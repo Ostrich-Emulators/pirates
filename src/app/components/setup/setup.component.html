@@ -1,0 +1,20 @@
+<div>
+  Pirate Name:
+  <input [(ngModel)]="shipsvc.captain">
+</div>
+<div>
+  <img src="/assets/galleon.svg" height="64" width="64">
+  <select [(ngModel)]="type">
+    <option [value]="0">Small and Fast</option>
+    <option [value]="1">Middle of the Road</option>
+    <option [value]="2">Big and Strong</option>
+  </select>
+  <br/>
+  <br/>
+  Avatar:
+   <ng-container *ngFor="let a of avatars">
+      <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="shipsvc.avatar===a ? 'selected':''">
+   </ng-container>
+</div>
+
+<button class="btn btn-default" [disabled]="0===shipsvc.captain.length" (click)="sail()">Set Sail!</button>
