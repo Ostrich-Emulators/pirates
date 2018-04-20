@@ -8,6 +8,7 @@ import { ShipDefinition } from '../model/ship-definition';
 export class ShipService {
   public captain: string = '';
   public ship: Ship;
+  public crew: Crew;
   public avatar: string;
   
   constructor() { }
@@ -15,7 +16,7 @@ export class ShipService {
   build(type: ShipType) {
     var def: ShipDefinition = this.shipdef(type);
 
-    var crew: Crew = {
+    this.crew = {
       count: def.crewsize,
       meleeSkill: 25,
       sailingSkill: 25
@@ -23,12 +24,13 @@ export class ShipService {
 
     this.ship = {
       type: type,
-      crew: crew,
-      cannons: 4,
+      cannons: 2,
       speed: def.speed,
       manueverability: def.manueverability,
       hullStrength: def.hull,
-      sailQuality: 50
+      sailQuality: 35,
+      food: 50,
+      ammo:20
     };
   }
 
@@ -43,15 +45,17 @@ export class ShipService {
           cannons: 15,
           crewsize: 50,
           foodstore: 1000,
+          ammostore: 100,
           speed: 5,
           manueverability: 5,
-          hull:40
+          hull: 40
         };
       case (ShipType.MEDIUM):
         return {
           cannons: 10,
           crewsize: 20,
           foodstore: 500,
+          ammostore: 100,
           speed: 10,
           manueverability: 15,
           hull: 20
@@ -61,10 +65,10 @@ export class ShipService {
           cannons: 4,
           crewsize: 10,
           foodstore: 250,
+          ammostore: 100,
           speed: 20,
           manueverability: 25,
           hull: 10
-
         };
     }
   }

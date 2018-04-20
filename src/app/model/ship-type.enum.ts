@@ -1,5 +1,6 @@
 export enum ShipType {
-    BIG,
-    MEDIUM,
-    SMALL
+    BIG = 0,
+    MEDIUM = 1,
+    SMALL = 2
+    
 }

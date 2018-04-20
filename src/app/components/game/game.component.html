@@ -1,7 +1,8 @@
-<p>
-  game works!
-  <img [src]="shipsvc.avatar" height="32" width="32">
-  {{shipsvc.captain}}
-
-  {{shipsvc.ship.cannons}}
-</p>
+<div class="container" fxLayout fxLayout.xs="column" fxLayoutAlign="center" fxLayoutGap="10px" fxLayoutGap.xs="0">
+  <div id="info-bar" fxFlex="25%">
+    <app-info-bar></app-info-bar>
+  </div>
+  <div id="main-map" fxFlex>
+    <app-map></app-map>
+  </div>
+</div>

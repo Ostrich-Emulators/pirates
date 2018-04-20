@@ -32,6 +32,19 @@ export class SetupComponent implements OnInit {
   }
 
   sail() {
+    if (typeof this.type == 'string') {
+      switch (this.type) {
+        case '0':
+          this.type = ShipType.SMALL;
+          break;
+        case '1':
+          this.type = ShipType.MEDIUM;
+          break;
+        case '2':
+          this.type = ShipType.BIG;
+          break;
+      }
+    }
     this.shipsvc.build(this.type);
     this.router.navigate(['/game']);
   }
