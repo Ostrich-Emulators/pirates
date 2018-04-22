@@ -13,7 +13,7 @@ export class SupplyDisplayComponent implements OnInit {
   constructor(private shipsvc: ShipService, private gavesvc: GameService) { }
 
   ngOnInit() {
-    console.log(this.shipsvc.ship);
+    //console.log(this.shipsvc.ship);
   }
 
 }

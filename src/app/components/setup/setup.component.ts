@@ -20,8 +20,9 @@ export class SetupComponent implements OnInit {
     "/assets/avatar4.svg"
   ];
 
-  constructor(private shipsvc: ShipService, private router: Router) { 
-    this.shipsvc.avatar = this.avatars[0];
+  constructor(private shipsvc: ShipService, private router: Router) {
+    var avidx = Math.random() * this.avatars.length;
+    this.shipsvc.avatar = this.avatars[Math.floor(avidx)];
   }
 
   ngOnInit() {
