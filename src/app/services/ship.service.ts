@@ -11,7 +11,14 @@ export class ShipService {
   public crew: Crew;
   public avatar: string;
   
-  constructor() { }
+  constructor() { 
+    if (localStorage.getItem('captain')) {
+      this.ship = JSON.parse(localStorage.getItem('ship'));
+      this.crew = JSON.parse(localStorage.getItem('crew'));
+      this.avatar = localStorage.getItem('avatar');
+      this.captain = localStorage.getItem('captain');
+    }
+  }
 
   build(type: ShipType) {
     var def: ShipDefinition = this.shipdef(type);
@@ -32,6 +39,11 @@ export class ShipService {
       food: 50,
       ammo:20
     };
+
+    localStorage.setItem('ship', JSON.stringify(this.ship));
+    localStorage.setItem('crew', JSON.stringify(this.crew));
+    localStorage.setItem('captain', this.captain);
+    localStorage.setItem('avatar', this.avatar);
   }
 
   shipdef(type?: ShipType): ShipDefinition {

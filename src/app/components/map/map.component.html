@@ -1,1 +1,2 @@
-<img src="/assets/map.svg" class="map">
+<img src="/assets/map.svg" id="map" (mousemove)="onhover($event)" (click)="onclick($event)">
+<canvas #mapguide id="map-canvas"></canvas>
