@@ -13,6 +13,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
   private shipimg;
+  private shipx: number;
+  private shipy: number;
+  private dstx: number;
+  private dsty: number;
+  private mapimg;
 
   constructor(private shipsvc: ShipService, private gavesvc: GameService) { }
 
@@ -24,17 +29,19 @@ export class MapComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     var my: MapComponent = this;
 
-    var mapimg = new Image(740, 710);
-    mapimg.src = '/assets/map.png';
-    mapimg.onload = function () {
+    my.mapimg = new Image(740, 710);
+    my.mapimg.src = '/assets/map.png';
+    my.mapimg.onload = function () {
       my.map.nativeElement.height = img.naturalHeight;
       my.map.nativeElement.width = img.naturalWidth;
-      my.canvasctx.drawImage(mapimg, 0, 0);
+      my.canvasctx.drawImage(my.mapimg, 0, 0);
 
       my.shipimg = new Image(24, 24);
       my.shipimg.src = my.shipsvc.avatar;
       my.shipimg.onload = function () {
-        my.canvasctx.drawImage(my.shipimg, 100, 200, 24, 24);
+        my.shipx = 100;
+        my.shipy = 200;
+        my.canvasctx.drawImage(my.shipimg, my.shipx - 12, my.shipy - 12, 24, 24);
       };
     };
 
@@ -57,7 +64,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   onclick(event: MouseEvent) {
     var x = event.offsetX;
     var y = event.offsetY;
-    console.log(this.pixelname(x,y));
+    console.log(this.pixelname(x, y));
+
+    if (this.iswater(x, y) || this.iscity(x, y)) {
+      this.sailTo(x, y);
+    }
   }
 
   pixel255(x: number, y: number, idx: number) {
@@ -76,6 +87,40 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
     return true;
   }
+
+  moveTo(x: number, y: number) {
+    var my: MapComponent = this;
+    //my.canvasctx.drawImage(my.shipimg, x - 12, y - 12, 24, 24);
+
+    my.canvasctx.drawImage(my.mapimg, my.shipx - 12, my.shipy - 12, 24, 24,
+      my.shipx - 12, my.shipy - 12, 24, 24);
+    my.canvasctx.drawImage(my.shipimg, x - 12, y - 12, 24, 24);
+    my.shipx = x;
+    my.shipy = y;
+  }
+
+  /**
+   * Sets our destination, but we still need to move there
+   * 
+   * @param x final x
+   * @param y final y
+   */
+  sailTo(x: number, y: number) {
+    this.dstx = x;
+    this.dsty = y;
+
+    var xdiff = (this.shipx - x);
+    var ydiff = (this.shipy - y);
+
+    var steps = 10;
+    for (var step = 0; step < 10; step++){
+      this.moveTo(this.shipx - Math.floor(xdiff / steps), this.shipy - Math.floor(ydiff / steps));
+    }
+
+
+
+  }
+
 
 
   pixelname(x: number, y: number) {
