@@ -6,17 +6,13 @@ import { ShipDefinition } from '../model/ship-definition';
 
 @Injectable()
 export class ShipService {
-  public captain: string = '';
   public ship: Ship;
   public crew: Crew;
-  public avatar: string;
   
   constructor() { 
-    if (localStorage.getItem('captain')) {
+    if (localStorage.getItem('ship')) {
       this.ship = JSON.parse(localStorage.getItem('ship'));
       this.crew = JSON.parse(localStorage.getItem('crew'));
-      this.avatar = localStorage.getItem('avatar');
-      this.captain = localStorage.getItem('captain');
     }
   }
 
@@ -42,8 +38,6 @@ export class ShipService {
 
     localStorage.setItem('ship', JSON.stringify(this.ship));
     localStorage.setItem('crew', JSON.stringify(this.crew));
-    localStorage.setItem('captain', this.captain);
-    localStorage.setItem('avatar', this.avatar);
   }
 
   shipdef(type?: ShipType): ShipDefinition {

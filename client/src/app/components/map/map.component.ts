@@ -1,6 +1,7 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core';
 import { ShipService } from '../../services/ship.service';
 import { GameService } from '../../services/game.service';
+import { PlayerService } from '../../services/player.service';
 
 @Component({
   selector: 'app-map',
@@ -19,8 +20,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   private shipy: number;
   private speedx: number = 0;
   private speedy: number = 0;
+  private dstx: number;
+  private dsty: number;
+  private anchored: boolean = true;
+  private grounded: boolean = false;
 
-  constructor(private shipsvc: ShipService, private gavesvc: GameService) { }
+  constructor(private shipsvc: ShipService, private playersvc: PlayerService,
+    private gavesvc: GameService) { }
 
   ngOnInit() {
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
@@ -38,15 +44,16 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.canvasctx.drawImage(my.mapimg, 0, 0);
 
       my.shipimg = new Image(24, 24);
-      my.shipimg.src = my.shipsvc.avatar;
+      my.shipimg.src = my.playersvc.avatar;
       my.shipimg.onload = function () {
         my.shipx = 100;
         my.shipy = 200;
         my.canvasctx.drawImage(my.shipimg, my.shipx - 12, my.shipy - 12, 24, 24);
 
-
         function looper() {
-          my.moveTo(my.shipx + my.speedx, my.shipy + my.speedy);
+          if (!my.anchored) {
+            my.moveTo(my.shipx + my.speedx, my.shipy + my.speedy);
+          }
           window.requestAnimationFrame(looper);
         }
         looper();
@@ -103,6 +110,29 @@ export class MapComponent implements OnInit, AfterViewInit {
     my.canvasctx.drawImage(my.shipimg, Math.floor( x - 12 ), Math.floor( y - 12 ), 24, 24);
     my.shipx = x;
     my.shipy = y;
+
+    if (my.isinland(my.shipx, my.shipy)) {
+      my.anchored = true;
+      console.log('we\'ve run aground!');
+      my.shipsvc.ship.hullStrength -= 3;
+      my.grounded = true;
+    }
+
+    var both: number = 0;
+    if (Math.abs(my.shipx - my.dstx) < 1) {
+      my.speedx = 0;
+      my.shipx = Math.floor(my.shipx);
+    }
+    if (Math.abs(my.shipy - my.dsty) < 1) {
+      my.speedy = 0;
+      my.shipy = Math.floor(my.shipy);
+    }
+
+    if (my.speedx === 0 && 0 === my.speedy && !my.anchored) {
+      my.anchored = true;
+      console.log('anchoring at ' + my.shipx + ',' + my.shipy);
+    }
+
   }
 
   /**
@@ -113,34 +143,49 @@ export class MapComponent implements OnInit, AfterViewInit {
    */
   sailTo(x: number, y: number) {
     var my: MapComponent = this;
-    var dstx = x;
-    var dsty = y;
+    if (my.anchored) {
+      console.log('setting sail!');
+    }
+    if (!my.anchored) {
+      console.log('setting new course!');
+    }
 
-    var x2 = (dstx - this.shipx);
-    var y2 = (dsty - this.shipy);
-    var slope = y2 / x2;
+    my.anchored = false;
+    var diffx = (x - this.shipx);
+    var diffy = (y - this.shipy);
+    var slope = diffy / diffx;
     var angle = Math.atan(slope);
-    
-    
-    var speed = 1;
-    my.speedx = speed * Math.cos(angle);
-    my.speedy = speed * Math.sin(angle);
 
-    if (x2 < 0) {
-      my.speedx = 0 - my.speedx;
+    var speed = 0.25;
+    var speedx = speed * Math.cos(angle);
+    var speedy = speed * Math.sin(angle);
+
+    if (diffx < 0 && diffy > 0) {
+      //console.log('flip 1');
+      speedx = 0 - speedx;
+      speedy = 0 - speedy;
     }
-    if (y2 < 0) {
-      my.speedy = 0 - my.speedy;
+    else if (diffx < 0 && diffy < 0) {
+      //console.log('flip 3');
+      speedx = 0 - speedx;
+      speedy = 0 - speedy;
     }
+
+    my.shipx = Math.floor(my.shipx);
+    my.shipy = Math.floor(my.shipy);
+    my.dstx = x;
+    my.dsty = y;
+    my.speedx = speedx;
+    my.speedy = speedy;
 
     // just for debugging
     var obj = {
       shipx: my.shipx,
       shipy: my.shipy,
-      dstx: dstx,
-      dsty: dsty,
-      diffx: x2,
-      diffy: y2,
+      dstx: my.dstx,
+      dsty: my.dsty,
+      diffx: diffx,
+      diffy: diffy,
       slope: slope,
       angle: angle,
       speedx: my.speedx,
@@ -184,6 +229,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   island(x: number, y: number) {
-    return !( this.isshallows(x, y) || this.outOfBounds(x,y) );
+    return !( this.iswater(x, y) || this.outOfBounds(x,y) );
+  }
+
+  isinland(x: number, y: number) {
+    return ( this.island(x, y) && !this.iscity(x, y) );
   }
 }

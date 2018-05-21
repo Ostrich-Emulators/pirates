@@ -16,6 +16,7 @@ import { MapComponent } from './components/map/map.component';
 import { CrewDisplayComponent } from './components/info-bar/crew-display/crew-display.component';
 import { ShipDisplayComponent } from './components/info-bar/ship-display/ship-display.component';
 import { SupplyDisplayComponent } from './components/info-bar/supply-display/supply-display.component';
+import { PlayerService } from './services/player.service';
 
 
 @NgModule({
@@ -36,7 +37,7 @@ import { SupplyDisplayComponent } from './components/info-bar/supply-display/sup
     FormsModule,
     FlexLayoutModule
   ],
-  providers: [ShipService, GameService],
+  providers: [ShipService, GameService, PlayerService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
