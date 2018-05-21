@@ -13,11 +13,12 @@ export class MapComponent implements OnInit, AfterViewInit {
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
   private shipimg;
+  private mapimg;
+
   private shipx: number;
   private shipy: number;
-  private dstx: number;
-  private dsty: number;
-  private mapimg;
+  private speedx: number = 0;
+  private speedy: number = 0;
 
   constructor(private shipsvc: ShipService, private gavesvc: GameService) { }
 
@@ -42,6 +43,13 @@ export class MapComponent implements OnInit, AfterViewInit {
         my.shipx = 100;
         my.shipy = 200;
         my.canvasctx.drawImage(my.shipimg, my.shipx - 12, my.shipy - 12, 24, 24);
+
+
+        function looper() {
+          my.moveTo(my.shipx + my.speedx, my.shipy + my.speedy);
+          window.requestAnimationFrame(looper);
+        }
+        looper();
       };
     };
 
@@ -90,11 +98,9 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   moveTo(x: number, y: number) {
     var my: MapComponent = this;
-    //my.canvasctx.drawImage(my.shipimg, x - 12, y - 12, 24, 24);
-
-    my.canvasctx.drawImage(my.mapimg, my.shipx - 12, my.shipy - 12, 24, 24,
-      my.shipx - 12, my.shipy - 12, 24, 24);
-    my.canvasctx.drawImage(my.shipimg, x - 12, y - 12, 24, 24);
+    my.canvasctx.drawImage(my.mapimg, Math.floor( my.shipx - 12 ), Math.floor( my.shipy - 12 ), 24, 24,
+      Math.floor( my.shipx - 12 ), Math.floor( my.shipy - 12 ), 24, 24);
+    my.canvasctx.drawImage(my.shipimg, Math.floor( x - 12 ), Math.floor( y - 12 ), 24, 24);
     my.shipx = x;
     my.shipy = y;
   }
@@ -106,22 +112,42 @@ export class MapComponent implements OnInit, AfterViewInit {
    * @param y final y
    */
   sailTo(x: number, y: number) {
-    this.dstx = x;
-    this.dsty = y;
+    var my: MapComponent = this;
+    var dstx = x;
+    var dsty = y;
 
-    var xdiff = (this.shipx - x);
-    var ydiff = (this.shipy - y);
+    var x2 = (dstx - this.shipx);
+    var y2 = (dsty - this.shipy);
+    var slope = y2 / x2;
+    var angle = Math.atan(slope);
+    
+    
+    var speed = 1;
+    my.speedx = speed * Math.cos(angle);
+    my.speedy = speed * Math.sin(angle);
 
-    var steps = 10;
-    for (var step = 0; step < 10; step++){
-      this.moveTo(this.shipx - Math.floor(xdiff / steps), this.shipy - Math.floor(ydiff / steps));
+    if (x2 < 0) {
+      my.speedx = 0 - my.speedx;
+    }
+    if (y2 < 0) {
+      my.speedy = 0 - my.speedy;
     }
 
-
-
+    // just for debugging
+    var obj = {
+      shipx: my.shipx,
+      shipy: my.shipy,
+      dstx: dstx,
+      dsty: dsty,
+      diffx: x2,
+      diffy: y2,
+      slope: slope,
+      angle: angle,
+      speedx: my.speedx,
+      speedy: my.speedy
+    };
+    console.log(obj);
   }
-
-
 
   pixelname(x: number, y: number) {
     if (this.outOfBounds(x, y)) {
