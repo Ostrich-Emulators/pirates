@@ -8,8 +8,8 @@ import { GameService } from '../../services/game.service';
   styleUrls: ['./game.component.css']
 })
 export class GameComponent implements OnInit {
-
-  constructor( private shipsvc:ShipService, private game:GameService) { }
+  constructor(private shipsvc: ShipService, private game: GameService) {
+   }
 
   ngOnInit() {
   }

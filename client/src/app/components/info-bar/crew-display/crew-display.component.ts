@@ -9,7 +9,7 @@ import { GameService } from '../../../services/game.service';
 })
 export class CrewDisplayComponent implements OnInit {
 
-  constructor(private shipsvc: ShipService, private gavesvc: GameService) { }
+  constructor(private shipsvc: ShipService, private gamesvc: GameService) { }
 
   ngOnInit() {
 //    console.log(this.shipsvc.crew);

@@ -1,7 +1,10 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core';
 import { ShipService } from '../../services/ship.service';
 import { GameService } from '../../services/game.service';
-import { PlayerService } from '../../services/player.service';
+import { forkJoin } from 'rxjs/observable/forkJoin';
+import { Observable } from 'rxjs/Observable';
+import { Player } from '../../../../../common/model/player';
+import { Ship } from '../../../../../common/model/ship';
 
 @Component({
   selector: 'app-map',
@@ -13,24 +16,20 @@ export class MapComponent implements OnInit, AfterViewInit {
   @ViewChild('mapguide', { read: ElementRef }) mapguide: ElementRef;
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
-  private shipimg;
+  private whirlpoolimg;
+  private seamonsterimg;
   private mapimg;
+  private images: Map<string, any> = new Map<string, any>();
+  private player: Player;
 
-  private shipx: number;
-  private shipy: number;
-  private speedx: number = 0;
-  private speedy: number = 0;
-  private dstx: number;
-  private dsty: number;
-  private anchored: boolean = true;
-  private grounded: boolean = false;
+  private messages: string = '';
 
-  constructor(private shipsvc: ShipService, private playersvc: PlayerService,
-    private gavesvc: GameService) { }
+  constructor(private shipsvc: ShipService, private gamesvc: GameService) { }
 
   ngOnInit() {
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
     this.canvasctx = this.map.nativeElement.getContext('2d');
+    this.player = this.gamesvc.myplayer();
   }
 
   ngAfterViewInit() {
@@ -43,6 +42,15 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.map.nativeElement.width = img.naturalWidth;
       my.canvasctx.drawImage(my.mapimg, 0, 0);
 
+      my.shipsvc.avatars.forEach(av => { 
+        my.images[av] = new Image();
+        my.images[av].src = av;
+      });
+      my.images['/assets/galleon.svg'] = new Image();
+      my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
+
+
+      /*
       my.shipimg = new Image(24, 24);
       my.shipimg.src = my.playersvc.avatar;
       my.shipimg.onload = function () {
@@ -58,6 +66,20 @@ export class MapComponent implements OnInit, AfterViewInit {
         }
         looper();
       };
+
+      my.whirlpoolimg = new Image();
+      my.whirlpoolimg.src = '/assets/whirlpool.png';
+      my.whirlpoolimg.onload = function () {
+        my.canvasctx.drawImage(my.whirlpoolimg, 285, 285);
+      }
+
+      my.seamonsterimg = new Image();
+      my.seamonsterimg.src = '/assets/seamonster.png';
+      my.seamonsterimg.onload = function () {
+        console.log( 'her eI am')
+        my.canvasctx.drawImage(my.seamonsterimg, 50, 300);
+      }
+      */
     };
 
     var img = new Image(740, 710);
@@ -68,6 +90,15 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.offscreenctx.drawImage(img, 0, 0);
       img.style.display = 'none';
     };
+
+    window.setInterval(function () { 
+      my.gamesvc.ships().subscribe( (data:Ship[]) => {
+        data.forEach((s: Ship) => { 
+          var shipimg = my.images[s.avatar];
+          my.canvasctx.drawImage(shipimg, s.location.x - 12, s.location.y - 12, 24, 24);
+        });
+      });
+    }, 1000);
   }
 
   onhover(event: MouseEvent) {
@@ -103,38 +134,6 @@ export class MapComponent implements OnInit, AfterViewInit {
     return true;
   }
 
-  moveTo(x: number, y: number) {
-    var my: MapComponent = this;
-    my.canvasctx.drawImage(my.mapimg, Math.floor( my.shipx - 12 ), Math.floor( my.shipy - 12 ), 24, 24,
-      Math.floor( my.shipx - 12 ), Math.floor( my.shipy - 12 ), 24, 24);
-    my.canvasctx.drawImage(my.shipimg, Math.floor( x - 12 ), Math.floor( y - 12 ), 24, 24);
-    my.shipx = x;
-    my.shipy = y;
-
-    if (my.isinland(my.shipx, my.shipy)) {
-      my.anchored = true;
-      console.log('we\'ve run aground!');
-      my.shipsvc.ship.hullStrength -= 3;
-      my.grounded = true;
-    }
-
-    var both: number = 0;
-    if (Math.abs(my.shipx - my.dstx) < 1) {
-      my.speedx = 0;
-      my.shipx = Math.floor(my.shipx);
-    }
-    if (Math.abs(my.shipy - my.dsty) < 1) {
-      my.speedy = 0;
-      my.shipy = Math.floor(my.shipy);
-    }
-
-    if (my.speedx === 0 && 0 === my.speedy && !my.anchored) {
-      my.anchored = true;
-      console.log('anchoring at ' + my.shipx + ',' + my.shipy);
-    }
-
-  }
-
   /**
    * Sets our destination, but we still need to move there
    * 
@@ -143,55 +142,15 @@ export class MapComponent implements OnInit, AfterViewInit {
    */
   sailTo(x: number, y: number) {
     var my: MapComponent = this;
-    if (my.anchored) {
+    var ship: Ship = my.player.ship;
+    if (ship.anchored) {
       console.log('setting sail!');
     }
-    if (!my.anchored) {
+    if (!ship.anchored) {
       console.log('setting new course!');
     }
 
-    my.anchored = false;
-    var diffx = (x - this.shipx);
-    var diffy = (y - this.shipy);
-    var slope = diffy / diffx;
-    var angle = Math.atan(slope);
-
-    var speed = 0.25;
-    var speedx = speed * Math.cos(angle);
-    var speedy = speed * Math.sin(angle);
-
-    if (diffx < 0 && diffy > 0) {
-      //console.log('flip 1');
-      speedx = 0 - speedx;
-      speedy = 0 - speedy;
-    }
-    else if (diffx < 0 && diffy < 0) {
-      //console.log('flip 3');
-      speedx = 0 - speedx;
-      speedy = 0 - speedy;
-    }
-
-    my.shipx = Math.floor(my.shipx);
-    my.shipy = Math.floor(my.shipy);
-    my.dstx = x;
-    my.dsty = y;
-    my.speedx = speedx;
-    my.speedy = speedy;
-
-    // just for debugging
-    var obj = {
-      shipx: my.shipx,
-      shipy: my.shipy,
-      dstx: my.dstx,
-      dsty: my.dsty,
-      diffx: diffx,
-      diffy: diffy,
-      slope: slope,
-      angle: angle,
-      speedx: my.speedx,
-      speedy: my.speedy
-    };
-    console.log(obj);
+    this.gamesvc.move(x, y);
   }
 
   pixelname(x: number, y: number) {

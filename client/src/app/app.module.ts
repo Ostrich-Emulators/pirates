@@ -1,4 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FlexLayoutModule } from '@angular/flex-layout';
@@ -16,7 +17,6 @@ import { MapComponent } from './components/map/map.component';
 import { CrewDisplayComponent } from './components/info-bar/crew-display/crew-display.component';
 import { ShipDisplayComponent } from './components/info-bar/ship-display/ship-display.component';
 import { SupplyDisplayComponent } from './components/info-bar/supply-display/supply-display.component';
-import { PlayerService } from './services/player.service';
 
 
 @NgModule({
@@ -32,12 +32,13 @@ import { PlayerService } from './services/player.service';
     SupplyDisplayComponent
   ],
   imports: [
+    HttpClientModule,
     BrowserModule,
     AppRoutingModule,
     FormsModule,
     FlexLayoutModule
   ],
-  providers: [ShipService, GameService, PlayerService],
+  providers: [ShipService, GameService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
