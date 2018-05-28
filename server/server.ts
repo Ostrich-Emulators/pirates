@@ -5,6 +5,7 @@ var cors = require('cors')
 import { Game } from "./api/models/game";
 import { GameController } from "./api/controllers/game-controller";
 import { ShipController } from './api/controllers/ship-controller';
+import { Player } from "../common/model/player";
 
 var port = process.env.PIRATEPORT || 30000;
 var bodyParser = require('body-parser');
@@ -33,6 +34,7 @@ app.route('/ships/:shipId')
     });
 app.route('/ships/:shipId/course')
     .post(function (req, res) {
+        console.log(req.params.shipId);
         console.log(req.body);
         res.json(shipcontroller.sail(req.params.shipId, req.body));
     });
@@ -44,7 +46,11 @@ app.route('/players')
     .put(function (req, res) {
         console.log('into create player');
         console.log(req.body);
-        res.json(gamecontroller.create(req.body));
+        var player: Player = gamecontroller.create(req.body);
+        if (1 === game.getPlayers().length) {
+            game.start();
+        }
+        res.json(player);
     })
     .post(function (req, res) {
         res.json(gamecontroller.create(req.body));

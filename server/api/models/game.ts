@@ -112,4 +112,32 @@ export class Game {
     getNonPlayerShips(): Ship[]{
         return this.nonplayerships;
     }
+
+    start() {
+        var my: Game = this;
+        console.log('starting game loop');
+        var updateShipLocation = function (ship: Ship) {
+            if (!ship.anchored) {
+                var speed = ship.speed / 4;
+                var speedx = ship.course.slopex * speed;
+                var speedy = ship.course.slopey * speed;
+                ship.location.x += speedx;
+                ship.location.y += speedy;
+
+                if (Math.abs(ship.location.x - ship.course.dstx) < 1
+                    && Math.abs(ship.location.y - ship.course.dsty) < 1) {
+                    ship.anchored = true;
+                }
+            }
+        }
+
+        setInterval(function () {
+            my.players.forEach(player => { 
+                updateShipLocation(player.ship);
+            });
+            my.nonplayerships.forEach((ship: Ship) => { 
+                updateShipLocation(ship);
+            });
+        }, 250);
+    }
 }

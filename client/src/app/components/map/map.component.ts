@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs/observable/forkJoin';
 import { Observable } from 'rxjs/Observable';
 import { Player } from '../../../../../common/model/player';
 import { Ship } from '../../../../../common/model/ship';
+import { Location } from '../../../../../common/model/location';
 
 @Component({
   selector: 'app-map',
@@ -21,8 +22,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private mapimg;
   private images: Map<string, any> = new Map<string, any>();
   private player: Player;
-
   private messages: string = '';
+  private ships: Ship[] = [];
+  private lastlocs: Map<string, Location> = new Map<string, Location>();
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService) { }
 
@@ -48,7 +50,6 @@ export class MapComponent implements OnInit, AfterViewInit {
       });
       my.images['/assets/galleon.svg'] = new Image();
       my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
-
 
       /*
       my.shipimg = new Image(24, 24);
@@ -91,14 +92,49 @@ export class MapComponent implements OnInit, AfterViewInit {
       img.style.display = 'none';
     };
 
-    window.setInterval(function () { 
-      my.gamesvc.ships().subscribe( (data:Ship[]) => {
-        data.forEach((s: Ship) => { 
-          var shipimg = my.images[s.avatar];
-          my.canvasctx.drawImage(shipimg, s.location.x - 12, s.location.y - 12, 24, 24);
-        });
-      });
-    }, 1000);
+    my.refreshShips(); // get ships from server
+    window.setInterval(function () { my.refreshShips(); }, 2000);
+    
+    // start the animation frame
+    setInterval(function () {
+      my.moveShips();
+    }, 250);
+  }
+
+  moveShips() {
+    var my: MapComponent = this;
+
+    // first, erase all our ships no matter what
+    my.lastlocs.forEach(( loc, shipid ) => {
+      my.canvasctx.drawImage(my.mapimg, loc.x - 13, loc.y - 13, 26, 26,
+        loc.x - 13, loc.y - 13, 26, 26);
+    });
+
+    my.ships.forEach((ship: Ship) => {
+      var shipimg = my.images[ship.avatar];
+      if (!ship.anchored) {
+        var speed = ship.speed / 4;
+
+        var speedx = ship.course.slopex * speed;
+        var speedy = ship.course.slopey * speed;
+        ship.location.x += speedx;
+        ship.location.y += speedy;
+        my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
+      }
+
+      if (shipimg) {
+        my.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,
+          24, 24);
+      }
+    });
+  }
+
+  refreshShips() {
+    console.log('refreshing ships!');
+    var my: MapComponent = this;
+    my.gamesvc.ships().subscribe((data: Ship[]) => {
+      my.ships = data;
+    });
   }
 
   onhover(event: MouseEvent) {

@@ -48,10 +48,8 @@ export class GameService {
 
   move(x: number, y: number) {
     var loc: Location = { x: x, y: y };
-    console.log('here?');
-    console.log(loc);
-    console.log(this.me.ship);
-    this.http.post(this.BASEURL + '/ships/' + this.me.ship.id + '/course', loc);
+    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/course';
+    this.http.post(url, loc).subscribe();
   }
 
   myplayer(): Player {
