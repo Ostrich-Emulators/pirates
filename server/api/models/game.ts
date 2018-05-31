@@ -6,10 +6,22 @@ import { ShipDefinition } from '../../../common/model/ship-definition';
 import { Ship } from '../../../common/model/ship';
 
 export class Game {
-    private whirlpoolloc: Location = {x:-100, y:-100};
-    private seamonsterloc: Location = {x:-100,y:-100};
+    private whirlpoolloc: Location = null;
+    private seamonsterloc: Location = null;
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
+    private WLOCATIONS: Location[] = [
+        { x: 313, y: 316 },
+        { x: 102, y: 284 },
+        { x: 333, y: 581 },
+        { x: 464, y: 129 }];
+
+    private MLOCATIONS: Location[] = [
+        { x: 404, y: 587 },
+        { x: 108, y: 386 },
+        { x: 211, y: 183 }];
+    private MPCT: number = 0.5;
+    private WPCT: number = 0.5;
 
     getPlayers(): Player[]{
         var p: Player[] = [];
@@ -42,7 +54,7 @@ export class Game {
                     cannons: 15,
                     crewsize: 50,
                     storage: 1000,
-                    speed: 5,
+                    speed: 0.2,
                     manueverability: 5,
                     hull: 40
                 };
@@ -51,7 +63,7 @@ export class Game {
                     cannons: 10,
                     crewsize: 20,
                     storage: 500,
-                    speed: 10,
+                    speed: 0.4,
                     manueverability: 15,
                     hull: 20
                 };
@@ -60,7 +72,7 @@ export class Game {
                     cannons: 4,
                     crewsize: 10,
                     storage: 250,
-                    speed: 20,
+                    speed: 0.6,
                     manueverability: 25,
                     hull: 10
                 };
@@ -118,11 +130,8 @@ export class Game {
         console.log('starting game loop');
         var updateShipLocation = function (ship: Ship) {
             if (!ship.anchored) {
-                var speed = ship.speed / 4;
-                var speedx = ship.course.slopex * speed;
-                var speedy = ship.course.slopey * speed;
-                ship.location.x += speedx;
-                ship.location.y += speedy;
+                ship.location.x += ship.course.speedx;
+                ship.location.y += ship.course.speedy;
 
                 if (Math.abs(ship.location.x - ship.course.dstx) < 1
                     && Math.abs(ship.location.y - ship.course.dsty) < 1) {
@@ -138,6 +147,24 @@ export class Game {
             my.nonplayerships.forEach((ship: Ship) => { 
                 updateShipLocation(ship);
             });
-        }, 250);
+        }, 100);
+        
+        setInterval(function () {
+            if (Math.random() < my.WPCT) {
+                my.whirlpoolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                console.log('whirlpool opened at ' + JSON.stringify(my.whirlpoolloc));
+            }
+            else { 
+                my.whirlpoolloc = null;
+            }
+            if (Math.random() < my.MPCT) {
+                my.seamonsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+                console.log('sea monster spotted at ' + JSON.stringify(my.seamonsterloc));
+            }
+            else {
+                my.seamonsterloc = null;
+            }
+         }, 5000 );
+
     }
 }

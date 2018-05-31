@@ -18,6 +18,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
   private whirlpoolimg;
+  private whirlloc: Location = null;
+  private monsterloc: Location = null;
   private seamonsterimg;
   private mapimg;
   private images: Map<string, any> = new Map<string, any>();
@@ -36,6 +38,12 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     var my: MapComponent = this;
+
+    my.seamonsterimg = new Image();
+    my.seamonsterimg.src = '/assets/seamonster.png';
+    my.whirlpoolimg = new Image();
+    my.whirlpoolimg.src = '/assets/whirlpool.png';
+
 
     my.mapimg = new Image(740, 710);
     my.mapimg.src = '/assets/map.png';
@@ -93,12 +101,12 @@ export class MapComponent implements OnInit, AfterViewInit {
     };
 
     my.refreshShips(); // get ships from server
-    window.setInterval(function () { my.refreshShips(); }, 2000);
+    window.setInterval(function () { my.refreshShips(); }, 500);
     
     // start the animation frame
     setInterval(function () {
       my.moveShips();
-    }, 250);
+    }, 100);
   }
 
   moveShips() {
@@ -106,17 +114,15 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     // first, erase all our ships no matter what
     my.lastlocs.forEach(( loc, shipid ) => {
-      my.canvasctx.drawImage(my.mapimg, loc.x - 13, loc.y - 13, 26, 26,
-        loc.x - 13, loc.y - 13, 26, 26);
+      my.canvasctx.drawImage(my.mapimg, loc.x - 14, loc.y - 14, 28, 28,
+        loc.x - 14, loc.y - 14, 28, 28);
     });
 
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
       if (!ship.anchored) {
-        var speed = ship.speed / 4;
-
-        var speedx = ship.course.slopex * speed;
-        var speedy = ship.course.slopey * speed;
+        var speedx = ship.course.speedx;
+        var speedy = ship.course.speedy;
         ship.location.x += speedx;
         ship.location.y += speedy;
         my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
@@ -130,10 +136,36 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   refreshShips() {
-    console.log('refreshing ships!');
+    //console.log('refreshing ships!');
     var my: MapComponent = this;
     my.gamesvc.ships().subscribe((data: Ship[]) => {
       my.ships = data;
+    });
+
+    my.gamesvc.status().subscribe((data: any) => {
+      //console.log(data);
+      if (null != my.monsterloc) {
+        // erase the old monster location before drawing a new one
+        my.canvasctx.drawImage(my.mapimg, my.monsterloc.x - 20, my.monsterloc.y - 40, 40, 80,
+          my.monsterloc.x - 20, my.monsterloc.y - 40, 40, 80);
+      }
+      if (null != my.whirlloc) {
+        // erase the old monster location before drawing a new one
+        my.canvasctx.drawImage(my.mapimg, my.whirlloc.x - 20, my.whirlloc.y - 40, 40, 80,
+          my.whirlloc.x - 20, my.whirlloc.y - 40, 40, 80);
+      }
+
+      if (null != data['whirlpoolloc']) {
+        my.whirlloc = data['whirlpoolloc'];
+        console.log('whirlpool at '+JSON.stringify(my.whirlloc));
+        my.canvasctx.drawImage(my.whirlpoolimg, my.whirlloc.x - 20, my.whirlloc.y - 40, 40, 80);
+      }
+      if (null != data['seamonsterloc']) {
+        my.monsterloc = data['seamonsterloc'];
+        console.log('sea monster at '+JSON.stringify(my.monsterloc));
+        my.canvasctx.drawImage(my.seamonsterimg, my.monsterloc.x-20, my.monsterloc.y-40, 40, 80);
+        my.canvasctx.drawImage(my.seamonsterimg, 0, 0);
+      }
     });
   }
 

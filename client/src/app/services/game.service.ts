@@ -46,6 +46,10 @@ export class GameService {
     return this.http.get(this.BASEURL + '/ships');
   }
 
+  status(): Observable<{}> {
+    return this.http.get(this.BASEURL + '/game/status');
+  }
+
   move(x: number, y: number) {
     var loc: Location = { x: x, y: y };
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/course';

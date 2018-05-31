@@ -48,17 +48,11 @@ export class ShipController {
         var slope = diffy / diffx;
         var angle = Math.atan(slope);
 
-        var speed = 1;
+        var speed = ship.speed;
         var speedx = speed * Math.cos(angle);
         var speedy = speed * Math.sin(angle);
 
-        if (diffx < 0 && diffy > 0) {
-            //console.log('flip 1');
-            speedx = 0 - speedx;
-            speedy = 0 - speedy;
-        }
-        else if (diffx < 0 && diffy < 0) {
-            //console.log('flip 3');
+        if (diffx < 0 ){
             speedx = 0 - speedx;
             speedy = 0 - speedy;
         }
@@ -66,8 +60,8 @@ export class ShipController {
         ship.course = {
             dstx: dst.x,
             dsty: dst.y,
-            slopex: Math.cos(angle),
-            slopey: Math.sin(angle)
+            speedx: speedx,
+            speedy: speedy
         };
         this.one(shipid).anchored = false;
     }
