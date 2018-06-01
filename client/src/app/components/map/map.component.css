@@ -4,6 +4,7 @@
 
 #map {
     cursor: pointer;
+    background: url('/assets/map.png');
 }
 
 textarea{

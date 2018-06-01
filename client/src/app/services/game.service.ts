@@ -43,7 +43,17 @@ export class GameService {
   }
 
   ships(): Observable<{}> {
-    return this.http.get(this.BASEURL + '/ships');
+    var my: GameService = this;
+    var obs: Subject<Ship[]> = new Subject<Ship[]>();
+    this.http.get(this.BASEURL + '/ships').subscribe((data:Ship[]) => { 
+      data.forEach(shp => {
+        if (shp.id === this.me.ship.id) {
+          my.me.ship = shp;
+        }
+      });
+      obs.next(data);
+    });
+    return obs;
   }
 
   status(): Observable<{}> {

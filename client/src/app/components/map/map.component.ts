@@ -44,52 +44,16 @@ export class MapComponent implements OnInit, AfterViewInit {
     my.whirlpoolimg = new Image();
     my.whirlpoolimg.src = '/assets/whirlpool.png';
 
-
     my.mapimg = new Image(740, 710);
-    my.mapimg.src = '/assets/map.png';
-    my.mapimg.onload = function () {
-      my.map.nativeElement.height = img.naturalHeight;
-      my.map.nativeElement.width = img.naturalWidth;
-      my.canvasctx.drawImage(my.mapimg, 0, 0);
+    my.map.nativeElement.height = 710;
+    my.map.nativeElement.width= 740;
 
-      my.shipsvc.avatars.forEach(av => { 
-        my.images[av] = new Image();
-        my.images[av].src = av;
-      });
-      my.images['/assets/galleon.svg'] = new Image();
-      my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
-
-      /*
-      my.shipimg = new Image(24, 24);
-      my.shipimg.src = my.playersvc.avatar;
-      my.shipimg.onload = function () {
-        my.shipx = 100;
-        my.shipy = 200;
-        my.canvasctx.drawImage(my.shipimg, my.shipx - 12, my.shipy - 12, 24, 24);
-
-        function looper() {
-          if (!my.anchored) {
-            my.moveTo(my.shipx + my.speedx, my.shipy + my.speedy);
-          }
-          window.requestAnimationFrame(looper);
-        }
-        looper();
-      };
-
-      my.whirlpoolimg = new Image();
-      my.whirlpoolimg.src = '/assets/whirlpool.png';
-      my.whirlpoolimg.onload = function () {
-        my.canvasctx.drawImage(my.whirlpoolimg, 285, 285);
-      }
-
-      my.seamonsterimg = new Image();
-      my.seamonsterimg.src = '/assets/seamonster.png';
-      my.seamonsterimg.onload = function () {
-        console.log( 'her eI am')
-        my.canvasctx.drawImage(my.seamonsterimg, 50, 300);
-      }
-      */
-    };
+    my.shipsvc.avatars.forEach(av => { 
+      my.images[av] = new Image();
+      my.images[av].src = av;
+    });
+    my.images['/assets/galleon.svg'] = new Image();
+    my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
 
     var img = new Image(740, 710);
     img.src = '/assets/map-guide.png';
@@ -100,23 +64,36 @@ export class MapComponent implements OnInit, AfterViewInit {
       img.style.display = 'none';
     };
 
-    my.refreshShips(); // get ships from server
-    window.setInterval(function () { my.refreshShips(); }, 500);
+    my.refreshData(); // get ships from server
+    window.setInterval(function () { my.refreshData(); }, 500);
     
     // start the animation frame
     setInterval(function () {
+      // first, erase everything no matter what
+      my.canvasctx.clearRect(0, 0, 740, 710);
+      my.drawSpecials();
       my.moveShips();
     }, 100);
   }
 
-  moveShips() {
+  drawSpecials() {
     var my: MapComponent = this;
 
-    // first, erase all our ships no matter what
-    my.lastlocs.forEach(( loc, shipid ) => {
-      my.canvasctx.drawImage(my.mapimg, loc.x - 14, loc.y - 14, 28, 28,
-        loc.x - 14, loc.y - 14, 28, 28);
-    });
+    if (null != my.monsterloc) {
+      my.canvasctx.drawImage(my.seamonsterimg,
+        my.monsterloc.x, my.monsterloc.y,
+        my.seamonsterimg.naturalWidth, my.seamonsterimg.naturalHeight);
+    }
+
+    if( null != my.whirlloc ){
+      my.canvasctx.drawImage(my.whirlpoolimg,
+        my.whirlloc.x, my.whirlloc.y,
+        my.whirlpoolimg.naturalWidth, my.whirlpoolimg.naturalHeight);
+    }
+  }
+
+  moveShips() {
+    var my: MapComponent = this;
 
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
@@ -129,13 +106,22 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
 
       if (shipimg) {
-        my.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,
+        //console.log('drawing ship image ' + ship.location.x + ' ' + ship.location.y);
+        my.canvasctx.drawImage(shipimg, ship.location.x, ship.location.y,
           24, 24);
       }
     });
   }
 
-  refreshShips() {
+  pointEq(one: Location, two: Location) {
+    if (null == one || null == two) {
+      return false;
+    }
+
+    return (one.x === two.x && one.y === two.y);
+  }
+
+  refreshData() {
     //console.log('refreshing ships!');
     var my: MapComponent = this;
     my.gamesvc.ships().subscribe((data: Ship[]) => {
@@ -143,29 +129,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     my.gamesvc.status().subscribe((data: any) => {
-      //console.log(data);
-      if (null != my.monsterloc) {
-        // erase the old monster location before drawing a new one
-        my.canvasctx.drawImage(my.mapimg, my.monsterloc.x - 20, my.monsterloc.y - 40, 40, 80,
-          my.monsterloc.x - 20, my.monsterloc.y - 40, 40, 80);
-      }
-      if (null != my.whirlloc) {
-        // erase the old monster location before drawing a new one
-        my.canvasctx.drawImage(my.mapimg, my.whirlloc.x - 20, my.whirlloc.y - 40, 40, 80,
-          my.whirlloc.x - 20, my.whirlloc.y - 40, 40, 80);
-      }
-
-      if (null != data['whirlpoolloc']) {
         my.whirlloc = data['whirlpoolloc'];
-        console.log('whirlpool at '+JSON.stringify(my.whirlloc));
-        my.canvasctx.drawImage(my.whirlpoolimg, my.whirlloc.x - 20, my.whirlloc.y - 40, 40, 80);
-      }
-      if (null != data['seamonsterloc']) {
         my.monsterloc = data['seamonsterloc'];
-        console.log('sea monster at '+JSON.stringify(my.monsterloc));
-        my.canvasctx.drawImage(my.seamonsterimg, my.monsterloc.x-20, my.monsterloc.y-40, 40, 80);
-        my.canvasctx.drawImage(my.seamonsterimg, 0, 0);
-      }
     });
   }
 
@@ -217,6 +182,27 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!ship.anchored) {
       console.log('setting new course!');
     }
+
+    var diffx = (x - ship.location.x);
+    var diffy = (y - ship.location.y);
+    var slope = diffy / diffx;
+    var angle = Math.atan(slope);
+
+    var speed = ship.speed;
+    var speedx = speed * Math.cos(angle);
+    var speedy = speed * Math.sin(angle);
+
+    if (diffx < 0) {
+      speedx = 0 - speedx;
+      speedy = 0 - speedy;
+    }
+
+    ship.course = {
+      dstx: x,
+      dsty: y,
+      speedx: speedx,
+      speedy: speedy
+    };
 
     this.gamesvc.move(x, y);
   }
