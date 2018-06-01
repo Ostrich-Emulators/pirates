@@ -5,12 +5,15 @@ import { Pirate } from '../../../common/model/pirate';
 import { ShipType } from '../../../common/model/ship-type.enum';
 import { ShipDefinition } from '../../../common/model/ship-definition';
 import { Ship } from '../../../common/model/ship';
+import { SeaMonster } from './seamonster';
 
 export class Game {
-    private whirlpoolloc: Location = null;
-    private seamonsterloc: Location = null;
+    private poolrect: Rectangle = null;
+    private monsterrect: Rectangle = null;
+    private monster: SeaMonster;
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
+    private monsterships: Ship[] = [];
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -25,9 +28,9 @@ export class Game {
     private MPCT: number = 0.9;
     private WPCT: number = 0.9;
 
-    getPlayers(): Player[]{
+    getPlayers(): Player[] {
         var p: Player[] = [];
-        this.players.forEach((player) => { 
+        this.players.forEach((player) => {
             p.push(player);
         });
         return p;
@@ -37,12 +40,12 @@ export class Game {
         return this.players.get(id);
     }
 
-    addPlayer(pirate: Pirate) :Player {
+    addPlayer(pirate: Pirate): Player {
         var type = ShipType.SMALL;
 
         var playerid: number = this.players.size + 1;
 
-        var ship = this.createShip(playerid + '-1', pirate.avatar, type );
+        var ship = this.createShip(playerid + '-1', pirate.avatar, type);
         var player: Player = new Player(playerid.toString(), pirate, ship);
         this.players.set(playerid.toString(), player);
         this.addShipToCollisionSystem(ship);
@@ -50,7 +53,7 @@ export class Game {
     }
 
     addShipToCollisionSystem(ship: Ship) {
-        
+
     }
 
     shipdef(type: ShipType): ShipDefinition {
@@ -78,14 +81,14 @@ export class Game {
                     cannons: 4,
                     crewsize: 10,
                     storage: 250,
-                    speed: 0.6,
+                    speed: 1,
                     manueverability: 25,
                     hull: 10
                 };
         }
     }
 
-    createShip(id: string, avatar:string, type: ShipType) :Ship {
+    createShip(id: string, avatar: string, type: ShipType): Ship {
         var def: ShipDefinition = this.shipdef(type);
 
         var crew = {
@@ -117,8 +120,8 @@ export class Game {
     /**
      * Generates the given number of Non-Player-Ships
      */
-    generateNonPlayerShips( ships:number ) {
-        for (var i = 0; i < ships; i++){
+    generateNonPlayerShips(ships: number) {
+        for (var i = 0; i < ships; i++) {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
             ship.location.x = Math.floor(Math.random() * 100 + 50);
@@ -128,7 +131,7 @@ export class Game {
         }
     }
 
-    getNonPlayerShips(): Ship[]{
+    getNonPlayerShips(): Ship[] {
         return this.nonplayerships;
     }
 
@@ -148,45 +151,24 @@ export class Game {
                 if (Math.abs(ship.location.x - ship.course.dstx) < 1
                     && Math.abs(ship.location.y - ship.course.dsty) < 1) {
                     ship.anchored = true;
-                }
-            }
 
-            // see if the ship hit the whirlpool
-            if (null != my.whirlpoolloc) {
-                var whirlrec: Rectangle = { x: my.whirlpoolloc.x, y: my.whirlpoolloc.y, height: 48, width: 89 };
-                if (my.iscollision({ x: ship.location.x, y: ship.location.y, height: 24, width: 24 }, whirlrec)) {
-                    var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-
-                    console.log('captured by the whirlpool!');
-                    ship.location.x = loc.x;
-                    ship.location.y = loc.y;
+                    // move ship exactly to our dst (just tidying up a bit)
+                    ship.location.x = ship.course.dstx;
+                    ship.location.y = ship.course.dsty;
                 }
             }
         }
 
-        /**
-         * Checks for collisions between ships, and also sea monster, whirlpool
-         * @param ship
-         */
-        var checkCollisions = function ( allships:Map<Ship, Rectangle> ) {
+        var checkShipCollisions = function (allships: Map<Ship, Rectangle>) {
             var revshipslkp: Map<Rectangle, Ship> = new Map<Rectangle, Ship>();
-            allships.forEach((rect: Rectangle, ship:Ship) => {
+            allships.forEach((rect: Rectangle, ship: Ship) => {
                 revshipslkp.set(rect, ship);
             });
 
             allships.forEach((rect: Rectangle, ship: Ship) => {
-                // see if the ship hit the seamonster
-                if (null != my.seamonsterloc) {
-                    var monsterrect: Rectangle = { x: my.seamonsterloc.x, y: my.seamonsterloc.y, height: 55, width: 144 };
-                    if (my.iscollision(rect, monsterrect)) {
-                        console.log('seamonster strike!');
-                        ship.crew.count -= 1;
-                    }
-                }
-
-                revshipslkp.forEach((other: Ship, otherrect: Rectangle) => { 
+                revshipslkp.forEach((other: Ship, otherrect: Rectangle) => {
                     if (other != ship) { // can't collide with myself
-                        if (my.iscollision( rect, otherrect ){
+                        if (my.iscollision(rect, otherrect){
                             // The objects are touching
                             //console.log(ship.id + ' collided with ' + other.id + '!');
                             ship.anchored = true;
@@ -196,18 +178,46 @@ export class Game {
             });
         }
 
+        var checkMonster = function (allships: Map<Ship, Rectangle>) {
+            if (null != my.monsterrect) {
+                my.monsterships = [];
+                allships.forEach((rect: Rectangle, ship: Ship) => {
+                    if (my.iscollision(rect, my.monsterrect)) {
+                        my.monsterships.push(ship);
+                        ship.anchored = true;
+                    }
+                });
+            }
+        }
+
+        var checkWhirlpool = function (allships: Map<Ship, Rectangle>) {
+            if (null != my.poolrect) {
+                allships.forEach((rect: Rectangle, ship: Ship) => {
+                    if (my.iscollision(rect, my.poolrect)) {
+                        console.log('captured by the whirlpool!');
+                        console.log('poolrect: ' + JSON.stringify(my.poolrect));
+                        console.log('shiprect: ' + JSON.stringify({ x: ship.location.x, y: ship.location.y, height: 24, width: 24 }));
+
+                        var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                        ship.location.x = loc.x;
+                        ship.location.y = loc.y;
+                    }
+                });
+            }
+        }
+
         setInterval(function () {
             var allships: Map<Ship, Rectangle> = new Map<Ship, Rectangle>();
-            my.players.forEach(player => { 
+            my.players.forEach(player => {
                 updateShipLocation(player.ship);
                 allships.set(player.ship, {
                     x: player.ship.location.x,
                     y: player.ship.location.y,
                     height: 24,
-                    width:24
+                    width: 24
                 });
             });
-            my.nonplayerships.forEach((ship: Ship) => { 
+            my.nonplayerships.forEach((ship: Ship) => {
                 updateShipLocation(ship);
                 allships.set(ship, {
                     x: ship.location.x,
@@ -217,27 +227,34 @@ export class Game {
                 });
             });
 
-            checkCollisions( allships );
-
+            checkWhirlpool(allships);
+            checkMonster(allships);
+            checkShipCollisions(allships);
         }, 100);
 
-        my.whirlpoolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-        my.seamonsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+        //var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+        //var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+        //my.poolrect = { x: poolloc.x-44.5, y: poolloc.y-24, width:89, height: 48 };
+        //my.monsterrect= {x:monsterloc.x-72, y:monsterloc.y-27.5, width: 144, height: 55 };
 
         setInterval(function () {
             if (Math.random() < my.WPCT) {
-                my.whirlpoolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-            }
-            else { 
-                my.whirlpoolloc = null;
-            }
-            if (Math.random() < my.MPCT) {
-                my.seamonsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+                var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                my.poolrect = { x: poolloc.x - 44.5, y: poolloc.y - 24, width: 89, height: 48 };
             }
             else {
-                my.seamonsterloc = null;
+                my.poolrect = null;
             }
-         }, 50000 );
+            if (Math.random() < my.MPCT) {
+                var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+                my.monsterrect = { x: monsterloc.x - 72, y: monsterloc.y - 27.5, width: 144, height: 55 };
+                my.monster = { attack: 1, defense: 1, health: 1, power: 0.5, attackers: [] };
+            }
+            else {
+                my.monsterrect = null;
+                my.monster = null;
+            }
+        }, 60000);
 
     }
 }

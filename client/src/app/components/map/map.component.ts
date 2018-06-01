@@ -6,6 +6,7 @@ import { Observable } from 'rxjs/Observable';
 import { Player } from '../../../../../common/model/player';
 import { Ship } from '../../../../../common/model/ship';
 import { Location } from '../../../../../common/model/location';
+import { Rectangle } from '../../../../../common/model/rectangle';
 
 @Component({
   selector: 'app-map',
@@ -18,8 +19,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
   private whirlpoolimg;
-  private whirlloc: Location = null;
-  private monsterloc: Location = null;
+  private poolrect: Rectangle = null;
+  private monsterrect: Rectangle = null;
   private seamonsterimg;
   private mapimg;
   private images: Map<string, any> = new Map<string, any>();
@@ -79,16 +80,16 @@ export class MapComponent implements OnInit, AfterViewInit {
   drawSpecials() {
     var my: MapComponent = this;
 
-    if (null != my.monsterloc) {
+    if (null != my.monsterrect) {
       my.canvasctx.drawImage(my.seamonsterimg,
-        my.monsterloc.x, my.monsterloc.y,
-        my.seamonsterimg.naturalWidth, my.seamonsterimg.naturalHeight);
+        my.monsterrect.x, my.monsterrect.y,
+        my.monsterrect.width, my.monsterrect.height );
     }
 
-    if( null != my.whirlloc ){
+    if( null != my.poolrect ){
       my.canvasctx.drawImage(my.whirlpoolimg,
-        my.whirlloc.x, my.whirlloc.y,
-        my.whirlpoolimg.naturalWidth, my.whirlpoolimg.naturalHeight);
+        my.poolrect.x, my.poolrect.y,
+        my.poolrect.width, my.poolrect.height );
     }
   }
 
@@ -107,7 +108,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       if (shipimg) {
         //console.log('drawing ship image ' + ship.location.x + ' ' + ship.location.y);
-        my.canvasctx.drawImage(shipimg, ship.location.x, ship.location.y,
+        my.canvasctx.drawImage(shipimg, ship.location.x-12, ship.location.y-12,
           24, 24);
       }
     });
@@ -129,8 +130,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     my.gamesvc.status().subscribe((data: any) => {
-        my.whirlloc = data['whirlpoolloc'];
-        my.monsterloc = data['seamonsterloc'];
+        my.poolrect = data['poolrect'];
+        my.monsterrect = data['monsterrect'];
     });
   }
 
