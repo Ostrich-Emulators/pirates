@@ -7,6 +7,8 @@ import { ShipDefinition } from '../../../common/model/ship-definition';
 import { Ship } from '../../../common/model/ship';
 import { SeaMonster } from './seamonster';
 
+var jimp = require('jimp')
+
 export class Game {
     private poolrect: Rectangle = null;
     private monsterrect: Rectangle = null;
@@ -14,6 +16,7 @@ export class Game {
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
     private monsterships: Ship[] = [];
+    private mapguide: any;
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -50,6 +53,10 @@ export class Game {
         this.players.set(playerid.toString(), player);
         this.addShipToCollisionSystem(ship);
         return player;
+    }
+
+    setImage(img) {
+        this.mapguide = img;
     }
 
     addShipToCollisionSystem(ship: Ship) {
@@ -117,17 +124,75 @@ export class Game {
         return ship;
     }
 
+    debugImageTo(file: string):any {
+        var img;
+        var my: Game = this;
+        var allships: Map<Ship, Rectangle> = new Map<Ship, Rectangle>();
+        this.players.forEach(player => {
+            allships.set(player.ship, {
+                x: player.ship.location.x,
+                y: player.ship.location.y,
+                height: 24,
+                width: 24
+            });
+        });
+        this.nonplayerships.forEach((ship: Ship) => {
+            allships.set(ship, {
+                x: ship.location.x,
+                y: ship.location.y,
+                height: 24,
+                width: 24
+            });
+        });
+
+        return jimp.read('map.png').then(function (image) {
+            img = image;
+            allships.forEach((rect, ship) => {
+                console.log('writing ship: ' + ship.id + ' at ' + JSON.stringify(rect));
+                //image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
+                image.scan(rect.x, rect.y, 3, 3, function (x, y, idx) {
+                    image.bitmap.data[idx] = 0;
+                    image.bitmap.data[idx + 1] = 0;
+                    image.bitmap.data[idx + 2] = 0;
+                });
+            });
+
+            if (null != my.poolrect) {
+                console.log('pool rect: ' + JSON.stringify(my.poolrect));
+                var rect = my.poolrect;
+                image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
+                    image.bitmap.data[idx] = 0x87;
+                    image.bitmap.data[idx+1] = 0xAD;
+                    image.bitmap.data[idx + 2] = 0x4F;
+                });
+            }
+            if (null != my.monsterrect) {
+                console.log('monster rect: ' + JSON.stringify(my.monsterrect));
+                var rect = my.monsterrect;
+                image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
+                    image.bitmap.data[idx] = 0xDC;
+                    image.bitmap.data[idx + 1] = 0x91;
+                    image.bitmap.data[idx + 2] = 0x58;
+                });
+            }
+
+            return image.write(file);
+        });
+    }
+
     /**
      * Generates the given number of Non-Player-Ships
      */
     generateNonPlayerShips(ships: number) {
+        console.log('not generating NPC ships (refusing!)');
+
         for (var i = 0; i < ships; i++) {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
             ship.location.x = Math.floor(Math.random() * 100 + 50);
             ship.location.y = Math.floor(Math.random() * 200 + 50);
-            this.nonplayerships.push(ship);
-            this.addShipToCollisionSystem(ship);
+            //this.nonplayerships.push(ship);
+            //this.addShipToCollisionSystem(ship);
         }
     }
 
@@ -140,21 +205,52 @@ export class Game {
             rect.y < otherrect.y + otherrect.height && rect.y + rect.height > otherrect.y);
     }
 
+    isnavigable(pixel): boolean {
+        return (this.iswater(pixel) || this.iscity(pixel));
+    }
+    iswater(pixel): boolean {
+        return (0xFFFF == pixel || 0xFF0000FF == pixel);
+    }
+
+    isinland(pixel): boolean {
+        return (0xFF == pixel );
+    }
+    iscity(pixel) :boolean {
+        return (0xFF00FF == pixel);
+    }
+    isoutofbounds(pixel): boolean {
+        return (0xFFFFFFFF == pixel);
+    }
+
     start() {
         var my: Game = this;
         console.log('starting game loop');
         var updateShipLocation = function (ship: Ship) {
             if (!ship.anchored) {
-                ship.location.x += ship.course.speedx;
-                ship.location.y += ship.course.speedy;
+                var newx = ship.location.x + ship.course.speedx;
+                var newy = ship.location.y + ship.course.speedy;
 
-                if (Math.abs(ship.location.x - ship.course.dstx) < 1
-                    && Math.abs(ship.location.y - ship.course.dsty) < 1) {
+                var pixel = my.mapguide.getPixelColor(newx, newy);
+                if (my.isnavigable(pixel)) {
+                    ship.location.x = newx;
+                    ship.location.y = newy;
+                }
+                else {
                     ship.anchored = true;
+                    if (my.isinland(pixel)) {
+                        ship.hullStrength -= 1;
+                    }
+                }
 
+                // if we overshoot our dst, stop
+                if (((ship.course.speedx < 0 && ship.location.x < ship.course.dstx) ||
+                    (ship.course.speedy > 0 && ship.location.x > ship.course.dstx)) &&
+                    ((ship.course.speedy < 0 && ship.location.y < ship.course.dsty) ||
+                    (ship.course.speedy > 0 && ship.location.y > ship.course.dsty ) ) ){
+                    ship.anchored = true;
                     // move ship exactly to our dst (just tidying up a bit)
-                    ship.location.x = ship.course.dstx;
-                    ship.location.y = ship.course.dsty;
+                    //ship.location.x = ship.course.dstx;
+                    //ship.location.y = ship.course.dsty;
                 }
             }
         }
@@ -168,7 +264,7 @@ export class Game {
             allships.forEach((rect: Rectangle, ship: Ship) => {
                 revshipslkp.forEach((other: Ship, otherrect: Rectangle) => {
                     if (other != ship) { // can't collide with myself
-                        if (my.iscollision(rect, otherrect){
+                        if (my.iscollision(rect, otherrect) ){
                             // The objects are touching
                             //console.log(ship.id + ' collided with ' + other.id + '!');
                             ship.anchored = true;
@@ -182,7 +278,8 @@ export class Game {
             if (null != my.monsterrect) {
                 my.monsterships = [];
                 allships.forEach((rect: Rectangle, ship: Ship) => {
-                    if (my.iscollision(rect, my.monsterrect)) {
+                    var shiprect: Rectangle = { x: rect.x - 1, y: rect.y - 1, height: 2, width: 2 };
+                    if (my.iscollision(shiprect, my.monsterrect)) {
                         my.monsterships.push(ship);
                         ship.anchored = true;
                     }
@@ -193,10 +290,12 @@ export class Game {
         var checkWhirlpool = function (allships: Map<Ship, Rectangle>) {
             if (null != my.poolrect) {
                 allships.forEach((rect: Rectangle, ship: Ship) => {
-                    if (my.iscollision(rect, my.poolrect)) {
+                    var shiprect: Rectangle = { x: rect.x - 1, y: rect.y - 1, height: 2, width: 2 };
+
+                    if (my.iscollision(shiprect, my.poolrect)) {
                         console.log('captured by the whirlpool!');
                         console.log('poolrect: ' + JSON.stringify(my.poolrect));
-                        console.log('shiprect: ' + JSON.stringify({ x: ship.location.x, y: ship.location.y, height: 24, width: 24 }));
+                        console.log('shiprect: ' + JSON.stringify(shiprect));
 
                         var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
                         ship.location.x = loc.x;
@@ -232,29 +331,29 @@ export class Game {
             checkShipCollisions(allships);
         }, 100);
 
-        //var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-        //var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-        //my.poolrect = { x: poolloc.x-44.5, y: poolloc.y-24, width:89, height: 48 };
-        //my.monsterrect= {x:monsterloc.x-72, y:monsterloc.y-27.5, width: 144, height: 55 };
+        var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+        var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+        my.poolrect = { x: poolloc.x - 20, y: poolloc.y - 15, width: 40, height: 30 };
+        my.monsterrect = { x: monsterloc.x - 15, y: monsterloc.y - 15, width: 30, height: 30 };
 
         setInterval(function () {
             if (Math.random() < my.WPCT) {
                 var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-                my.poolrect = { x: poolloc.x - 44.5, y: poolloc.y - 24, width: 89, height: 48 };
+                my.poolrect = { x: poolloc.x - 20, y: poolloc.y - 15, width: 40, height: 30 };
             }
             else {
                 my.poolrect = null;
             }
             if (Math.random() < my.MPCT) {
                 var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-                my.monsterrect = { x: monsterloc.x - 72, y: monsterloc.y - 27.5, width: 144, height: 55 };
+                my.monsterrect = { x: monsterloc.x - 15, y: monsterloc.y - 15, width: 30, height: 30 };
                 my.monster = { attack: 1, defense: 1, health: 1, power: 0.5, attackers: [] };
             }
             else {
                 my.monsterrect = null;
                 my.monster = null;
             }
-        }, 60000);
+        }, 600000);
 
     }
 }

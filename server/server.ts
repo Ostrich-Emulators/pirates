@@ -1,14 +1,15 @@
 
-import * as express from "express";
+import * as express from "express"
 var cors = require('cors')
+var jimp = require('jimp')
+var bodyParser = require('body-parser')
 
-import { Game } from "./api/models/game";
-import { GameController } from "./api/controllers/game-controller";
-import { ShipController } from './api/controllers/ship-controller';
-import { Player } from "../common/model/player";
+import { Game } from "./api/models/game"
+import { GameController } from "./api/controllers/game-controller"
+import { ShipController } from './api/controllers/ship-controller'
+import { Player } from "../common/model/player"
 
 var port = process.env.PIRATEPORT || 30000;
-var bodyParser = require('body-parser');
 
 
 //var routes = require('./api/routes/routes');
@@ -24,10 +25,17 @@ game.generateNonPlayerShips(3);
 var shipcontroller: ShipController = new ShipController(game);
 var gamecontroller: GameController = new GameController(game);
 
+app.route('/mapimg')
+    .get(function (req, res) {
+        game.debugImageTo('/tmp/img.png').then(function () { 
+            res.sendFile('/tmp/img.png');
+        });
+    })
+
 app.route('/ships')
     .get(function (req, res) {
         res.json(shipcontroller.all());
-    })
+    });
 app.route('/ships/:shipId')
     .get(function (req, res) {
         res.json(shipcontroller.one(req.params.shipId));
@@ -65,8 +73,11 @@ app.route('/game/status')
         res.json(game);
     });
 
-app.listen(port, function () {
-    console.log('pirates are restles on port: ' + port);
+jimp.read('map-guide.png').then(function (img) { 
+    game.setImage(img);
+    app.listen(port, function () {
+        console.log('pirates are restles on port: ' + port);
+    });
 });
 
 

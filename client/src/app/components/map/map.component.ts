@@ -79,23 +79,42 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   drawSpecials() {
     var my: MapComponent = this;
+    // our images are actually bigger than the "hotspots" we get from the server
+    // so we need to calculate where to put the images on the map
 
     if (null != my.monsterrect) {
+      var imgh = my.seamonsterimg.naturalHeight;
+      var imgw = my.seamonsterimg.naturalWidth;
+      var woffset = (imgw - my.monsterrect.width) / 2;
+      var hoffset = (imgh - my.monsterrect.height) / 2;
+
       my.canvasctx.drawImage(my.seamonsterimg,
-        my.monsterrect.x, my.monsterrect.y,
-        my.monsterrect.width, my.monsterrect.height );
+        my.monsterrect.x - woffset, my.monsterrect.y - hoffset, imgw, imgh);
+      
+      my.canvasctx.beginPath();
+      my.canvasctx.rect(my.monsterrect.x, my.monsterrect.y, my.monsterrect.width, my.monsterrect.height);
+      my.canvasctx.stroke();
     }
 
-    if( null != my.poolrect ){
+    if (null != my.poolrect) {
+      var imgh = my.whirlpoolimg.naturalHeight;
+      var imgw = my.whirlpoolimg.naturalWidth;
+      var woffset = (imgw - my.poolrect.width) / 2;
+      var hoffset = (imgh - my.poolrect.height) / 2;
+
       my.canvasctx.drawImage(my.whirlpoolimg,
-        my.poolrect.x, my.poolrect.y,
-        my.poolrect.width, my.poolrect.height );
+        my.poolrect.x - woffset, my.poolrect.y - hoffset, imgw, imgh);
+
+      my.canvasctx.beginPath();
+      my.canvasctx.rect(my.poolrect.x, my.poolrect.y, my.poolrect.width, my.poolrect.height);
+      my.canvasctx.stroke();
     }
   }
 
   moveShips() {
     var my: MapComponent = this;
 
+    // two loops: update ship locations, then draw ships
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
       if (!ship.anchored) {
@@ -105,10 +124,32 @@ export class MapComponent implements OnInit, AfterViewInit {
         ship.location.y += speedy;
         my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
       }
-
+    });
+    
+    my.ships.forEach((ship: Ship) => {
+      var shipimg = my.images[ship.avatar];
       if (shipimg) {
         //console.log('drawing ship image ' + ship.location.x + ' ' + ship.location.y);
-        my.canvasctx.drawImage(shipimg, ship.location.x-12, ship.location.y-12,
+        //my.canvasctx.beginPath();
+        //my.canvasctx.arc(ship.location.x, ship.location.y, 3, 0, 2 * Math.PI);
+        //my.canvasctx.fillStyle = "yellow";
+        //my.canvasctx.fill();
+        //my.canvasctx.beginPath();
+        //my.canvasctx.arc(ship.location.x, ship.location.y, 0.5, 0, 2 * Math.PI);
+        //my.canvasctx.fillStyle = "black";
+        //my.canvasctx.fill();
+
+        my.canvasctx.beginPath();
+        my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
+        my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.25)";
+        my.canvasctx.fill();
+
+        my.canvasctx.beginPath();
+        my.canvasctx.arc(ship.location.x, ship.location.y, 30, 0, 2 * Math.PI);
+        my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
+        my.canvasctx.fill();
+
+        my.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,
           24, 24);
       }
     });
