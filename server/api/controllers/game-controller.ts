@@ -23,4 +23,22 @@ export class GameController {
     create(pirate: Pirate): Player {
         return this.game.addPlayer(pirate);
     }
+
+    status(playerid: string) {
+        var msgs: string[] = this.game.popMessages(playerid);
+        var ships: Ship[] = [];
+        this.game.getNonPlayerShips().forEach(s => {
+            ships.push(s);
+        });
+        this.game.getPlayers().forEach(p => { 
+            ships.push(p.ship);
+        });
+
+        return {
+            messages: msgs,
+            ships: ships,
+            pollrect: this.game.poolrect,
+            monsterrect: this.game.monsterrect
+        };
+    }
 }

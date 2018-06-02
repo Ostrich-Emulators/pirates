@@ -7,6 +7,7 @@ import { Player } from '../../../../../common/model/player';
 import { Ship } from '../../../../../common/model/ship';
 import { Location } from '../../../../../common/model/location';
 import { Rectangle } from '../../../../../common/model/rectangle';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-map',
@@ -28,8 +29,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private messages: string = '';
   private ships: Ship[] = [];
   private lastlocs: Map<string, Location> = new Map<string, Location>();
+  private myship;
 
-  constructor(private shipsvc: ShipService, private gamesvc: GameService) { }
+  constructor(private shipsvc: ShipService, private gamesvc: GameService, private http:HttpClient) { }
 
   ngOnInit() {
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
@@ -52,6 +54,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     my.shipsvc.avatars.forEach(av => { 
       my.images[av] = new Image();
       my.images[av].src = av;
+
+      if (av === my.gamesvc.myship().avatar) {
+        my.http.get(av, { responseType: 'text' }).subscribe(data => { 
+          my.myship = new Image();
+          my.myship.src = "data:image/svg+xml;charset=utf-8,"
+            + data.replace(/fill="#ffffff"/, 'fill="#0000FF"');
+        });
+      }
     });
     my.images['/assets/galleon.svg'] = new Image();
     my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
@@ -66,15 +76,17 @@ export class MapComponent implements OnInit, AfterViewInit {
     };
 
     my.refreshData(); // get ships from server
-    window.setInterval(function () { my.refreshData(); }, 500);
+    window.setInterval(function () { my.refreshData(); }, 250);
     
     // start the animation frame
-    setInterval(function () {
+    var looper = function () {
       // first, erase everything no matter what
       my.canvasctx.clearRect(0, 0, 740, 710);
       my.drawSpecials();
       my.moveShips();
-    }, 100);
+      window.requestAnimationFrame(looper);
+    }
+    looper();
   }
 
   drawSpecials() {
@@ -128,6 +140,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
+      if (ship === my.gamesvc.myship()) {
+        shipimg = my.myship;
+      }
+
       if (shipimg) {
         //console.log('drawing ship image ' + ship.location.x + ' ' + ship.location.y);
         //my.canvasctx.beginPath();
