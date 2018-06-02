@@ -30,6 +30,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private ships: Ship[] = [];
   private lastlocs: Map<string, Location> = new Map<string, Location>();
   private myship;
+  private lastperf = 0;
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http:HttpClient) { }
 
@@ -59,7 +60,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         my.http.get(av, { responseType: 'text' }).subscribe(data => { 
           my.myship = new Image();
           my.myship.src = "data:image/svg+xml;charset=utf-8,"
-            + data.replace(/fill="#ffffff"/, 'fill="#0000FF"');
+            + data.replace(/fill="#ffffff"/, 'fill="#AE499A"');
         });
       }
     });
@@ -75,15 +76,18 @@ export class MapComponent implements OnInit, AfterViewInit {
       img.style.display = 'none';
     };
 
+    const REFRESH_RATE: number = 250;
     my.refreshData(); // get ships from server
-    window.setInterval(function () { my.refreshData(); }, 250);
+    window.setInterval(function () { my.refreshData(); }, REFRESH_RATE);
     
     // start the animation frame
     var looper = function () {
       // first, erase everything no matter what
+      var now = performance.now();
       my.canvasctx.clearRect(0, 0, 740, 710);
       my.drawSpecials();
-      my.moveShips();
+      my.moveShips((now - my.lastperf)/REFRESH_RATE);
+      my.lastperf = performance.now();
       window.requestAnimationFrame(looper);
     }
     looper();
@@ -123,15 +127,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
   }
 
-  moveShips() {
+  moveShips(speedratio: number) {
     var my: MapComponent = this;
 
     // two loops: update ship locations, then draw ships
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
       if (!ship.anchored) {
-        var speedx = ship.course.speedx;
-        var speedy = ship.course.speedy;
+        var speedx = ship.course.speedx * speedratio;
+        var speedy = ship.course.speedy * speedratio;
         ship.location.x += speedx;
         ship.location.y += speedy;
         my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });

@@ -10,13 +10,14 @@ import { SeaMonster } from './seamonster';
 var jimp = require('jimp')
 
 export class Game {
-    private poolrect: Rectangle = null;
-    private monsterrect: Rectangle = null;
+    poolrect: Rectangle = null;
+    monsterrect: Rectangle = null;
     private monster: SeaMonster;
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
     private monsterships: Ship[] = [];
     private mapguide: any;
+    private messages: Map<string, string[]> = new Map<string, string[]>();
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -46,11 +47,12 @@ export class Game {
     addPlayer(pirate: Pirate): Player {
         var type = ShipType.SMALL;
 
-        var playerid: number = this.players.size + 1;
+        var playernumber: number = this.players.size + 1;
 
-        var ship = this.createShip(playerid + '-1', pirate.avatar, type);
-        var player: Player = new Player(playerid.toString(), pirate, ship);
-        this.players.set(playerid.toString(), player);
+        var ship = this.createShip(playernumber + '-1', pirate.avatar, type);
+        var player: Player = new Player(playernumber.toString(), pirate, ship);
+        this.players.set(player.id, player);
+        this.messages.set(player.id, []);
         this.addShipToCollisionSystem(ship);
         return player;
     }
@@ -180,20 +182,29 @@ export class Game {
         });
     }
 
+    getStatusForPlayer(playerid: string) {
+        
+    }
+
     /**
      * Generates the given number of Non-Player-Ships
      */
     generateNonPlayerShips(ships: number) {
-        console.log('not generating NPC ships (refusing!)');
-
+        console.log( 'generating '+ships+' new NPC ships')
         for (var i = 0; i < ships; i++) {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
-            ship.location.x = Math.floor(Math.random() * 100 + 50);
-            ship.location.y = Math.floor(Math.random() * 200 + 50);
-            //this.nonplayerships.push(ship);
-            //this.addShipToCollisionSystem(ship);
+            ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
+            ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
+            this.nonplayerships.push(ship);
+            this.addShipToCollisionSystem(ship);
         }
+    }
+
+    popMessages(pid: string): string[]{
+        var msgs = (this.messages.has(pid) ? this.messages.get(pid) : []);
+        this.messages.delete(pid);
+        return msgs;
     }
 
     getNonPlayerShips(): Ship[] {
@@ -354,6 +365,5 @@ export class Game {
                 my.monster = null;
             }
         }, 600000);
-
     }
 }
