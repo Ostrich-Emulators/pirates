@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 var game: Game = new Game();
-game.generateNonPlayerShips(3);
+game.generateNonPlayerShips(5);
 var shipcontroller: ShipController = new ShipController(game);
 var gamecontroller: GameController = new GameController(game);
 

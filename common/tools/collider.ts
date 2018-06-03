@@ -1,24 +1,47 @@
 import { CollisionBody } from '../model/body'
 
 export class Collider {
-    bodies: CollisionBody[] = [];
+    bodies: Map<string, CollisionBody> = new Map<string, CollisionBody>();
+    
+
+    clear() {
+        this.bodies.clear();
+    }
 
     add(body: CollisionBody) {
-        this.bodies.push(body);
+        this.bodies.set(body.id, body);
     }
-    remove(body: CollisionBody) {
-        var idx: number = this.bodies.indexOf(body);
-        this.bodies.splice(idx, 1);
+
+    update(id: string, cb:CollisionBody) {
+        this.bodies.set(id, cb);
+    }
+
+    get(id: string): CollisionBody {
+        return this.bodies.get(id);
+    }
+
+    remove(body: CollisionBody | string) {
+        if (typeof body === 'string') {
+            this.bodies.delete(body);
+        }
+        else {
+            this.bodies.delete(body.id);
+        }
     }
 
     getCollisions(): any[] {
         var collisions: any[] = [];
-        for (var i = 0; i < this.bodies.length; i++) {
-            var src = this.bodies[i];
-            for (var j = i + 1; j < this.bodies.length; j++) {
-                var tgt = this.bodies[j];
+        var bodies2: CollisionBody[] = [];
+        this.bodies.forEach(body => {
+            bodies2.push(body);
+        });
 
-                if (this.collides(src, tgt)) {
+        for (var i = 0; i < bodies2.length; i++) {
+            var src = bodies2[i];
+            for (var j = i + 1; j < bodies2.length; j++) {
+                var tgt = bodies2[j];
+
+                if ( this.collides(src, tgt)) {
                     collisions.push({ first: src, second: tgt });
                     collisions.push({ first: tgt, second: src });
                 }
@@ -29,16 +52,18 @@ export class Collider {
     }
 
     checkCollisions(tgt: CollisionBody): CollisionBody[] {
+        var my: Collider = this;
         var collisions: CollisionBody[] = [];
-        for (var i = 0; i < this.bodies.length; i++) {
-            if (this.collides(this.bodies[i], tgt)) {
-               collisions.push(this.bodies[i]);
+        this.bodies.forEach(body => { 
+            if (tgt.id != body.id && my.collides( body, tgt ) ){
+                collisions.push(body);
             }
-        }
+        });
         return collisions;
     }
 
     collides(src: CollisionBody, tgt: CollisionBody): boolean {
+        //console.log('checking collides: ' + JSON.stringify(src) + ' against ' + JSON.stringify(tgt));
         var dx = src.getX() - tgt.getX();
         var dy = src.getY() - tgt.getY();
         var distance = Math.sqrt(dx * dx + dy * dy);

@@ -71,6 +71,7 @@ export class Game {
     addShipToCollisionSystem(ship: Ship) {
         var radius = this.SHIP_RADIUS;
         this.collider.add({
+            id: ship.id,
             src: ship,
             getX: function (): number { return ship.location.x },
             getY: function (): number { return ship.location.y },
@@ -222,6 +223,9 @@ export class Game {
 
     pushMessage(player: Player | Ship | string, msg: string) {
         var id: string = '';
+        if (typeof player === 'undefined' || null == player ) {
+            return; // no message to send
+        }
         if (typeof player === 'string') {
             id = player;
         }
@@ -292,22 +296,18 @@ export class Game {
 
         var checkShipCollisions = function () {
             my.collider.getCollisions().forEach(en => {
-                en.first.src.anchored = true;
-                en.second.src.anchored = true;
-                my.pushMessage(en.first.src, 'encountered ship!');
-                my.pushMessage(en.second.src, 'encountered ship!');
+                if (!('whirlpool' === en.first.id || 'whirlpool' === en.second.id
+                    || 'monster' === en.first.id || 'monster' === en.second.id)) {
+                    my.pushMessage(en.first.src, 'encountered ship!');
+                    my.pushMessage(en.second.src, 'encountered ship!');
+                }
             });
         }
 
         var checkMonster = function () {
             if (null != my.monsterloc) {
-                var monstercircle:CollisionBody = {
-                    src: null,
-                    getX: function () { return my.monsterloc.x },
-                    getY: function () { return my.monsterloc.y },
-                    getR: function() { return my.MONSTER_RADIUS }
-                }
-                my.collider.checkCollisions( monstercircle).forEach(body => { 
+                var monster: CollisionBody = my.collider.get('monster');
+                my.collider.checkCollisions( monster ).forEach(body => { 
                     my.pushMessage(body.src, 'Sea Monster Strike!');
                     my.monsterships.push(body.src);
                     body.src.anchored = true;
@@ -317,17 +317,8 @@ export class Game {
 
         var checkWhirlpool = function (){
             if (null != my.poolloc) {
-                var poolcircle: CollisionBody = {
-                    src: null,
-                    getX: function () { return my.poolloc.x },
-                    getY: function () { return my.poolloc.y },
-                    getR: function () { return my.POOL_RADIUS }
-                };
-
+                var poolcircle: CollisionBody = my.collider.get('whirlpool');
                 my.collider.checkCollisions(poolcircle).forEach(body => { 
-                    console.log('captured by the whirlpool!');
-                    console.log('poolrect: ' + JSON.stringify(my.poolloc));
-                    console.log('shiprect: ' + JSON.stringify(body));
                     my.pushMessage(body.src, 'Captured by the whirlpool!');
                     var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
                     body.src.location.x = loc.x;
@@ -348,19 +339,51 @@ export class Game {
             checkWhirlpool();
             checkMonster();
             checkShipCollisions();
-
         }, 100);
 
         my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+        my.collider.add({
+            id: 'whirlpool',
+            getX: function (): number { return my.poolloc.x; },
+            getY: function (): number { return my.poolloc.y; },
+            getR: function (): number { return my.POOL_RADIUS; }
+        });
         my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+                my.collider.add({
+                    id: 'monster',
+                    getX: function (): number { return my.monsterloc.x; },
+                    getY: function (): number { return my.monsterloc.y; },
+                    getR: function (): number { return my.MONSTER_RADIUS; }
+                });
 
         setInterval(function () {
-            my.poolloc = (Math.random() < my.WPCT
-                ? my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)]
-                : null);
-            my.monsterloc = (Math.random() < my.MPCT
-                ? my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)]
-                : null);
+            my.collider.remove('whirlpool');
+            if (Math.random() < my.WPCT) {
+                my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)]
+                my.collider.add({
+                    id: 'whirlpool',
+                    getX: function (): number { return my.poolloc.x; },
+                    getY: function (): number { return my.poolloc.y; },
+                    getR: function (): number { return my.POOL_RADIUS; }
+                });
+            }
+            else {
+                my.poolloc = null;
+            }
+            
+            my.collider.remove('monster');
+            if( Math.random() < my.MPCT ){
+                my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+                my.collider.add({
+                    id: 'monster',
+                    getX: function (): number { return my.monsterloc.x; },
+                    getY: function (): number { return my.monsterloc.y; },
+                    getR: function (): number { return my.MONSTER_RADIUS; }
+                });
+            }
+            else {
+                my.poolloc = null;
+            }
         }, 600000);
     }
 }

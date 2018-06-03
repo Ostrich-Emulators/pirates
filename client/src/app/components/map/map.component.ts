@@ -1,14 +1,16 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core';
-import { ShipService } from '../../services/ship.service';
-import { GameService } from '../../services/game.service';
-import { forkJoin } from 'rxjs/observable/forkJoin';
-import { Observable } from 'rxjs/Observable';
-import { Player } from '../../../../../common/model/player';
-import { Ship } from '../../../../../common/model/ship';
-import { Location } from '../../../../../common/model/location';
-import { Rectangle } from '../../../../../common/model/rectangle';
-import { HttpClient } from '@angular/common/http';
-import { StatusResponse } from '../../../../../common/model/status-response';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core'
+import { ShipService } from '../../services/ship.service'
+import { GameService } from '../../services/game.service'
+import { forkJoin } from 'rxjs/observable/forkJoin'
+import { Observable } from 'rxjs/Observable'
+import { Player } from '../../../../../common/model/player'
+import { Ship } from '../../../../../common/model/ship'
+import { Location } from '../../../../../common/model/location'
+import { Rectangle } from '../../../../../common/model/rectangle'
+import { HttpClient } from '@angular/common/http'
+import { StatusResponse } from '../../../../../common/model/status-response'
+import { Collider } from '../../../../../common/tools/collider'
+import { CollisionBody } from '../../../../../common/model/body';
 
 @Component({
   selector: 'app-map',
@@ -32,6 +34,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private lastlocs: Map<string, Location> = new Map<string, Location>();
   private myship;
   private lastperf = 0;
+  private shortcollider: Collider = new Collider();
+  private longcollider: Collider = new Collider();
+  private myshipbody: CollisionBody;
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http:HttpClient) { }
 
@@ -120,10 +125,6 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
   }
 
-  showDstTargetting(src: Ship, dst: Ship) {
-    
-  }
-  
   moveShips(speedratio: number) {
     var my: MapComponent = this;
 
@@ -137,6 +138,12 @@ export class MapComponent implements OnInit, AfterViewInit {
         ship.location.y += speedy;
         my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
       }
+    });
+
+    var showTargetting: Set<string> = new Set<string>();
+    my.longcollider.getCollisions().forEach(en => {
+      showTargetting.add(en.first.id);
+      showTargetting.add(en.second.id);
     });
 
     my.ships.forEach((ship: Ship) => {
@@ -157,15 +164,20 @@ export class MapComponent implements OnInit, AfterViewInit {
         //my.canvasctx.fillStyle = "black";
         //my.canvasctx.fill();
 
-        my.canvasctx.beginPath();
-        my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
-        my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.25)";
-        my.canvasctx.fill();
+        if (ismyship) {
+          my.gamesvc.canfire = showTargetting.has(ship.id);
+          if (my.gamesvc.canfire) {
+            my.canvasctx.beginPath();
+            my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
+            my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.25)";
+            my.canvasctx.fill();
 
-        my.canvasctx.beginPath();
-        my.canvasctx.arc(ship.location.x, ship.location.y, (ismyship ? 50 : 30), 0, 2 * Math.PI);
-        my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
-        my.canvasctx.fill();
+            my.canvasctx.beginPath();
+            my.canvasctx.arc(ship.location.x, ship.location.y, 30, 0, 2 * Math.PI);
+            my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
+            my.canvasctx.fill();
+          }  
+        }
 
         my.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,
           24, 24);
@@ -182,10 +194,37 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   refreshData() {
-    //console.log('refreshing ships!');
     var my: MapComponent = this;
     my.gamesvc.status().subscribe((data: StatusResponse) => {
+      //console.log('refreshing data!');
       my.ships = data.ships;
+
+      my.ships.forEach(ship => {
+        var ismyship: boolean = (ship.id === my.gamesvc.myship().id);
+        //console.log('adding ' + ship.id);
+        my.longcollider.add({
+          id: ship.id,
+          src: ship,
+          getX: function (): number { return ship.location.x },
+          getY: function (): number { return ship.location.y },
+          getR: function (): number { return (ismyship ? 30 : 15) }
+        });
+        my.shortcollider.add({
+          id: ship.id,
+          src: ship,
+          getX: function (): number { return ship.location.x },
+          getY: function (): number { return ship.location.y },
+          getR: function (): number { return 15 }
+        });
+      });
+
+      //my.myshipbody = {
+      //  src: my.gamesvc.myship(),
+      //  getX: function (): number { return data.ships[i].location.x },
+      //  getY: function (): number { return data.ships[i].location.y },
+      //  getR: function (): number { return 30 }
+      //};
+
       my.poolloc = (data.poolloc ? data.poolloc : null);
       my.monsterloc = (data.monsterloc ? data.monsterloc : null);
       if (data.messages.length > 0) {

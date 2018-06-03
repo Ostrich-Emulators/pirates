@@ -14,6 +14,7 @@ export class GameService {
   private me: Player;
   private _player: Subject<Player> = new Subject<Player>();
   private BASEURL: string = 'http://localhost:30000';
+  canfire: boolean = false;
 
   constructor(private http: HttpClient) {
     if (null != localStorage.getItem('pirate')) {
