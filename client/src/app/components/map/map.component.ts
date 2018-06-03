@@ -37,6 +37,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private shortcollider: Collider = new Collider();
   private longcollider: Collider = new Collider();
   private myshipbody: CollisionBody;
+  private ballpaths: CannonBallPath[] = [];
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http:HttpClient) { }
 
@@ -170,8 +171,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         //my.canvasctx.fill();
 
         if (ismyship) {
-          my.gamesvc.canfire = longTargetting.has(ship.id);
-          if (my.gamesvc.canfire && ship.ammo > 0) {
+          my.gamesvc.canfire = (longTargetting.has(ship.id) && ship.ammo > 0);
+          if (my.gamesvc.canfire) {
             my.canvasctx.beginPath();
             my.canvasctx.arc(ship.location.x, ship.location.y, 30, 0, 2 * Math.PI);
             my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
@@ -354,4 +355,12 @@ export class MapComponent implements OnInit, AfterViewInit {
   isinland(x: number, y: number) {
     return ( this.island(x, y) && !this.iscity(x, y) );
   }
+}
+
+interface CannonBallPath {
+  srcx: number,
+  srcy: number,
+  dstx: number,
+  dsty: number,
+  turns: number
 }

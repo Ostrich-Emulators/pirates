@@ -78,7 +78,6 @@ export class GameService {
     this.http.post(url, null).subscribe();
   }
 
-
   move(x: number, y: number) {
     var loc: Location = { x: x, y: y };
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/course';
