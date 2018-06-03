@@ -31,7 +31,6 @@ app.route('/mapimg')
             res.sendFile('/tmp/img.png');
         });
     })
-
 app.route('/ships')
     .get(function (req, res) {
         res.json(shipcontroller.all());
@@ -68,9 +67,9 @@ app.route('/players/:playerId')
     .get(function (req, res) {
         res.json(gamecontroller.one(req.params.playerId));
     });
-app.route('/game/status')
+app.route('/game/status/:playerId')
     .get(function (req, res) {
-        res.json(game);
+        res.json(gamecontroller.status( req.params.playerId));
     });
 
 jimp.read('map-guide.png').then(function (img) { 

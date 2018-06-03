@@ -21,7 +21,8 @@ export class ShipController {
         });
     }
     
-    one(shipid: string) :Ship {
+    one(shipid: string): Ship {
+        this.refreshShips();
         return this.shiplkp.get(shipid);
     }
 

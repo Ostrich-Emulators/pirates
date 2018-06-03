@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core'
-import { HttpClient, HttpHeaders } from '@angular/common/http'
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 
@@ -7,6 +7,7 @@ import { Ship } from '../../../../common/model/ship'
 import { Pirate } from '../../../../common/model/pirate'
 import { Player } from '../../../../common/model/player'
 import { Location } from '../../../../common/model/location'
+import { StatusResponse } from '../../../../common/model/status-response'
 
 @Injectable()
 export class GameService {
@@ -57,7 +58,17 @@ export class GameService {
   }
 
   status(): Observable<{}> {
-    return this.http.get(this.BASEURL + '/game/status');
+    var my: GameService = this;
+    var obs: Subject<any> = new Subject<any>();
+    this.http.get(this.BASEURL + '/game/status/' + this.me.id).subscribe((data:StatusResponse) => { 
+      data.ships.forEach(shp => {
+        if (shp.id === this.me.ship.id) {
+          my.me.ship = shp;
+        }
+      });
+      obs.next(data);
+    });
+    return obs;
   }
 
   move(x: number, y: number) {

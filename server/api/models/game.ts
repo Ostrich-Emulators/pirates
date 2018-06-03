@@ -1,23 +1,30 @@
 import { Player } from '../../../common/model/player';
 import { Location } from '../../../common/model/location';
 import { Rectangle } from '../../../common/model/rectangle';
+import { Circle } from '../../../common/model/circle';
 import { Pirate } from '../../../common/model/pirate';
 import { ShipType } from '../../../common/model/ship-type.enum';
 import { ShipDefinition } from '../../../common/model/ship-definition';
 import { Ship } from '../../../common/model/ship';
+import { CollisionBody } from '../../../common/model/body';
+import { Collider } from '../../../common/tools/collider';
 import { SeaMonster } from './seamonster';
 
 var jimp = require('jimp')
 
 export class Game {
-    poolrect: Rectangle = null;
-    monsterrect: Rectangle = null;
+    poolloc: Location = null;
+    monsterloc: Location = null;
     private monster: SeaMonster;
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
+    private collider: Collider = new Collider();
     private monsterships: Ship[] = [];
     private mapguide: any;
-    private messages: Map<string, string[]> = new Map<string, string[]>();
+    private messages: Map<string, string[]> = new Map<string, string[]>(); // playerid, messages
+    private SHIP_RADIUS: number = 15;
+    private POOL_RADIUS: number = 30;
+    private MONSTER_RADIUS: number = 25;
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -62,7 +69,13 @@ export class Game {
     }
 
     addShipToCollisionSystem(ship: Ship) {
-
+        var radius = this.SHIP_RADIUS;
+        this.collider.add({
+            src: ship,
+            getX: function (): number { return ship.location.x },
+            getY: function (): number { return ship.location.y },
+            getR: function (): number { return radius }
+        });
     }
 
     shipdef(type: ShipType): ShipDefinition {
@@ -129,49 +142,32 @@ export class Game {
     debugImageTo(file: string):any {
         var img;
         var my: Game = this;
-        var allships: Map<Ship, Rectangle> = new Map<Ship, Rectangle>();
-        this.players.forEach(player => {
-            allships.set(player.ship, {
-                x: player.ship.location.x,
-                y: player.ship.location.y,
-                height: 24,
-                width: 24
-            });
-        });
-        this.nonplayerships.forEach((ship: Ship) => {
-            allships.set(ship, {
-                x: ship.location.x,
-                y: ship.location.y,
-                height: 24,
-                width: 24
-            });
-        });
 
         return jimp.read('map.png').then(function (image) {
             img = image;
-            allships.forEach((rect, ship) => {
-                console.log('writing ship: ' + ship.id + ' at ' + JSON.stringify(rect));
+            my.shipbodies.forEach(ship => {
+                console.log('writing ship: ' + ship.src.id + ' at ' + JSON.stringify(rect));
                 //image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
-                image.scan(rect.x, rect.y, 3, 3, function (x, y, idx) {
+                image.scan(ship.getX(), ship.getY(), 4, 4, function (x, y, idx) {
                     image.bitmap.data[idx] = 0;
                     image.bitmap.data[idx + 1] = 0;
                     image.bitmap.data[idx + 2] = 0;
                 });
             });
 
-            if (null != my.poolrect) {
-                console.log('pool rect: ' + JSON.stringify(my.poolrect));
-                var rect = my.poolrect;
-                image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
+            if (null != my.poolloc) {
+                console.log('pool rect: ' + JSON.stringify(my.poolloc));
+                var rect = my.poolloc;
+                image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
                     image.bitmap.data[idx] = 0x87;
                     image.bitmap.data[idx+1] = 0xAD;
                     image.bitmap.data[idx + 2] = 0x4F;
                 });
             }
-            if (null != my.monsterrect) {
-                console.log('monster rect: ' + JSON.stringify(my.monsterrect));
-                var rect = my.monsterrect;
-                image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
+            if (null != my.monsterloc) {
+                console.log('monster rect: ' + JSON.stringify(my.monsterloc));
+                var rect = my.monsterloc;
+                image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
                     image.bitmap.data[idx] = 0xDC;
                     image.bitmap.data[idx + 1] = 0x91;
                     image.bitmap.data[idx + 2] = 0x58;
@@ -180,10 +176,6 @@ export class Game {
 
             return image.write(file);
         });
-    }
-
-    getStatusForPlayer(playerid: string) {
-        
     }
 
     /**
@@ -211,11 +203,6 @@ export class Game {
         return this.nonplayerships;
     }
 
-    iscollision(rect: Rectangle, otherrect: Rectangle) {
-        return (rect.x < otherrect.x + otherrect.width && rect.x + rect.width > otherrect.x &&
-            rect.y < otherrect.y + otherrect.height && rect.y + rect.height > otherrect.y);
-    }
-
     isnavigable(pixel): boolean {
         return (this.iswater(pixel) || this.iscity(pixel));
     }
@@ -233,10 +220,44 @@ export class Game {
         return (0xFFFFFFFF == pixel);
     }
 
+    pushMessage(player: Player | Ship | string, msg: string) {
+        var id: string = '';
+        if (typeof player === 'string') {
+            id = player;
+        }
+        else if (player.hasOwnProperty('pirate')) {
+            id = player.id;
+        }
+        else {
+            this.players.forEach(p => {
+                if (p.ship.id === player.id) {
+                    id = p.id;
+                }
+            });
+            if ('' === id) {
+                return; // NPC ship
+            }
+        }
+        
+        if (!this.messages.has(id)) {
+            this.messages.set(id, []);
+        }
+        this.messages.get(id).push(msg);
+    }
+
+    getPlayerForShip(s: Ship) {
+        this.players.forEach(player => { 
+            if (player.ship.id === s.id) {
+                return player;
+            }
+        });
+        return null;
+    }
+
     start() {
         var my: Game = this;
         console.log('starting game loop');
-        var updateShipLocation = function (ship: Ship) {
+        var updateShipLocation = function (ship: Ship, player?: Player) {
             if (!ship.anchored) {
                 var newx = ship.location.x + ship.course.speedx;
                 var newy = ship.location.y + ship.course.speedy;
@@ -250,6 +271,9 @@ export class Game {
                     ship.anchored = true;
                     if (my.isinland(pixel)) {
                         ship.hullStrength -= 1;
+                        if (player) {
+                            my.pushMessage(player, "We've run aground!")
+                        }
                     }
                 }
 
@@ -266,104 +290,77 @@ export class Game {
             }
         }
 
-        var checkShipCollisions = function (allships: Map<Ship, Rectangle>) {
-            var revshipslkp: Map<Rectangle, Ship> = new Map<Rectangle, Ship>();
-            allships.forEach((rect: Rectangle, ship: Ship) => {
-                revshipslkp.set(rect, ship);
-            });
-
-            allships.forEach((rect: Rectangle, ship: Ship) => {
-                revshipslkp.forEach((other: Ship, otherrect: Rectangle) => {
-                    if (other != ship) { // can't collide with myself
-                        if (my.iscollision(rect, otherrect) ){
-                            // The objects are touching
-                            //console.log(ship.id + ' collided with ' + other.id + '!');
-                            ship.anchored = true;
-                        }
-                    }
-                });
+        var checkShipCollisions = function () {
+            my.collider.getCollisions().forEach(en => {
+                en.first.src.anchored = true;
+                en.second.src.anchored = true;
+                my.pushMessage(en.first.src, 'encountered ship!');
+                my.pushMessage(en.second.src, 'encountered ship!');
             });
         }
 
-        var checkMonster = function (allships: Map<Ship, Rectangle>) {
-            if (null != my.monsterrect) {
-                my.monsterships = [];
-                allships.forEach((rect: Rectangle, ship: Ship) => {
-                    var shiprect: Rectangle = { x: rect.x - 1, y: rect.y - 1, height: 2, width: 2 };
-                    if (my.iscollision(shiprect, my.monsterrect)) {
-                        my.monsterships.push(ship);
-                        ship.anchored = true;
-                    }
+        var checkMonster = function () {
+            if (null != my.monsterloc) {
+                var monstercircle:CollisionBody = {
+                    src: null,
+                    getX: function () { return my.monsterloc.x },
+                    getY: function () { return my.monsterloc.y },
+                    getR: function() { return my.MONSTER_RADIUS }
+                }
+                my.collider.checkCollisions( monstercircle).forEach(body => { 
+                    my.pushMessage(body.src, 'Sea Monster Strike!');
+                    my.monsterships.push(body.src);
+                    body.src.anchored = true;
                 });
             }
         }
 
-        var checkWhirlpool = function (allships: Map<Ship, Rectangle>) {
-            if (null != my.poolrect) {
-                allships.forEach((rect: Rectangle, ship: Ship) => {
-                    var shiprect: Rectangle = { x: rect.x - 1, y: rect.y - 1, height: 2, width: 2 };
+        var checkWhirlpool = function (){
+            if (null != my.poolloc) {
+                var poolcircle: CollisionBody = {
+                    src: null,
+                    getX: function () { return my.poolloc.x },
+                    getY: function () { return my.poolloc.y },
+                    getR: function () { return my.POOL_RADIUS }
+                };
 
-                    if (my.iscollision(shiprect, my.poolrect)) {
-                        console.log('captured by the whirlpool!');
-                        console.log('poolrect: ' + JSON.stringify(my.poolrect));
-                        console.log('shiprect: ' + JSON.stringify(shiprect));
-
-                        var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-                        ship.location.x = loc.x;
-                        ship.location.y = loc.y;
-                    }
+                my.collider.checkCollisions(poolcircle).forEach(body => { 
+                    console.log('captured by the whirlpool!');
+                    console.log('poolrect: ' + JSON.stringify(my.poolloc));
+                    console.log('shiprect: ' + JSON.stringify(body));
+                    my.pushMessage(body.src, 'Captured by the whirlpool!');
+                    var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                    body.src.location.x = loc.x;
+                    body.src.location.y = loc.y;
                 });
             }
         }
 
         setInterval(function () {
-            var allships: Map<Ship, Rectangle> = new Map<Ship, Rectangle>();
             my.players.forEach(player => {
-                updateShipLocation(player.ship);
-                allships.set(player.ship, {
-                    x: player.ship.location.x,
-                    y: player.ship.location.y,
-                    height: 24,
-                    width: 24
-                });
+                var ship = player.ship;
+                updateShipLocation(ship, player );
             });
             my.nonplayerships.forEach((ship: Ship) => {
                 updateShipLocation(ship);
-                allships.set(ship, {
-                    x: ship.location.x,
-                    y: ship.location.y,
-                    height: 24,
-                    width: 24
-                });
             });
 
-            checkWhirlpool(allships);
-            checkMonster(allships);
-            checkShipCollisions(allships);
+            checkWhirlpool();
+            checkMonster();
+            checkShipCollisions();
+
         }, 100);
 
-        var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-        var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-        my.poolrect = { x: poolloc.x - 20, y: poolloc.y - 15, width: 40, height: 30 };
-        my.monsterrect = { x: monsterloc.x - 15, y: monsterloc.y - 15, width: 30, height: 30 };
+        my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+        my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
 
         setInterval(function () {
-            if (Math.random() < my.WPCT) {
-                var poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-                my.poolrect = { x: poolloc.x - 20, y: poolloc.y - 15, width: 40, height: 30 };
-            }
-            else {
-                my.poolrect = null;
-            }
-            if (Math.random() < my.MPCT) {
-                var monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-                my.monsterrect = { x: monsterloc.x - 15, y: monsterloc.y - 15, width: 30, height: 30 };
-                my.monster = { attack: 1, defense: 1, health: 1, power: 0.5, attackers: [] };
-            }
-            else {
-                my.monsterrect = null;
-                my.monster = null;
-            }
+            my.poolloc = (Math.random() < my.WPCT
+                ? my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)]
+                : null);
+            my.monsterloc = (Math.random() < my.MPCT
+                ? my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)]
+                : null);
         }, 600000);
     }
 }

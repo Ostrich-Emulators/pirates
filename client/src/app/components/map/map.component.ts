@@ -8,6 +8,7 @@ import { Ship } from '../../../../../common/model/ship';
 import { Location } from '../../../../../common/model/location';
 import { Rectangle } from '../../../../../common/model/rectangle';
 import { HttpClient } from '@angular/common/http';
+import { StatusResponse } from '../../../../../common/model/status-response';
 
 @Component({
   selector: 'app-map',
@@ -20,13 +21,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
   private whirlpoolimg;
-  private poolrect: Rectangle = null;
-  private monsterrect: Rectangle = null;
+  private poolloc: Location = null;
+  private monsterloc: Location = null;
   private seamonsterimg;
   private mapimg;
   private images: Map<string, any> = new Map<string, any>();
   private player: Player;
-  private messages: string = '';
+  private messages: string[] = [];
   private ships: Ship[] = [];
   private lastlocs: Map<string, Location> = new Map<string, Location>();
   private myship;
@@ -95,38 +96,34 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   drawSpecials() {
     var my: MapComponent = this;
-    // our images are actually bigger than the "hotspots" we get from the server
-    // so we need to calculate where to put the images on the map
 
-    if (null != my.monsterrect) {
+    if (null != my.monsterloc) {
       var imgh = my.seamonsterimg.naturalHeight;
       var imgw = my.seamonsterimg.naturalWidth;
-      var woffset = (imgw - my.monsterrect.width) / 2;
-      var hoffset = (imgh - my.monsterrect.height) / 2;
 
-      my.canvasctx.drawImage(my.seamonsterimg,
-        my.monsterrect.x - woffset, my.monsterrect.y - hoffset, imgw, imgh);
-      
+      my.canvasctx.drawImage(my.seamonsterimg, my.monsterloc.x - imgw/2, my.monsterloc.y - imgh/2, imgw, imgh);
       my.canvasctx.beginPath();
-      my.canvasctx.rect(my.monsterrect.x, my.monsterrect.y, my.monsterrect.width, my.monsterrect.height);
+      my.canvasctx.arc(my.monsterloc.x, my.monsterloc.y, 25, 0, 2 * Math.PI);
+      my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       my.canvasctx.stroke();
     }
 
-    if (null != my.poolrect) {
+    if (null != my.poolloc) {
       var imgh = my.whirlpoolimg.naturalHeight;
       var imgw = my.whirlpoolimg.naturalWidth;
-      var woffset = (imgw - my.poolrect.width) / 2;
-      var hoffset = (imgh - my.poolrect.height) / 2;
 
-      my.canvasctx.drawImage(my.whirlpoolimg,
-        my.poolrect.x - woffset, my.poolrect.y - hoffset, imgw, imgh);
-
+      my.canvasctx.drawImage(my.whirlpoolimg, my.poolloc.x - imgw / 2, my.poolloc.y - imgh / 2, imgw, imgh);
       my.canvasctx.beginPath();
-      my.canvasctx.rect(my.poolrect.x, my.poolrect.y, my.poolrect.width, my.poolrect.height);
+      my.canvasctx.arc(my.poolloc.x, my.poolloc.y, 30, 0, 2 * Math.PI);
+      my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       my.canvasctx.stroke();
     }
   }
 
+  showDstTargetting(src: Ship, dst: Ship) {
+    
+  }
+  
   moveShips(speedratio: number) {
     var my: MapComponent = this;
 
@@ -141,10 +138,11 @@ export class MapComponent implements OnInit, AfterViewInit {
         my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
       }
     });
-    
+
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
-      if (ship === my.gamesvc.myship()) {
+      var ismyship:boolean = (ship === my.gamesvc.myship());
+      if( ismyship ){
         shipimg = my.myship;
       }
 
@@ -165,7 +163,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         my.canvasctx.fill();
 
         my.canvasctx.beginPath();
-        my.canvasctx.arc(ship.location.x, ship.location.y, 30, 0, 2 * Math.PI);
+        my.canvasctx.arc(ship.location.x, ship.location.y, (ismyship ? 50 : 30), 0, 2 * Math.PI);
         my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
         my.canvasctx.fill();
 
@@ -186,13 +184,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   refreshData() {
     //console.log('refreshing ships!');
     var my: MapComponent = this;
-    my.gamesvc.ships().subscribe((data: Ship[]) => {
-      my.ships = data;
-    });
-
-    my.gamesvc.status().subscribe((data: any) => {
-        my.poolrect = data['poolrect'];
-        my.monsterrect = data['monsterrect'];
+    my.gamesvc.status().subscribe((data: StatusResponse) => {
+      my.ships = data.ships;
+      my.poolloc = (data.poolloc ? data.poolloc : null);
+      my.monsterloc = (data.monsterloc ? data.monsterloc : null);
+      if (data.messages.length > 0) {
+        my.messages = data.messages;
+      }
     });
   }
 

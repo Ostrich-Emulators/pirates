@@ -6,6 +6,7 @@ import { ShipDefinition } from '../../../common/model/ship-definition';
 import { ShipType } from '../../../common/model/ship-type.enum';
 import { Crew } from '../../../common/model/crew';
 import { Ship } from '../../../common/model/ship';
+import { StatusResponse } from '../../../common/model/status-response';
 import { Game } from '../models/game';
 
 export class GameController {
@@ -24,7 +25,7 @@ export class GameController {
         return this.game.addPlayer(pirate);
     }
 
-    status(playerid: string) {
+    status(playerid: string) :StatusResponse {
         var msgs: string[] = this.game.popMessages(playerid);
         var ships: Ship[] = [];
         this.game.getNonPlayerShips().forEach(s => {
@@ -37,8 +38,8 @@ export class GameController {
         return {
             messages: msgs,
             ships: ships,
-            pollrect: this.game.poolrect,
-            monsterrect: this.game.monsterrect
+            poolloc: this.game.poolloc,
+            monsterloc: this.game.monsterloc
         };
     }
 }
