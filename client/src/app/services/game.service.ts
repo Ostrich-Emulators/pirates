@@ -15,6 +15,7 @@ export class GameService {
   private _player: Subject<Player> = new Subject<Player>();
   private BASEURL: string = 'http://localhost:30000';
   canfire: boolean = false;
+  canboard: boolean = false;
 
   constructor(private http: HttpClient) {
     if (null != localStorage.getItem('pirate')) {
@@ -71,6 +72,12 @@ export class GameService {
     });
     return obs;
   }
+
+  fire() {
+    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/fire';
+    this.http.post(url, null).subscribe();
+  }
+
 
   move(x: number, y: number) {
     var loc: Location = { x: x, y: y };

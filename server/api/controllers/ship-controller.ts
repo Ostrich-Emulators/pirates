@@ -66,4 +66,8 @@ export class ShipController {
         };
         this.one(shipid).anchored = false;
     }
+
+    fire(shipid: string) {
+        this.game.fire(this.shiplkp.get(shipid));
+    }
 }

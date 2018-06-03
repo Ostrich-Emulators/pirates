@@ -258,6 +258,12 @@ export class Game {
         return null;
     }
 
+    fire(s: Ship) {
+        if (s.ammo > 0) {
+            s.ammo -= 1;
+        }
+    }
+
     start() {
         var my: Game = this;
         console.log('starting game loop');
@@ -298,8 +304,10 @@ export class Game {
             my.collider.getCollisions().forEach(en => {
                 if (!('whirlpool' === en.first.id || 'whirlpool' === en.second.id
                     || 'monster' === en.first.id || 'monster' === en.second.id)) {
-                    my.pushMessage(en.first.src, 'encountered ship!');
-                    my.pushMessage(en.second.src, 'encountered ship!');
+                    // do anything here?
+
+                    //my.pushMessage(en.first.src, 'encountered ship!');
+                    //my.pushMessage(en.second.src, 'encountered ship!');
                 }
             });
         }

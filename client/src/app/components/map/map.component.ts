@@ -140,10 +140,15 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
 
-    var showTargetting: Set<string> = new Set<string>();
+    var longTargetting: Set<string> = new Set<string>();
     my.longcollider.getCollisions().forEach(en => {
-      showTargetting.add(en.first.id);
-      showTargetting.add(en.second.id);
+      longTargetting.add(en.first.id);
+      longTargetting.add(en.second.id);
+    });
+    var shortTargetting: Set<string> = new Set<string>();
+    my.shortcollider.getCollisions().forEach(en => {
+      shortTargetting.add(en.first.id);
+      shortTargetting.add(en.second.id);
     });
 
     my.ships.forEach((ship: Ship) => {
@@ -165,18 +170,20 @@ export class MapComponent implements OnInit, AfterViewInit {
         //my.canvasctx.fill();
 
         if (ismyship) {
-          my.gamesvc.canfire = showTargetting.has(ship.id);
-          if (my.gamesvc.canfire) {
-            my.canvasctx.beginPath();
-            my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
-            my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.25)";
-            my.canvasctx.fill();
-
+          my.gamesvc.canfire = longTargetting.has(ship.id);
+          if (my.gamesvc.canfire && ship.ammo > 0) {
             my.canvasctx.beginPath();
             my.canvasctx.arc(ship.location.x, ship.location.y, 30, 0, 2 * Math.PI);
             my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
             my.canvasctx.fill();
-          }  
+          }
+          my.gamesvc.canboard = shortTargetting.has(ship.id);
+          if (my.gamesvc.canboard) {
+            my.canvasctx.beginPath();
+            my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
+            my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.35)";
+            my.canvasctx.fill();
+          }
         }
 
         my.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,

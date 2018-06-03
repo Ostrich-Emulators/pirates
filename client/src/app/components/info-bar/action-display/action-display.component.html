@@ -1,2 +1,3 @@
 
-<button [disabled]="!gamesvc.canfire">Fire!</button>
+<button [disabled]="!gamesvc.canfire" (click)="fire()">Fire!</button>
+<button [disabled]="!gamesvc.canboard" (click)="board()">Board!</button>

@@ -13,4 +13,12 @@ export class ActionDisplayComponent implements OnInit {
   ngOnInit() {
   }
 
+  fire() {
+    this.gamesvc.fire();
+  }
+
+  board() {
+    
+  }
+
 }

@@ -41,9 +41,13 @@ app.route('/ships/:shipId')
     });
 app.route('/ships/:shipId/course')
     .post(function (req, res) {
-        console.log(req.params.shipId);
-        console.log(req.body);
+        console.log(req.params.shipId + ' course to ' + JSON.stringify(req.body));
         res.json(shipcontroller.sail(req.params.shipId, req.body));
+    });
+app.route('/ships/:shipId/fire')
+    .post(function (req, res) {
+        console.log(req.params.shipId + ' firing!');
+        res.json(shipcontroller.fire(req.params.shipId));
     });
 
 app.route('/players')
