@@ -73,9 +73,15 @@ export class GameService {
     return obs;
   }
 
-  fire() {
+  fire(at: Ship) {
+    console.log('firing at ' + JSON.stringify( at) );
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/fire';
-    this.http.post(url, null).subscribe();
+    this.http.post(url, at.id).subscribe();
+  }
+
+  fight(at: Ship) { // try to board anothe rship
+    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/fight';
+    this.http.post(url, at.id).subscribe();
   }
 
   move(x: number, y: number) {

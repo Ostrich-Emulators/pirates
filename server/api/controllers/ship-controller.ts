@@ -67,7 +67,13 @@ export class ShipController {
         this.one(shipid).anchored = false;
     }
 
-    fire(shipid: string) {
-        this.game.fire(this.shiplkp.get(shipid));
+    fire(from: string, at: string) {
+        console.log('firing at: ' + at);
+        this.game.fire(this.shiplkp.get(from), this.shiplkp.get(at));
+    }
+
+    board(from: string, at: string) {
+        console.log('boarding: ' + at);
+        this.game.board(this.shiplkp.get(from), this.shiplkp.get(at));
     }
 }

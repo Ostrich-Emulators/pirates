@@ -6,6 +6,7 @@ import { ShipDefinition } from '../../../common/model/ship-definition';
 import { ShipType } from '../../../common/model/ship-type.enum';
 import { Crew } from '../../../common/model/crew';
 import { Ship } from '../../../common/model/ship';
+import { ShipPair } from '../../../common/model/ship-pair';
 import { StatusResponse } from '../../../common/model/status-response';
 import { Game } from '../models/game';
 
@@ -27,6 +28,8 @@ export class GameController {
 
     status(playerid: string) :StatusResponse {
         var msgs: string[] = this.game.popMessages(playerid);
+        var combat: ShipPair[] = this.game.popCombat(playerid);
+
         var ships: Ship[] = [];
         this.game.getNonPlayerShips().forEach(s => {
             ships.push(s);
@@ -39,7 +42,8 @@ export class GameController {
             messages: msgs,
             ships: ships,
             poolloc: this.game.poolloc,
-            monsterloc: this.game.monsterloc
+            monsterloc: this.game.monsterloc,
+            combat: combat
         };
     }
 }

@@ -16,7 +16,9 @@ export interface Ship {
     storage: number,
     crew: Crew,
     
-    avatar:string,
+    name: string, // name of the ship
+    captain: string, // name of the ship's captain (mostly for NPC ships)
+    avatar: string,
     gold?: number,
     location: Location,
     course?: Course,

@@ -1,18 +1,24 @@
-import { Player } from '../../../common/model/player';
-import { Location } from '../../../common/model/location';
-import { Rectangle } from '../../../common/model/rectangle';
-import { Circle } from '../../../common/model/circle';
-import { Pirate } from '../../../common/model/pirate';
-import { ShipType } from '../../../common/model/ship-type.enum';
-import { ShipDefinition } from '../../../common/model/ship-definition';
-import { Ship } from '../../../common/model/ship';
-import { CollisionBody } from '../../../common/model/body';
-import { Collider } from '../../../common/tools/collider';
-import { SeaMonster } from './seamonster';
+import { Player } from '../../../common/model/player'
+import { Location } from '../../../common/model/location'
+import { Rectangle } from '../../../common/model/rectangle'
+import { Circle } from '../../../common/model/circle'
+import { Pirate } from '../../../common/model/pirate'
+import { ShipType } from '../../../common/model/ship-type.enum'
+import { ShipDefinition } from '../../../common/model/ship-definition'
+import { Ship } from '../../../common/model/ship'
+import { CollisionBody } from '../../../common/model/body'
+import { Collider } from '../../../common/tools/collider'
+import { SeaMonster } from './seamonster'
+import { ShipPair } from '../../../common/model/ship-pair'
+import { CombatEngine } from '../combat/combat-engine'
+import { Names } from '../models/names'
 
 var jimp = require('jimp')
 
 export class Game {
+    private SHIP_RADIUS: number = 15;
+    private POOL_RADIUS: number = 30;
+    private MONSTER_RADIUS: number = 25;
     poolloc: Location = null;
     monsterloc: Location = null;
     private monster: SeaMonster;
@@ -22,9 +28,10 @@ export class Game {
     private monsterships: Ship[] = [];
     private mapguide: any;
     private messages: Map<string, string[]> = new Map<string, string[]>(); // playerid, messages
-    private SHIP_RADIUS: number = 15;
-    private POOL_RADIUS: number = 30;
-    private MONSTER_RADIUS: number = 25;
+    private fireQueue: ShipPair[] = [];
+    private boardQueue: ShipPair[] = [];
+    private combat: Map<string, ShipPair[]> = new Map<string, ShipPair[]>(); // playerid, firings
+    private combatengine: CombatEngine = new CombatEngine();
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -57,6 +64,8 @@ export class Game {
         var playernumber: number = this.players.size + 1;
 
         var ship = this.createShip(playernumber + '-1', pirate.avatar, type);
+        ship.captain = pirate.name;
+        ship.name = Names.ship();
         var player: Player = new Player(playernumber.toString(), pirate, ship);
         this.players.set(player.id, player);
         this.messages.set(player.id, []);
@@ -134,7 +143,9 @@ export class Game {
             storage: def.storage,
             location: { x: 100, y: 200 },
             anchored: true,
-            crew: crew
+            crew: crew,
+            name: Names.ship(),
+            captain: Names.captain()
         };
 
         return ship;
@@ -146,15 +157,15 @@ export class Game {
 
         return jimp.read('map.png').then(function (image) {
             img = image;
-            my.shipbodies.forEach(ship => {
-                console.log('writing ship: ' + ship.src.id + ' at ' + JSON.stringify(rect));
-                //image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
-                image.scan(ship.getX(), ship.getY(), 4, 4, function (x, y, idx) {
-                    image.bitmap.data[idx] = 0;
-                    image.bitmap.data[idx + 1] = 0;
-                    image.bitmap.data[idx + 2] = 0;
-                });
-            });
+            //my.shipbodies.forEach(ship => {
+            //    console.log('writing ship: ' + ship.src.id + ' at ' + JSON.stringify(rect));
+            //    //image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
+            //    image.scan(ship.getX(), ship.getY(), 4, 4, function (x, y, idx) {
+            //        image.bitmap.data[idx] = 0;
+            //        image.bitmap.data[idx + 1] = 0;
+            //        image.bitmap.data[idx + 2] = 0;
+            //    });
+            //});
 
             if (null != my.poolloc) {
                 console.log('pool rect: ' + JSON.stringify(my.poolloc));
@@ -197,6 +208,12 @@ export class Game {
     popMessages(pid: string): string[]{
         var msgs = (this.messages.has(pid) ? this.messages.get(pid) : []);
         this.messages.delete(pid);
+        return msgs;
+    }
+
+    popCombat(pid: string): ShipPair[] {
+        var msgs = (this.combat.has(pid) ? this.combat.get(pid) : []);
+        this.combat.delete(pid);
         return msgs;
     }
 
@@ -258,9 +275,27 @@ export class Game {
         return null;
     }
 
-    fire(s: Ship) {
-        if (s.ammo > 0) {
-            s.ammo -= 1;
+    fire(from: Ship, to: Ship) {
+        this.fireQueue.push({ one: from, two: to });
+    }
+
+    board(from: Ship, to: Ship) {
+        this.boardQueue.push({ one: from, two: to });
+    }
+
+    resolveCombat() {
+        var my: Game = this;
+
+        while (my.fireQueue.length > 0) {
+            var pair = my.fireQueue.pop();
+            my.combatengine.resolve(pair);
+
+            my.players.forEach((p, k) => {
+                if (!my.combat.has(k)) {
+                    my.combat.set(k, []);
+                }
+                my.combat.get(k).push(pair);
+            });
         }
     }
 
@@ -336,6 +371,8 @@ export class Game {
         }
 
         setInterval(function () {
+            my.resolveCombat();
+
             my.players.forEach(player => {
                 var ship = player.ship;
                 updateShipLocation(ship, player );

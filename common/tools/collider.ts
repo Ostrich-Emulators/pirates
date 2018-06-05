@@ -51,11 +51,13 @@ export class Collider {
         return collisions;
     }
 
-    checkCollisions(tgt: CollisionBody): CollisionBody[] {
+    checkCollisions(tgt: CollisionBody|string): CollisionBody[] {
         var my: Collider = this;
         var collisions: CollisionBody[] = [];
+
+        var me: CollisionBody = (typeof tgt === 'string' ? this.bodies.get(tgt) : tgt);
         this.bodies.forEach(body => { 
-            if (tgt.id != body.id && my.collides( body, tgt ) ){
+            if (me.id != body.id && my.collides( body, me ) ){
                 collisions.push(body);
             }
         });

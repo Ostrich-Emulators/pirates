@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { GameService } from '../../../services/game.service';
+import { ShipService } from '../../../services/ship.service';
+import { Ship } from '../../../../../../common/model/ship';
 
 @Component({
   selector: 'app-action-display',
@@ -8,17 +10,17 @@ import { GameService } from '../../../services/game.service';
 })
 export class ActionDisplayComponent implements OnInit {
 
-  constructor( private gamesvc:GameService) { }
+  constructor( private gamesvc:GameService, private shipsvc:ShipService) { }
 
   ngOnInit() {
   }
 
-  fire() {
-    this.gamesvc.fire();
+  fire(ship) {
+    this.gamesvc.fire(ship);
   }
 
-  board() {
-    
+  board(ship) {
+    this.gamesvc.fight(JSON.parse(ship));
   }
 
 }

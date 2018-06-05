@@ -1,3 +1,15 @@
-
-<button [disabled]="!gamesvc.canfire" (click)="fire()">Fire!</button>
-<button [disabled]="!gamesvc.canboard" (click)="board()">Board!</button>
+<div id="targetting">
+    <table *ngFor="let tgt of shipsvc.getTargets()" class="ship">
+        <tr>
+            <td rowspan="4">
+                <img src="/assets/galleon.svg" class='shipimg'>
+            </td>
+            <td>{{tgt.name}}<br/>{{tgt.hullStrength}}</td>
+            <td>Captain: {{ tgt.captain }}</td>
+            <td rowspan="4">
+                <button [disabled]="!shipsvc.canFire(tgt)" (click)="fire(tgt.id)">Fire!</button>
+                <button [disabled]="!shipsvc.canBoard(tgt)" (click)="board(tgt.id)">Board!</button>
+            </td>
+        </tr>
+    </table>
+</div>
