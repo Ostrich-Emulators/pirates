@@ -11,7 +11,8 @@ import { Collider } from '../../../common/tools/collider'
 import { SeaMonster } from './seamonster'
 import { ShipPair } from '../../../common/model/ship-pair'
 import { CombatEngine } from '../combat/combat-engine'
-import { Names } from '../models/names'
+import { Names } from '../../../common/tools/names'
+import { CombatResult } from '../../../common/model/combat-result';
 
 var jimp = require('jimp')
 
@@ -30,7 +31,7 @@ export class Game {
     private messages: Map<string, string[]> = new Map<string, string[]>(); // playerid, messages
     private fireQueue: ShipPair[] = [];
     private boardQueue: ShipPair[] = [];
-    private combat: Map<string, ShipPair[]> = new Map<string, ShipPair[]>(); // playerid, firings
+    private combat: Map<string, CombatResult[]> = new Map<string, CombatResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine();
 
     private WLOCATIONS: Location[] = [
@@ -58,7 +59,7 @@ export class Game {
         return this.players.get(id);
     }
 
-    addPlayer(pirate: Pirate): Player {
+    addPlayer(pirate: Pirate, shipname:string, color:string): Player {
         var type = ShipType.SMALL;
 
         var playernumber: number = this.players.size + 1;
@@ -66,7 +67,8 @@ export class Game {
         var ship = this.createShip(playernumber + '-1', pirate.avatar, type);
         ship.captain = pirate.name;
         ship.name = Names.ship();
-        var player: Player = new Player(playernumber.toString(), pirate, ship);
+        var player: Player = new Player(playernumber.toString(),
+            pirate, ship, color);
         this.players.set(player.id, player);
         this.messages.set(player.id, []);
         this.addShipToCollisionSystem(ship);
@@ -133,6 +135,7 @@ export class Game {
             id: id,
             type: type,
             cannons: 2,
+            cannonrange: 60,
             speed: def.speed,
             manueverability: def.manueverability,
             hullStrength: def.hull,
@@ -195,7 +198,14 @@ export class Game {
      */
     generateNonPlayerShips(ships: number) {
         console.log( 'generating '+ships+' new NPC ships')
-        for (var i = 0; i < ships; i++) {
+        var ship = this.createShip('placed-1', "/assets/galleon.svg", ShipType.SMALL);
+        ship.gold = Math.floor(Math.random() * 20);
+        ship.location.x = 145;
+        ship.location.y = 180;
+        this.nonplayerships.push(ship);
+        this.addShipToCollisionSystem(ship);
+
+        for (var i = 1; i < ships; i++) {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
             ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
@@ -250,16 +260,19 @@ export class Game {
             id = player.id;
         }
         else {
+            console.log(player);
             this.players.forEach(p => {
                 if (p.ship.id === player.id) {
                     id = p.id;
                 }
-            });
+            }); 
             if ('' === id) {
+                console.log('NPC ship? ' + player + '->' + msg);
                 return; // NPC ship
             }
         }
         
+        //console.log('message for ' + id);
         if (!this.messages.has(id)) {
             this.messages.set(id, []);
         }
@@ -287,14 +300,49 @@ export class Game {
         var my: Game = this;
 
         while (my.fireQueue.length > 0) {
-            var pair = my.fireQueue.pop();
-            my.combatengine.resolve(pair);
+            var pair: ShipPair = my.fireQueue.pop();
+            var result:CombatResult = my.combatengine.resolve(pair);
+            console.log('combat results: ' + JSON.stringify(result));
+
+            // update the ships involved in the combat (for player ships)
+            my.players.forEach(p => {
+                if (result.attackee.id === p.ship.id) {
+                    p.setShip(result.attackee);
+                }
+                if (result.attacker.id === p.ship.id) {
+                    p.setShip(result.attacker);
+                }
+            });
+
+            // update NPC ships
+            my.nonplayerships.forEach((s,idx) => { 
+                if (result.attackee.id === s.id) {
+                    if (result.attackee.hullStrength > 0) {
+                        my.nonplayerships[idx] = result.attackee;
+                        my.pushMessage(result.attacker,
+                            result.attackee.name + ' has been hit!');
+                    }
+                    else {
+                        my.nonplayerships.splice(idx, 1);
+                        my.pushMessage(result.attacker,
+                            result.attackee.name + ' has been sunk!');
+                    }
+                }
+                if (result.attacker.id === s.id) {
+                    if (result.attacker.hullStrength > 0) {
+                        my.nonplayerships[idx] = result.attacker;
+                    }
+                    else {
+                        my.nonplayerships.splice(idx, 1);
+                    }
+                }
+            });
 
             my.players.forEach((p, k) => {
                 if (!my.combat.has(k)) {
                     my.combat.set(k, []);
                 }
-                my.combat.get(k).push(pair);
+                my.combat.get(k).push(result);
             });
         }
     }

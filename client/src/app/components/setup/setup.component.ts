@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core'
+import { Router } from '@angular/router'
 
-import { ShipService } from '../../services/ship.service';
-import { GameService } from '../../services/game.service';
+import { ShipService } from '../../services/ship.service'
+import { GameService } from '../../services/game.service'
+
+import { Names } from '../../../../../common/tools/names'
 
 @Component({
   selector: 'app-setup',
@@ -11,8 +13,10 @@ import { GameService } from '../../services/game.service';
 })
 export class SetupComponent implements OnInit {
   avatar: string;
-  captain: string = '';
+  captain: string = Names.captain();
   female: boolean = false;
+  shipname: string = Names.ship();
+  color: string = '#5F87FF';
 
   constructor(private shipsvc: ShipService, private gamesvc:GameService, private router: Router) {
     var avidx = Math.random() * shipsvc.avatars.length;
@@ -30,8 +34,17 @@ export class SetupComponent implements OnInit {
     this.female = f;
   }
 
+  newcaptain() {
+    this.captain = Names.captain();
+  }
+
+  newname() {
+    this.shipname = Names.ship();
+  }
+
   sail() {
-    this.gamesvc.start(this.captain, this.female, this.avatar).subscribe(data => {
+    this.gamesvc.start(this.captain, this.female, this.avatar,
+      this.shipname, this.color ).subscribe(data => {
       this.router.navigate(['/game']);
     });
   }

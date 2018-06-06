@@ -66,7 +66,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         my.http.get(av, { responseType: 'text' }).subscribe(data => { 
           my.myship = new Image();
           my.myship.src = "data:image/svg+xml;charset=utf-8,"
-            + data.replace(/fill="#ffffff"/, 'fill="#AE499A"');
+            + data.replace(/fill="#ffffff"/, 'fill="' + my.gamesvc.myplayer().color + '"');
         });
       }
     });
@@ -173,8 +173,15 @@ export class MapComponent implements OnInit, AfterViewInit {
         if (ismyship) {
           if (cannonTargetting.length>0) {
             my.canvasctx.beginPath();
-            my.canvasctx.arc(ship.location.x, ship.location.y, 30, 0, 2 * Math.PI);
-            my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.15)";
+
+            var rad = my.canvasctx.createRadialGradient(
+              ship.location.x, ship.location.y, 1,
+              ship.location.x, ship.location.y, ship.cannonrange);
+            
+            rad.addColorStop(0, 'rgba(255, 0, 0, 0.6)');
+            rad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            my.canvasctx.fillStyle = rad;
+            my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannonrange, 0, 2 * Math.PI);
             my.canvasctx.fill();
           }
           if (boardTargetting.length>0) {
@@ -213,7 +220,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           src: ship,
           getX: function (): number { return ship.location.x },
           getY: function (): number { return ship.location.y },
-          getR: function (): number { return (ismyship ? 30 : 15) }
+          getR: function (): number { return (ismyship ? ship.cannonrange : 15) }
         });
         my.shortcollider.add({
           id: ship.id,
@@ -233,8 +240,18 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       my.poolloc = (data.poolloc ? data.poolloc : null);
       my.monsterloc = (data.monsterloc ? data.monsterloc : null);
+      console.log(data.messages);
       if (data.messages.length > 0) {
-        my.messages = data.messages;
+        data.messages.forEach(str => {
+          if (my.messages.length > 0) {
+            if (my.messages[my.messages.length - 1] !== str) {
+              my.messages.push(str);
+            }
+          }
+          else {
+            my.messages.push(str);
+          }
+        });
       }
 
       var cannonTargetting: Ship[] = [];

@@ -22,8 +22,8 @@ export class GameController {
         return this.game.getPlayers();
     }
 
-    create(pirate: Pirate): Player {
-        return this.game.addPlayer(pirate);
+    create(body): Player {
+        return this.game.addPlayer(body.pirate, body.shipname, body.color );
     }
 
     status(playerid: string) :StatusResponse {
@@ -31,11 +31,18 @@ export class GameController {
         var combat: ShipPair[] = this.game.popCombat(playerid);
 
         var ships: Ship[] = [];
+        // hide the actual hull strengths of other people's ships
         this.game.getNonPlayerShips().forEach(s => {
-            ships.push(s);
+            var newship: Ship = Object.assign({}, s);
+            newship.hullStrength = Math.ceil(s.hullStrength);
+            ships.push(newship);
         });
         this.game.getPlayers().forEach(p => { 
-            ships.push(p.ship);
+            var newship: Ship = Object.assign({}, p.ship);
+            if (p.id != playerid) {
+                newship.hullStrength = Math.ceil(p.ship.hullStrength);
+            }
+            ships.push(newship);
         });
 
         return {

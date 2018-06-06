@@ -7,6 +7,7 @@ export interface Ship {
     id:string,
     type: ShipType,
     cannons: number,
+    cannonrange: number,
     speed: number,
     manueverability: number,
     hullStrength: number,

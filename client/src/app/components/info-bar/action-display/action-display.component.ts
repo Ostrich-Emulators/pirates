@@ -20,7 +20,7 @@ export class ActionDisplayComponent implements OnInit {
   }
 
   board(ship) {
-    this.gamesvc.fight(JSON.parse(ship));
+    this.gamesvc.board(ship);
   }
 
 }

@@ -46,13 +46,11 @@ app.route('/ships/:shipId/course')
     });
 app.route('/ships/:shipId/fire')
     .post(function (req, res) {
-        console.log(req.params.shipId + ' firing!');
-        res.json(shipcontroller.fire(req.params.shipId, req.body.toString()));
+        res.json(shipcontroller.fire(req.params.shipId, req.body.targetid));
     });
 app.route('/ships/:shipId/board')
     .post(function (req, res) {
-        console.log(req.params.shipId + ' boarding!');
-        res.json(shipcontroller.board(req.params.shipId, req.body));
+        res.json(shipcontroller.board(req.params.shipId, req.body.targetid));
     });
 
 app.route('/players')
@@ -66,6 +64,8 @@ app.route('/players')
         if (1 === game.getPlayers().length) {
             game.start();
         }
+
+        shipcontroller.refreshShips();
         res.json(player);
     })
     .post(function (req, res) {

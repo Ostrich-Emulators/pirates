@@ -3,6 +3,11 @@ export class Names {
     private static captainidx = 0;
 
     static SHIPS: string[] = [
+        'Pigeon', 
+        'Squeaker',
+        'Augusta Belle',
+        'The Renegade',
+        'The Avenger',
         'Kincardine',
         'The Sacrett',
         'Cambridge',
@@ -66,6 +71,7 @@ export class Names {
     ]
 
     static CAPTAINS = [
+        'Cannonball Jack',
         "Elsdon 'The Honest' Thor",
         "Derek 'Disfigured' Prescott",
         "Butcher 'Softy' Camus",
@@ -145,7 +151,7 @@ export class Names {
             this.shipidx = 0;
         }
 
-        // just pick a random name
+        // just pick a random name for now
         name = this.SHIPS[Math.floor(Math.random() * this.SHIPS.length)];
         return name;
     }
@@ -156,6 +162,9 @@ export class Names {
         if (this.captainidx > this.CAPTAINS.length) {
             this.captainidx = 0;
         }
+
+        // just pick a random name for now
+        name = this.CAPTAINS[Math.floor(Math.random() * this.CAPTAINS.length)];
         return name;
     }
 };

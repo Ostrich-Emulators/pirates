@@ -7,8 +7,8 @@
             <td>{{tgt.name}}<br/>{{tgt.hullStrength}}</td>
             <td>Captain: {{ tgt.captain }}</td>
             <td rowspan="4">
-                <button [disabled]="!shipsvc.canFire(tgt)" (click)="fire(tgt.id)">Fire!</button>
-                <button [disabled]="!shipsvc.canBoard(tgt)" (click)="board(tgt.id)">Board!</button>
+                <button [disabled]="!shipsvc.canFire(tgt)" (click)="fire(tgt)">Fire!</button>
+                <button [disabled]="!shipsvc.canBoard(tgt)" (click)="board(tgt)">Board!</button>
             </td>
         </tr>
     </table>

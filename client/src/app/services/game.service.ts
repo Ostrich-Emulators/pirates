@@ -24,13 +24,13 @@ export class GameService {
     }
   }
 
-  start(name: string, female: boolean, avatar: string): Observable<Player>{
+  start(name: string, female: boolean, avatar: string,
+    shipname: string, color: string): Observable<Player>{
     var my: GameService = this;
     var pirate: Pirate = { name: name, female: female, avatar: avatar };
-    console.log(pirate);
     var url = this.BASEURL + '/players';
 
-    this.http.put(url, pirate).subscribe(
+    this.http.put(url, { pirate: pirate, ship: shipname, color:color }).subscribe(
       (data: Player) => {
         console.log(data);
         my.me = data;
@@ -74,13 +74,12 @@ export class GameService {
   }
 
   fire(at: Ship) {
-    console.log('firing at ' + JSON.stringify( at) );
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/fire';
-    this.http.post(url, at.id).subscribe();
+    this.http.post(url, { targetid: at.id }).subscribe();
   }
 
-  fight(at: Ship) { // try to board anothe rship
-    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/fight';
+  board(at: Ship) { // try to board anothe rship
+    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/board';
     this.http.post(url, at.id).subscribe();
   }
 

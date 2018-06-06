@@ -36,12 +36,6 @@ export class ShipController {
         return ret;
     }
 
-    create(ship: Ship): string {
-        ship.id = (this.shiplkp.size + 1 ).toString();
-        this.shiplkp.set(ship.id, ship);
-        return ship.id;
-    }
-
     sail(shipid: string, dst: Location) {
         var ship: Ship = this.one(shipid);
         var diffx = (dst.x - ship.location.x);
@@ -68,12 +62,27 @@ export class ShipController {
     }
 
     fire(from: string, at: string) {
-        console.log('firing at: ' + at);
+        if (!this.shiplkp.has(from) ){
+            console.error('unknown ship: ' + from);
+            return;
+        }
+        else if (!this.shiplkp.has(at)) {
+            console.error('unknown ship: ' + from);
+            return;
+        }
+
         this.game.fire(this.shiplkp.get(from), this.shiplkp.get(at));
     }
 
     board(from: string, at: string) {
-        console.log('boarding: ' + at);
+        if (!this.shiplkp.has(from)) {
+            console.error('unknown ship: ' + from);
+            return;
+        }
+        else if (!this.shiplkp.has(at)) {
+            console.error('unknown ship: ' + from);
+            return;
+        }
         this.game.board(this.shiplkp.get(from), this.shiplkp.get(at));
     }
 }
