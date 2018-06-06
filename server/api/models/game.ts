@@ -221,7 +221,7 @@ export class Game {
         return msgs;
     }
 
-    popCombat(pid: string): ShipPair[] {
+    popCombat(pid: string): CombatResult[] {
         var msgs = (this.combat.has(pid) ? this.combat.get(pid) : []);
         this.combat.delete(pid);
         return msgs;
@@ -260,7 +260,6 @@ export class Game {
             id = player.id;
         }
         else {
-            console.log(player);
             this.players.forEach(p => {
                 if (p.ship.id === player.id) {
                     id = p.id;
