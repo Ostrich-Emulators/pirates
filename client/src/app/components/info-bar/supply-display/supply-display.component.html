@@ -1,4 +1,4 @@
-<table>
+<table *ngIf="ship">
   <thead>
     <tr>
       <th colspan="2">Supplies</th>
@@ -7,11 +7,11 @@
   <tbody>
     <tr>
       <td>Food</td>
-      <td>{{gamesvc.myship().food}}</td>
+      <td>{{ship.food}}</td>
     </tr>
     <tr>
       <td>Cannonballs</td>
-      <td>{{gamesvc.myship().ammo}}</td>
+      <td>{{ship.ammo}}</td>
     </tr>
   </tbody>
 </table>

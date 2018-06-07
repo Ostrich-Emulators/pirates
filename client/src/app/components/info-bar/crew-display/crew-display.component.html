@@ -1,4 +1,4 @@
-<table>
+<table *ngIf="crew">
   <thead>
     <tr>
       <th colspan="2">Crew</th>
@@ -7,15 +7,15 @@
   <tbody>
     <tr>
       <td># Crew</td>
-      <td>{{gamesvc.myship().crew.count}}</td>
+      <td>{{crew.count}}</td>
     </tr>
     <tr>
       <td>Fighting Skill</td>
-      <td>{{gamesvc.myship().crew.meleeSkill}}</td>
+      <td>{{crew.meleeSkill}}</td>
     </tr>
     <tr>
       <td>Sailing Skill</td>
-      <td>{{gamesvc.myship().crew.sailingSkill}}</td>
+      <td>{{crew.sailingSkill}}</td>
     </tr>
   </tbody>
 </table>

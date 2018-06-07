@@ -8,7 +8,6 @@ import { Ship } from '../../../../../common/model/ship'
 import { Location } from '../../../../../common/model/location'
 import { Rectangle } from '../../../../../common/model/rectangle'
 import { HttpClient } from '@angular/common/http'
-import { StatusResponse } from '../../../../../common/model/status-response'
 import { Collider } from '../../../../../common/tools/collider'
 import { CollisionBody } from '../../../../../common/model/body';
 
@@ -32,18 +31,56 @@ export class MapComponent implements OnInit, AfterViewInit {
   private messages: string[] = [];
   private ships: Ship[] = [];
   private lastlocs: Map<string, Location> = new Map<string, Location>();
-  private myship; // image of my ship
+  private myshipimg; // image of my ship
   private lastperf = 0;
   private shortcollider: Collider = new Collider();
   private longcollider: Collider = new Collider();
   private ballpaths: CannonBallPath[] = [];
+  private ship: Ship;
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http:HttpClient) { }
 
   ngOnInit() {
+    var my: MapComponent = this;
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
     this.canvasctx = this.map.nativeElement.getContext('2d');
     this.player = this.gamesvc.myplayer();
+    this.ship = this.player.ship;
+
+    this.gamesvc.poolloc().subscribe(data => { 
+      my.poolloc = data;
+    });
+
+    this.gamesvc.monsterloc().subscribe(data => { 
+      my.monsterloc = data;
+    });
+
+    this.gamesvc.ships().subscribe(data => { 
+      console.log('refreshing ships in map');
+      my.ships = data;
+
+      my.ships.forEach(ship => {
+        var ismyship: boolean = (ship.id === my.player.ship.id);
+        my.longcollider.add({
+          id: ship.id,
+          src: ship,
+          getX: function (): number { return ship.location.x },
+          getY: function (): number { return ship.location.y },
+          getR: function (): number { return (ismyship ? ship.cannonrange : 15) }
+        });
+        my.shortcollider.add({
+          id: ship.id,
+          src: ship,
+          getX: function (): number { return ship.location.x },
+          getY: function (): number { return ship.location.y },
+          getR: function (): number { return 15 }
+        });
+      });
+    });
+    
+    this.gamesvc.myship().subscribe(data => { 
+      my.ship = data;
+    });
   }
 
   ngAfterViewInit() {
@@ -62,11 +99,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.images[av] = new Image();
       my.images[av].src = av;
 
-      if (av === my.gamesvc.myship().avatar) {
+      if (av === my.player.ship.avatar) {
         my.http.get(av, { responseType: 'text' }).subscribe(data => { 
-          my.myship = new Image();
-          my.myship.src = "data:image/svg+xml;charset=utf-8,"
-            + data.replace(/fill="#ffffff"/, 'fill="' + my.gamesvc.myplayer().color + '"');
+          my.myshipimg = new Image();
+          my.myshipimg.src = "data:image/svg+xml;charset=utf-8,"
+            + data.replace(/fill="#ffffff"/, 'fill="' + my.player.color + '"');
         });
       }
     });
@@ -81,10 +118,6 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.offscreenctx.drawImage(img, 0, 0);
       img.style.display = 'none';
     };
-
-    const REFRESH_RATE: number = 250;
-    my.refreshData(); // get ships from server
-    window.setInterval(function () { my.refreshData(); }, REFRESH_RATE);
     
     // start the animation frame
     var looper = function () {
@@ -92,7 +125,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       var now = performance.now();
       my.canvasctx.clearRect(0, 0, 740, 710);
       my.drawSpecials();
-      my.moveShips((now - my.lastperf)/REFRESH_RATE);
+      my.moveShips((now - my.lastperf)/my.gamesvc.REFRESH_RATE);
       my.lastperf = performance.now();
       window.requestAnimationFrame(looper);
     }
@@ -140,23 +173,31 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
 
-    var cannonTargetting: Ship[] = [];
-    if (this.gamesvc.myship().ammo > 0) {
-      my.longcollider.checkCollisions(this.gamesvc.myship().id).forEach(en => {
-        cannonTargetting.push(en.src);
+    var showCannonTargetting: boolean = false;
+    var targetting: Map<Ship, any> = new Map<Ship, any>();
+    if (my.ship.ammo > 0 && my.ship.cannons > 0) {
+      my.longcollider.checkCollisions(my.ship.id).forEach(en => {
+        targetting.set(en.src, { fire: true, board: false });
+        showCannonTargetting = true;
       });
     }
 
-    var boardTargetting: Ship[] = [];
-    my.shortcollider.checkCollisions(this.gamesvc.myship().id).forEach(en => {
-      boardTargetting.push(en.src);
+    my.shortcollider.checkCollisions(my.ship.id).forEach(en => {
+      if (targetting.has(en.src)) {
+        var t = targetting.get(en.src);
+        t.board = true;
+        targetting.set(en.src, t);
+      }
+      else {
+        targetting.set(en.src, { fire: false, board: true });
+      }
     });
 
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
-      var ismyship:boolean = (ship === my.gamesvc.myship());
+      var ismyship: boolean = (ship.id === my.ship.id);
       if( ismyship ){
-        shipimg = my.myship;
+        shipimg = my.myshipimg;
       }
 
       if (shipimg) {
@@ -171,23 +212,23 @@ export class MapComponent implements OnInit, AfterViewInit {
         //my.canvasctx.fill();
 
         if (ismyship) {
-          if (cannonTargetting.length>0) {
+          if (showCannonTargetting) {
             my.canvasctx.beginPath();
 
             var rad = my.canvasctx.createRadialGradient(
               ship.location.x, ship.location.y, 1,
               ship.location.x, ship.location.y, ship.cannonrange);
             
-            rad.addColorStop(0, 'rgba(255, 0, 0, 0.6)');
-            rad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            rad.addColorStop(0, my.hexToRGBA(my.gamesvc.myplayer().color, 0.6));
+            rad.addColorStop(1, my.hexToRGBA(my.gamesvc.myplayer().color, 0));
             my.canvasctx.fillStyle = rad;
             my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannonrange, 0, 2 * Math.PI);
             my.canvasctx.fill();
           }
-          if (boardTargetting.length>0) {
+          if (targetting.size > 0) {
             my.canvasctx.beginPath();
             my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
-            my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.35)";
+            my.canvasctx.fillStyle = my.hexToRGBA(my.gamesvc.myplayer().color, 0.35);
             my.canvasctx.fill();
           }
         }
@@ -208,66 +249,26 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   refreshData() {
     var my: MapComponent = this;
-    my.gamesvc.status().subscribe((data: StatusResponse) => {
-      //console.log('refreshing data!');
-      my.ships = data.ships;
 
-      my.ships.forEach(ship => {
-        var ismyship: boolean = (ship.id === my.gamesvc.myship().id);
-        //console.log('adding ' + ship.id);
-        my.longcollider.add({
-          id: ship.id,
-          src: ship,
-          getX: function (): number { return ship.location.x },
-          getY: function (): number { return ship.location.y },
-          getR: function (): number { return (ismyship ? ship.cannonrange : 15) }
-        });
-        my.shortcollider.add({
-          id: ship.id,
-          src: ship,
-          getX: function (): number { return ship.location.x },
-          getY: function (): number { return ship.location.y },
-          getR: function (): number { return 15 }
-        });
+    var targetting: Map<Ship, any> = new Map<Ship, any>();
+    if (my.ship.ammo > 0 && my.ship.cannons > 0) {
+      my.longcollider.checkCollisions(my.ship.id).forEach(en => {
+        targetting.set(en.src, { fire: true, board: false });
       });
+    }
 
-      //my.myshipbody = {
-      //  src: my.gamesvc.myship(),
-      //  getX: function (): number { return data.ships[i].location.x },
-      //  getY: function (): number { return data.ships[i].location.y },
-      //  getR: function (): number { return 30 }
-      //};
-
-      my.poolloc = (data.poolloc ? data.poolloc : null);
-      my.monsterloc = (data.monsterloc ? data.monsterloc : null);
-      console.log(data.messages);
-      if (data.messages.length > 0) {
-        data.messages.forEach(str => {
-          if (my.messages.length > 0) {
-            if (my.messages[my.messages.length - 1] !== str) {
-              my.messages.push(str);
-            }
-          }
-          else {
-            my.messages.push(str);
-          }
-        });
+    my.shortcollider.checkCollisions(my.ship.id).forEach(en => {
+      if (targetting.has(en.src)) {
+        var t = targetting.get(en.src);
+        t.board = true;
+        targetting.set(en.src, t);
       }
-
-      var cannonTargetting: Ship[] = [];
-      if (this.gamesvc.myship().ammo > 0) {
-        my.longcollider.checkCollisions(this.gamesvc.myship().id).forEach(en => {
-          cannonTargetting.push(en.src);
-        });
+      else {
+        targetting.set(en.src, { fire: false, board: true });
       }
-      my.shipsvc.setCannonTargets(cannonTargetting);
-
-      var boardTargetting: Ship[] = [];
-      my.shortcollider.checkCollisions(this.gamesvc.myship().id).forEach(en => {
-        boardTargetting.push(en.src);
-      });
-      my.shipsvc.setBoardingTargets(boardTargetting);
     });
+
+    my.shipsvc.setTargets(targetting);
   }
 
   onhover(event: MouseEvent) {
@@ -383,6 +384,18 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   isinland(x: number, y: number) {
     return ( this.island(x, y) && !this.iscity(x, y) );
+  }
+
+  hexToRGBA(hex: string, a:number): string {
+    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+      return r + r + g + g + b + b;
+    });
+
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return 'rgba(' + parseInt(result[1], 16) + ',' + parseInt(result[2], 16)
+      + ',' + parseInt(result[3], 16) + ',' + a + ')';
   }
 }
 

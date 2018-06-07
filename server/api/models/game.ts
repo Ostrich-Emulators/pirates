@@ -94,7 +94,7 @@ export class Game {
         switch (type) {
             case (ShipType.BIG):
                 return {
-                    cannons: 15,
+                    cannons: 20,
                     crewsize: 50,
                     storage: 1000,
                     speed: 0.2,
@@ -103,7 +103,7 @@ export class Game {
                 };
             case (ShipType.MEDIUM):
                 return {
-                    cannons: 10,
+                    cannons: 12,
                     crewsize: 20,
                     storage: 500,
                     speed: 0.4,
@@ -112,7 +112,7 @@ export class Game {
                 };
             case (ShipType.SMALL):
                 return {
-                    cannons: 4,
+                    cannons: 8,
                     crewsize: 10,
                     storage: 250,
                     speed: 1,
@@ -134,14 +134,14 @@ export class Game {
         var ship: Ship = {
             id: id,
             type: type,
-            cannons: 2,
+            cannons: def.cannons,
             cannonrange: 60,
             speed: def.speed,
             manueverability: def.manueverability,
             hullStrength: def.hull,
             sailQuality: 35,
             food: 50,
-            ammo: 20,
+            ammo: 120,
             avatar: avatar,
             storage: def.storage,
             location: { x: 100, y: 200 },
@@ -395,6 +395,7 @@ export class Game {
         }
 
         var checkMonster = function () {
+            return;
             if (null != my.monsterloc) {
                 var monster: CollisionBody = my.collider.get('monster');
                 my.collider.checkCollisions( monster ).forEach(body => { 
@@ -405,7 +406,8 @@ export class Game {
             }
         }
 
-        var checkWhirlpool = function (){
+        var checkWhirlpool = function () {
+            return;
             if (null != my.poolloc) {
                 var poolcircle: CollisionBody = my.collider.get('whirlpool');
                 my.collider.checkCollisions(poolcircle).forEach(body => { 

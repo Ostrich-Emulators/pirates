@@ -1,21 +1,21 @@
-<table>
+<table *ngIf="ship">
   <thead>
     <tr>
-      <th colspan="2">{{gamesvc.myship().name}}</th>
+      <th colspan="2">{{ship.name}}</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td># Cannons</td>
-      <td>{{gamesvc.myship().cannons}}</td>
+      <td>{{ship.cannons}}</td>
     </tr>
     <tr>
       <td>Hull Strength</td>
-      <td>{{gamesvc.myship().hullStrength}}</td>
+      <td>{{ship.hullStrength}}</td>
     </tr>
     <tr>
       <td>Sail Quality</td>
-      <td>{{gamesvc.myship().sailQuality}}</td>
+      <td>{{ship.sailQuality}}</td>
     </tr>
   </tbody>
 </table>

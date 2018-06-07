@@ -9,6 +9,7 @@ import { Ship } from '../../../common/model/ship';
 import { ShipPair } from '../../../common/model/ship-pair';
 import { StatusResponse } from '../../../common/model/status-response';
 import { Game } from '../models/game';
+import { CombatResult } from '../../../common/model/combat-result';
 
 export class GameController {
     constructor( private game:Game) {
@@ -28,7 +29,7 @@ export class GameController {
 
     status(playerid: string) :StatusResponse {
         var msgs: string[] = this.game.popMessages(playerid);
-        var combat: ShipPair[] = this.game.popCombat(playerid);
+        var combat: CombatResult[] = this.game.popCombat(playerid);
 
         var ships: Ship[] = [];
         // hide the actual hull strengths of other people's ships

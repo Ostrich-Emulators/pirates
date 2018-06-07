@@ -14,10 +14,10 @@ export class ShipService {
     "/assets/avatar6.svg",
   ];
 
-  private ctargets: Ship[] = [];
-  private btargets: Ship[] = [];
+  private targets: Map<Ship, targetting> = new Map<Ship, targetting>();
   private svgxmls: Map<string, string> = new Map<string, string>();
   private images: Map<string, any> = new Map<string, any>();
+
   constructor(private http: HttpClient) {
     var my: ShipService = this;
     this.avatars.forEach(av => { 
@@ -38,7 +38,7 @@ export class ShipService {
     });
   }
 
-  get(avatar: string, fghex?: string, bghex?: string): any {
+  getImage(avatar: string, fghex?: string, bghex?: string): any {
     console.log('getting ' + avatar);
     if (fghex || bghex) {
       console.log('changing colors');
@@ -60,41 +60,42 @@ export class ShipService {
     }
   }
 
-  getAll() {
+  getAllImages() {
     var ret: any[] = [];
     this.images.forEach(img => { ret.push(img) });
     return ret;
   }
 
-  getTargets(): Ship[]{
-    var set: Set<Ship> = new Set<Ship>();
-    this.ctargets.forEach(s => { 
-      set.add(s);
-    });
-    this.btargets.forEach(s => {
-      set.add(s);
-    });
-    var ret: Ship[] = [];
-    set.forEach(s => {
-      ret.push(s);
-    });
+  getTargets(): Map<Ship,targetting>{
+    return this.targets;
+  }
 
+  getTargetShips(): Ship[] {
+    var ret: Ship[] = [];
+    this.targets.forEach((v, ship) => {
+      ret.push(ship);
+    } );
     return ret;
   }
 
-  setCannonTargets(ships: Ship[]) {
-    this.ctargets = ships;
+  setTarget(s: Ship, f: boolean, b: boolean) {
+    this.targets.set(s, { fire: f, board: b });
   }
 
-  setBoardingTargets(ships: Ship[]) {
-    this.btargets = ships;
+  setTargets(map: Map<Ship, targetting>) {
+    this.targets = map;
   }
 
   canBoard(s: Ship) :boolean {
-    return this.btargets.includes(s);
+    return (this.targets.has(s) ? this.targets.get(s).board : false);
   }
 
   canFire(s: Ship): boolean {
-    return this.ctargets.includes(s);
+    return (this.targets.has(s) ? this.targets.get(s).fire : false);
   }
+}
+
+interface targetting {
+  fire: boolean,
+  board: boolean
 }
