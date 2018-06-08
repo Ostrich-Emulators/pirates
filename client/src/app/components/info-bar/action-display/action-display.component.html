@@ -1,10 +1,11 @@
 <div id="targetting">
-    <table *ngFor="let tgt of shipsvc.getTargetShips()" class="ship">
+    <table *ngFor="let tgt of targets" class="ship">
         <tr>
             <td rowspan="4">
                 <img src="/assets/galleon.svg" class='shipimg'>
             </td>
-            <td>{{tgt.name}}<br/>{{tgt.hullStrength}}</td>
+            <td>{{tgt.name}}
+                <br/>{{tgt.hullStrength}}</td>
             <td>Captain: {{ tgt.captain }}</td>
             <td rowspan="4">
                 <button [disabled]="!shipsvc.canFire(tgt)" (click)="fire(tgt)">Fire!</button>

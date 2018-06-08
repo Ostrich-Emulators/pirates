@@ -9,10 +9,15 @@ import { Ship } from '../../../../../../common/model/ship';
   styleUrls: ['./action-display.component.css']
 })
 export class ActionDisplayComponent implements OnInit {
+  private targets: Ship[];
 
-  constructor( private gamesvc:GameService, private shipsvc:ShipService) { }
+  constructor(private gamesvc: GameService, private shipsvc: ShipService) { }
 
   ngOnInit() {
+    var my: ActionDisplayComponent = this;
+    this.shipsvc.getTargets().subscribe(data => {
+      my.targets = data;
+    });
   }
 
   fire(ship) {

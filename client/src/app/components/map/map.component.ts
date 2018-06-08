@@ -28,7 +28,6 @@ export class MapComponent implements OnInit, AfterViewInit {
   private mapimg;
   private images: Map<string, any> = new Map<string, any>();
   private player: Player;
-  private messages: string[] = [];
   private ships: Ship[] = [];
   private lastlocs: Map<string, Location> = new Map<string, Location>();
   private myshipimg; // image of my ship
@@ -38,7 +37,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private ballpaths: CannonBallPath[] = [];
   private ship: Ship;
 
-  constructor(private shipsvc: ShipService, private gamesvc: GameService, private http:HttpClient) { }
+  constructor(private shipsvc: ShipService, private gamesvc: GameService, private http: HttpClient) { }
 
   ngOnInit() {
     var my: MapComponent = this;
@@ -47,16 +46,20 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.player = this.gamesvc.myplayer();
     this.ship = this.player.ship;
 
-    this.gamesvc.poolloc().subscribe(data => { 
+    this.gamesvc.poolloc().subscribe(data => {
       my.poolloc = data;
     });
 
-    this.gamesvc.monsterloc().subscribe(data => { 
+    this.gamesvc.monsterloc().subscribe(data => {
       my.monsterloc = data;
     });
 
-    this.gamesvc.ships().subscribe(data => { 
-      console.log('refreshing ships in map');
+    this.gamesvc.myship().subscribe(data => {
+      my.ship = data;
+    });
+
+    this.gamesvc.ships().subscribe(data => {
+      //console.log('refreshing ships in map');
       my.ships = data;
 
       my.ships.forEach(ship => {
@@ -77,10 +80,6 @@ export class MapComponent implements OnInit, AfterViewInit {
         });
       });
     });
-    
-    this.gamesvc.myship().subscribe(data => { 
-      my.ship = data;
-    });
   }
 
   ngAfterViewInit() {
@@ -93,14 +92,14 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     my.mapimg = new Image(740, 710);
     my.map.nativeElement.height = 710;
-    my.map.nativeElement.width= 740;
+    my.map.nativeElement.width = 740;
 
-    my.shipsvc.avatars.forEach(av => { 
+    my.shipsvc.avatars.forEach(av => {
       my.images[av] = new Image();
       my.images[av].src = av;
 
       if (av === my.player.ship.avatar) {
-        my.http.get(av, { responseType: 'text' }).subscribe(data => { 
+        my.http.get(av, { responseType: 'text' }).subscribe(data => {
           my.myshipimg = new Image();
           my.myshipimg.src = "data:image/svg+xml;charset=utf-8,"
             + data.replace(/fill="#ffffff"/, 'fill="' + my.player.color + '"');
@@ -112,20 +111,20 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     var img = new Image(740, 710);
     img.src = '/assets/map-guide.png';
-    img.onload = function () { 
+    img.onload = function () {
       my.mapguide.nativeElement.height = img.naturalHeight;
       my.mapguide.nativeElement.width = img.naturalWidth;
       my.offscreenctx.drawImage(img, 0, 0);
       img.style.display = 'none';
     };
-    
+
     // start the animation frame
     var looper = function () {
       // first, erase everything no matter what
       var now = performance.now();
       my.canvasctx.clearRect(0, 0, 740, 710);
       my.drawSpecials();
-      my.moveShips((now - my.lastperf)/my.gamesvc.REFRESH_RATE);
+      my.moveShips((now - my.lastperf) / my.gamesvc.REFRESH_RATE);
       my.lastperf = performance.now();
       window.requestAnimationFrame(looper);
     }
@@ -139,7 +138,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       var imgh = my.seamonsterimg.naturalHeight;
       var imgw = my.seamonsterimg.naturalWidth;
 
-      my.canvasctx.drawImage(my.seamonsterimg, my.monsterloc.x - imgw/2, my.monsterloc.y - imgh/2, imgw, imgh);
+      my.canvasctx.drawImage(my.seamonsterimg, my.monsterloc.x - imgw / 2, my.monsterloc.y - imgh / 2, imgw, imgh);
       my.canvasctx.beginPath();
       my.canvasctx.arc(my.monsterloc.x, my.monsterloc.y, 25, 0, 2 * Math.PI);
       my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
@@ -196,7 +195,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
       var ismyship: boolean = (ship.id === my.ship.id);
-      if( ismyship ){
+      if (ismyship) {
         shipimg = my.myshipimg;
       }
 
@@ -218,7 +217,7 @@ export class MapComponent implements OnInit, AfterViewInit {
             var rad = my.canvasctx.createRadialGradient(
               ship.location.x, ship.location.y, 1,
               ship.location.x, ship.location.y, ship.cannonrange);
-            
+
             rad.addColorStop(0, my.hexToRGBA(my.gamesvc.myplayer().color, 0.6));
             rad.addColorStop(1, my.hexToRGBA(my.gamesvc.myplayer().color, 0));
             my.canvasctx.fillStyle = rad;
@@ -247,30 +246,6 @@ export class MapComponent implements OnInit, AfterViewInit {
     return (one.x === two.x && one.y === two.y);
   }
 
-  refreshData() {
-    var my: MapComponent = this;
-
-    var targetting: Map<Ship, any> = new Map<Ship, any>();
-    if (my.ship.ammo > 0 && my.ship.cannons > 0) {
-      my.longcollider.checkCollisions(my.ship.id).forEach(en => {
-        targetting.set(en.src, { fire: true, board: false });
-      });
-    }
-
-    my.shortcollider.checkCollisions(my.ship.id).forEach(en => {
-      if (targetting.has(en.src)) {
-        var t = targetting.get(en.src);
-        t.board = true;
-        targetting.set(en.src, t);
-      }
-      else {
-        targetting.set(en.src, { fire: false, board: true });
-      }
-    });
-
-    my.shipsvc.setTargets(targetting);
-  }
-
   onhover(event: MouseEvent) {
     if (this.iswater(event.offsetX, event.offsetY)) {
       // do something?
@@ -296,7 +271,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   outOfBounds(x: number, y: number) {
     var pixel = this.offscreenctx.getImageData(x, y, 1, 1);
     var data = pixel.data;
-    for (var i = 0; i < 3; i++){
+    for (var i = 0; i < 3; i++) {
       if (255 != data[i]) {
         return false;
       }
@@ -379,14 +354,14 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   island(x: number, y: number) {
-    return !( this.iswater(x, y) || this.outOfBounds(x,y) );
+    return !(this.iswater(x, y) || this.outOfBounds(x, y));
   }
 
   isinland(x: number, y: number) {
-    return ( this.island(x, y) && !this.iscity(x, y) );
+    return (this.island(x, y) && !this.iscity(x, y));
   }
 
-  hexToRGBA(hex: string, a:number): string {
+  hexToRGBA(hex: string, a: number): string {
     // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
     hex = hex.replace(shorthandRegex, function (m, r, g, b) {

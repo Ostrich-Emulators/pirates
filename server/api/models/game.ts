@@ -59,7 +59,7 @@ export class Game {
         return this.players.get(id);
     }
 
-    addPlayer(pirate: Pirate, shipname:string, color:string): Player {
+    addPlayer(pirate: Pirate, shipname: string, color: string): Player {
         var type = ShipType.SMALL;
 
         var playernumber: number = this.players.size + 1;
@@ -154,7 +154,7 @@ export class Game {
         return ship;
     }
 
-    debugImageTo(file: string):any {
+    debugImageTo(file: string): any {
         var img;
         var my: Game = this;
 
@@ -175,7 +175,7 @@ export class Game {
                 var rect = my.poolloc;
                 image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
                     image.bitmap.data[idx] = 0x87;
-                    image.bitmap.data[idx+1] = 0xAD;
+                    image.bitmap.data[idx + 1] = 0xAD;
                     image.bitmap.data[idx + 2] = 0x4F;
                 });
             }
@@ -197,7 +197,7 @@ export class Game {
      * Generates the given number of Non-Player-Ships
      */
     generateNonPlayerShips(ships: number) {
-        console.log( 'generating '+ships+' new NPC ships')
+        console.log('generating ' + ships + ' new NPC ships')
         var ship = this.createShip('placed-1', "/assets/galleon.svg", ShipType.SMALL);
         ship.gold = Math.floor(Math.random() * 20);
         ship.location.x = 145;
@@ -215,7 +215,7 @@ export class Game {
         }
     }
 
-    popMessages(pid: string): string[]{
+    popMessages(pid: string): string[] {
         var msgs = (this.messages.has(pid) ? this.messages.get(pid) : []);
         this.messages.delete(pid);
         return msgs;
@@ -239,9 +239,9 @@ export class Game {
     }
 
     isinland(pixel): boolean {
-        return (0xFF == pixel );
+        return (0xFF == pixel);
     }
-    iscity(pixel) :boolean {
+    iscity(pixel): boolean {
         return (0xFF00FF == pixel);
     }
     isoutofbounds(pixel): boolean {
@@ -250,7 +250,7 @@ export class Game {
 
     pushMessage(player: Player | Ship | string, msg: string) {
         var id: string = '';
-        if (typeof player === 'undefined' || null == player ) {
+        if (typeof player === 'undefined' || null == player) {
             return; // no message to send
         }
         if (typeof player === 'string') {
@@ -264,13 +264,13 @@ export class Game {
                 if (p.ship.id === player.id) {
                     id = p.id;
                 }
-            }); 
+            });
             if ('' === id) {
                 console.log('NPC ship? ' + player + '->' + msg);
                 return; // NPC ship
             }
         }
-        
+
         //console.log('message for ' + id);
         if (!this.messages.has(id)) {
             this.messages.set(id, []);
@@ -279,7 +279,7 @@ export class Game {
     }
 
     getPlayerForShip(s: Ship) {
-        this.players.forEach(player => { 
+        this.players.forEach(player => {
             if (player.ship.id === s.id) {
                 return player;
             }
@@ -300,7 +300,7 @@ export class Game {
 
         while (my.fireQueue.length > 0) {
             var pair: ShipPair = my.fireQueue.pop();
-            var result:CombatResult = my.combatengine.resolve(pair);
+            var result: CombatResult = my.combatengine.resolve(pair);
             console.log('combat results: ' + JSON.stringify(result));
 
             // update the ships involved in the combat (for player ships)
@@ -314,7 +314,7 @@ export class Game {
             });
 
             // update NPC ships
-            my.nonplayerships.forEach((s,idx) => { 
+            my.nonplayerships.forEach((s, idx) => {
                 if (result.attackee.id === s.id) {
                     if (result.attackee.hullStrength > 0) {
                         my.nonplayerships[idx] = result.attackee;
@@ -373,7 +373,7 @@ export class Game {
                 if (((ship.course.speedx < 0 && ship.location.x < ship.course.dstx) ||
                     (ship.course.speedy > 0 && ship.location.x > ship.course.dstx)) &&
                     ((ship.course.speedy < 0 && ship.location.y < ship.course.dsty) ||
-                    (ship.course.speedy > 0 && ship.location.y > ship.course.dsty ) ) ){
+                        (ship.course.speedy > 0 && ship.location.y > ship.course.dsty))) {
                     ship.anchored = true;
                     // move ship exactly to our dst (just tidying up a bit)
                     //ship.location.x = ship.course.dstx;
@@ -395,11 +395,12 @@ export class Game {
         }
 
         var checkMonster = function () {
-            return;
             if (null != my.monsterloc) {
                 var monster: CollisionBody = my.collider.get('monster');
-                my.collider.checkCollisions( monster ).forEach(body => { 
-                    my.pushMessage(body.src, 'Sea Monster Strike!');
+                my.collider.checkCollisions(monster).forEach(body => {
+                    if (body.id.substr(0, 1) !== '-') {
+                        my.pushMessage(body.src, 'Sea Monster Strike!');
+                    }
                     my.monsterships.push(body.src);
                     body.src.anchored = true;
                 });
@@ -407,10 +408,9 @@ export class Game {
         }
 
         var checkWhirlpool = function () {
-            return;
             if (null != my.poolloc) {
                 var poolcircle: CollisionBody = my.collider.get('whirlpool');
-                my.collider.checkCollisions(poolcircle).forEach(body => { 
+                my.collider.checkCollisions(poolcircle).forEach(body => {
                     my.pushMessage(body.src, 'Captured by the whirlpool!');
                     var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
                     body.src.location.x = loc.x;
@@ -424,7 +424,7 @@ export class Game {
 
             my.players.forEach(player => {
                 var ship = player.ship;
-                updateShipLocation(ship, player );
+                updateShipLocation(ship, player);
             });
             my.nonplayerships.forEach((ship: Ship) => {
                 updateShipLocation(ship);
@@ -443,12 +443,12 @@ export class Game {
             getR: function (): number { return my.POOL_RADIUS; }
         });
         my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-                my.collider.add({
-                    id: 'monster',
-                    getX: function (): number { return my.monsterloc.x; },
-                    getY: function (): number { return my.monsterloc.y; },
-                    getR: function (): number { return my.MONSTER_RADIUS; }
-                });
+        my.collider.add({
+            id: 'monster',
+            getX: function (): number { return my.monsterloc.x; },
+            getY: function (): number { return my.monsterloc.y; },
+            getR: function (): number { return my.MONSTER_RADIUS; }
+        });
 
         setInterval(function () {
             my.collider.remove('whirlpool');
@@ -464,9 +464,9 @@ export class Game {
             else {
                 my.poolloc = null;
             }
-            
+
             my.collider.remove('monster');
-            if( Math.random() < my.MPCT ){
+            if (Math.random() < my.MPCT) {
                 my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
                 my.collider.add({
                     id: 'monster',
