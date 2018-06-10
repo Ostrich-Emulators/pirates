@@ -1,4 +1,4 @@
-<table *ngIf="crew">
+<table>
   <thead>
     <tr>
       <th colspan="2">Crew</th>
@@ -7,15 +7,15 @@
   <tbody>
     <tr>
       <td># Crew</td>
-      <td>{{crew.count}}</td>
+      <td>{{crew?.count}}</td>
     </tr>
     <tr>
       <td>Fighting Skill</td>
-      <td>{{crew.meleeSkill}}</td>
+      <td>{{crew?.meleeSkill}}</td>
     </tr>
     <tr>
       <td>Sailing Skill</td>
-      <td>{{crew.sailingSkill}}</td>
+      <td>{{crew?.sailingSkill}}</td>
     </tr>
   </tbody>
 </table>

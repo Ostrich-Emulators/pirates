@@ -13,6 +13,7 @@ import { ShipPair } from '../../../common/model/ship-pair'
 import { CombatEngine } from '../combat/combat-engine'
 import { Names } from '../../../common/tools/names'
 import { CombatResult } from '../../../common/model/combat-result';
+import { BoardResult, BoardCode } from '../../../common/model/board-result';
 
 var jimp = require('jimp')
 
@@ -32,6 +33,7 @@ export class Game {
     private fireQueue: ShipPair[] = [];
     private boardQueue: ShipPair[] = [];
     private combat: Map<string, CombatResult[]> = new Map<string, CombatResult[]>(); // playerid, results
+    private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine();
 
     private WLOCATIONS: Location[] = [
@@ -66,6 +68,7 @@ export class Game {
 
         var ship = this.createShip(playernumber + '-1', pirate.avatar, type);
         ship.captain = pirate.name;
+        ship.gold = 120;
         ship.name = Names.ship();
         var player: Player = new Player(playernumber.toString(),
             pirate, ship, color);
@@ -142,6 +145,7 @@ export class Game {
             sailQuality: 35,
             food: 50,
             ammo: 120,
+            gold: 0,
             avatar: avatar,
             storage: def.storage,
             location: { x: 100, y: 200 },
@@ -227,6 +231,12 @@ export class Game {
         return msgs;
     }
 
+    popBoard(pid: string): BoardResult[] {
+        var msgs = (this.boarding.has(pid) ? this.boarding.get(pid) : []);
+        this.boarding.delete(pid);
+        return msgs;
+    }
+
     getNonPlayerShips(): Ship[] {
         return this.nonplayerships;
     }
@@ -306,9 +316,28 @@ export class Game {
             // update the ships involved in the combat (for player ships)
             my.players.forEach(p => {
                 if (result.attackee.id === p.ship.id) {
+                    if (result.attackee.hullStrength < 0) {
+                        var shipname: string = Names.ship();
+                        my.pushMessage(p.id, result.attackee.name +
+                            ' has been sunk, but we\'ve comandeered another: ' +
+                            shipname);
+                        var s: Ship = this.createShip(p.id + '-1', p.pirate.avatar,
+                            ShipType.SMALL);
+                        s.name = shipname;
+                        result.attackee = s;
+                    }
                     p.setShip(result.attackee);
                 }
                 if (result.attacker.id === p.ship.id) {
+                    if (result.attacker.hullStrength < 0) {
+                        var shipname: string = Names.ship();
+                        my.pushMessage(p.id, result.attackee.name +
+                            ' has been sunk, but we\'ve comandeered another: ' +
+                            shipname);
+                        var s: Ship = this.createShip(p.id + '-1', p.pirate.avatar,
+                            ShipType.SMALL);
+                        s.name = shipname;
+                    }
                     p.setShip(result.attacker);
                 }
             });
@@ -318,11 +347,14 @@ export class Game {
                 if (result.attackee.id === s.id) {
                     if (result.attackee.hullStrength > 0) {
                         my.nonplayerships[idx] = result.attackee;
-                        my.pushMessage(result.attacker,
-                            result.attackee.name + ' has been hit!');
+                        if (result.hits > 0) {
+                            my.pushMessage(result.attacker,
+                                result.attackee.name + ' has been hit!');
+                        }
                     }
                     else {
                         my.nonplayerships.splice(idx, 1);
+                        my.collider.remove(result.attacker.id);
                         my.pushMessage(result.attacker,
                             result.attackee.name + ' has been sunk!');
                     }
@@ -333,6 +365,7 @@ export class Game {
                     }
                     else {
                         my.nonplayerships.splice(idx, 1);
+                        my.collider.remove(result.attackee.id);
                     }
                 }
             });
@@ -342,6 +375,45 @@ export class Game {
                     my.combat.set(k, []);
                 }
                 my.combat.get(k).push(result);
+            });
+        }
+    }
+
+    resolveBoarding() {
+        var my: Game = this;
+
+        while (my.boardQueue.length > 0) {
+            var pair: ShipPair = my.boardQueue.pop();
+            var result: BoardResult = my.combatengine.resolveBoarding(pair, my.shipdef(pair.one.type));
+
+            console.log('boarding results: ' + JSON.stringify(result));
+            // FIXME: need to make sure the attacker can't plunder more it can hold
+
+            // update the ships involved in the combat (for player ships)
+            my.players.forEach(p => {
+                if (result.attackee.id === p.ship.id) {
+                    p.setShip(result.attackee);
+                }
+                if (result.attacker.id === p.ship.id) {
+                    p.setShip(result.attacker);
+                }
+            });
+
+            // update NPC ships
+            my.nonplayerships.forEach((s, idx) => {
+                if (result.attackee.id === s.id) {
+                    my.nonplayerships[idx] = result.attackee;
+                }
+                if (result.attacker.id === s.id) {
+                    my.nonplayerships[idx] = result.attacker;
+                }
+            });
+
+            my.players.forEach((p, k) => {
+                if (!my.boarding.has(k)) {
+                    my.boarding.set(k, []);
+                }
+                my.boarding.get(k).push(result);
             });
         }
     }
@@ -395,6 +467,7 @@ export class Game {
         }
 
         var checkMonster = function () {
+            return;
             if (null != my.monsterloc) {
                 var monster: CollisionBody = my.collider.get('monster');
                 my.collider.checkCollisions(monster).forEach(body => {
@@ -408,6 +481,7 @@ export class Game {
         }
 
         var checkWhirlpool = function () {
+            return;
             if (null != my.poolloc) {
                 var poolcircle: CollisionBody = my.collider.get('whirlpool');
                 my.collider.checkCollisions(poolcircle).forEach(body => {
@@ -421,6 +495,7 @@ export class Game {
 
         setInterval(function () {
             my.resolveCombat();
+            my.resolveBoarding();
 
             my.players.forEach(player => {
                 var ship = player.ship;
@@ -478,6 +553,6 @@ export class Game {
             else {
                 my.poolloc = null;
             }
-        }, 600000);
+        }, 60000);
     }
 }

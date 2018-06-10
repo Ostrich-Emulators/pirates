@@ -10,6 +10,7 @@ import { ShipPair } from '../../../common/model/ship-pair';
 import { StatusResponse } from '../../../common/model/status-response';
 import { Game } from '../models/game';
 import { CombatResult } from '../../../common/model/combat-result';
+import { BoardResult } from '../../../common/model/board-result';
 
 export class GameController {
     constructor( private game:Game) {
@@ -30,7 +31,8 @@ export class GameController {
     status(playerid: string) :StatusResponse {
         var msgs: string[] = this.game.popMessages(playerid);
         var combat: CombatResult[] = this.game.popCombat(playerid);
-
+        var board: BoardResult[] = this.game.popBoard(playerid);
+ 
         var ships: Ship[] = [];
         // hide the actual hull strengths of other people's ships
         this.game.getNonPlayerShips().forEach(s => {
@@ -40,7 +42,7 @@ export class GameController {
         });
         this.game.getPlayers().forEach(p => { 
             var newship: Ship = Object.assign({}, p.ship);
-            if (p.id != playerid) {
+            if (p.id != playerid) { 
                 newship.hullStrength = Math.ceil(p.ship.hullStrength);
             }
             ships.push(newship);
@@ -51,7 +53,8 @@ export class GameController {
             ships: ships,
             poolloc: this.game.poolloc,
             monsterloc: this.game.monsterloc,
-            combat: combat
+            combat: combat,
+            board: board
         };
     }
 }

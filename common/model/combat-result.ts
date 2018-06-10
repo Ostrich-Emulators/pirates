@@ -10,9 +10,10 @@ export enum HitCode {
     OUT_OF_RANGE = 6
 }
 
-
 export interface CombatResult {
     attacker: Ship,
     attackee: Ship,
-    hitcodes: HitCode[];
+    hitcodes: HitCode[],
+    hits: number,
+    misses: number
 }

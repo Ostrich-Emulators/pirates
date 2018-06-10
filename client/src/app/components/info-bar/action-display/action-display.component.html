@@ -2,7 +2,7 @@
     <table *ngFor="let tgt of targets" class="ship">
         <tr>
             <td rowspan="4">
-                <img src="/assets/galleon.svg" class='shipimg'>
+                <img src="{{tgt.avatar}}" class='shipimg'>
             </td>
             <td>{{tgt.name}}
                 <br/>{{tgt.hullStrength}}</td>

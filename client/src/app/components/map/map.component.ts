@@ -62,6 +62,9 @@ export class MapComponent implements OnInit, AfterViewInit {
       //console.log('refreshing ships in map');
       my.ships = data;
 
+      my.longcollider.clear();
+      my.shortcollider.clear();
+
       my.ships.forEach(ship => {
         var ismyship: boolean = (ship.id === my.player.ship.id);
         my.longcollider.add({
@@ -172,25 +175,12 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
 
-    var showCannonTargetting: boolean = false;
-    var targetting: Map<Ship, any> = new Map<Ship, any>();
-    if (my.ship.ammo > 0 && my.ship.cannons > 0) {
-      my.longcollider.checkCollisions(my.ship.id).forEach(en => {
-        targetting.set(en.src, { fire: true, board: false });
-        showCannonTargetting = true;
-      });
-    }
+    var showCannonTargetting: boolean =
+      (my.ship.ammo > 0 && my.ship.cannons > 0
+        && my.longcollider.checkCollisions(my.ship.id).length > 0);
 
-    my.shortcollider.checkCollisions(my.ship.id).forEach(en => {
-      if (targetting.has(en.src)) {
-        var t = targetting.get(en.src);
-        t.board = true;
-        targetting.set(en.src, t);
-      }
-      else {
-        targetting.set(en.src, { fire: false, board: true });
-      }
-    });
+    var showBoardTargetting: boolean =
+      (my.shortcollider.checkCollisions(my.ship.id).length > 0);
 
     my.ships.forEach((ship: Ship) => {
       var shipimg = my.images[ship.avatar];
@@ -224,7 +214,7 @@ export class MapComponent implements OnInit, AfterViewInit {
             my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannonrange, 0, 2 * Math.PI);
             my.canvasctx.fill();
           }
-          if (targetting.size > 0) {
+          if (showBoardTargetting) {
             my.canvasctx.beginPath();
             my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
             my.canvasctx.fillStyle = my.hexToRGBA(my.gamesvc.myplayer().color, 0.35);

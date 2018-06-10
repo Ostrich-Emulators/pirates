@@ -62,12 +62,13 @@ export class ShipController {
     }
 
     fire(from: string, at: string) {
+        this.refreshShips();
         if (!this.shiplkp.has(from) ){
             console.error('unknown ship: ' + from);
             return;
         }
         else if (!this.shiplkp.has(at)) {
-            console.error('unknown ship: ' + from);
+            console.error('unknown ship: ' + at);
             return;
         }
 
@@ -75,12 +76,18 @@ export class ShipController {
     }
 
     board(from: string, at: string) {
+        this.shiplkp.forEach((val, key) => {
+            console.log(key + '==>' + JSON.stringify(val));
+        });
+
+
+        this.refreshShips();
         if (!this.shiplkp.has(from)) {
             console.error('unknown ship: ' + from);
             return;
         }
         else if (!this.shiplkp.has(at)) {
-            console.error('unknown ship: ' + from);
+            console.error('unknown ship: ' + at);
             return;
         }
         this.game.board(this.shiplkp.get(from), this.shiplkp.get(at));

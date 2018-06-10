@@ -1,21 +1,21 @@
-<table *ngIf="ship">
+<table>
   <thead>
     <tr>
-      <th colspan="2">{{ship.name}}</th>
+      <th colspan="2">{{ship?.name}}</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td># Cannons</td>
-      <td>{{ship.cannons}}</td>
+      <td>{{ship?.cannons}}</td>
     </tr>
     <tr>
       <td>Hull Strength</td>
-      <td>{{ship.hullStrength}}</td>
+      <td>{{ship?.hullStrength| number : '1.2-2'}}</td>
     </tr>
     <tr>
       <td>Sail Quality</td>
-      <td>{{ship.sailQuality}}</td>
+      <td>{{ship?.sailQuality| number : '1.2-2'}}</td>
     </tr>
   </tbody>
 </table>

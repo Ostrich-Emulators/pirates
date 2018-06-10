@@ -1,6 +1,9 @@
 import { Ship } from '../../../common/model/ship'
 import { ShipPair } from '../../../common/model/ship-pair';
 import { CombatResult, HitCode } from '../../../common/model/combat-result';
+import { BoardResult, BoardCode } from '../../../common/model/board-result';
+import { ShipDefinition } from '../../../common/model/ship-definition';
+import { Crew } from '../../../common/model/crew';
 
 export class CombatEngine {
     resolve(pair: ShipPair): CombatResult {
@@ -12,7 +15,9 @@ export class CombatEngine {
         var result: CombatResult = {
             attacker: pair.one,
             attackee: pair.two,
-            hitcodes: []
+            hitcodes: [],
+            hits: 0,
+            misses: 0
         };
 
 
@@ -48,6 +53,7 @@ export class CombatEngine {
         for (var cannon = 0; cannon < cannonsInAttack; cannon++){
             if (Math.random() < distanceFactor) {
                 var msg: string = attacker.id + ' hit ' + attackee.id;
+                result.hits += 1;
 
                 // if you hit, you have a 10% chance of damaging sails,
                 // 2% chance of killing some crew,
@@ -85,6 +91,7 @@ export class CombatEngine {
                 console.log(msg);
             }
             else {
+                result.misses += 1;
                 console.log('missed!');
                 result.hitcodes.push(HitCode.MISSED);
             }
@@ -92,6 +99,93 @@ export class CombatEngine {
 
         return result;
     }
+
+    resolveBoarding(pair: ShipPair, attackerdef: ShipDefinition): BoardResult {
+        console.log('resolving ' + pair.one.id + ' boarding '
+            + pair.two.id);
+        console.log(attackerdef);
+        
+        var attacker: Ship = pair.one;
+        var attackee: Ship = pair.two;
+
+        var attackval = (attacker.crew.count * attacker.crew.meleeSkill);
+        var defendval = (attackee.crew.count * attackee.crew.meleeSkill);
+
+        if ( attackval < defendval ){
+            return {
+                attacker: pair.one,
+                attackee: pair.two,
+                code: BoardCode.REPELLED
+            };
+        }
+
+        if (attackval > defendval * 2) {
+            var crew: Crew = Object.assign({}, attackee.crew);
+            if (attackerdef.crewsize < (attacker.crew.count + crew.count)) {
+                crew.count = attackerdef.crewsize - attacker.crew.count;
+            }
+
+            attacker.gold += attackee.gold;
+            attacker.food += attackee.food;
+            attacker.ammo += attackee.ammo;
+            // FIXME: figure out new crew stats
+            attacker.crew.count += crew.count;
+
+            return {
+                attacker: pair.one,
+                attackee: pair.two,
+                code: BoardCode.TOTAL_SUCCESS,
+                gold: attackee.gold,
+                ammo: attackee.ammo,
+                food: attackee.food,
+                crew: crew
+            }
+        }
+        else {
+            var choice: number = Math.random();
+            var rslt: BoardResult = {
+                attacker: pair.one,
+                attackee: pair.two,
+                code: BoardCode.PARTIAL_SUCCESS
+            }
+
+            // equal chance of getting gold, crew, ammo, or food
+            var pct: number = Math.max(Math.random(), 0.25);
+            if (choice < 0.25) {
+                rslt.gold = Math.floor( attackee.gold * pct );
+                attackee.gold -= rslt.gold;
+                attacker.gold += rslt.gold;
+            }
+            else if (choice < 0.5) {
+                rslt.ammo = Math.floor(attackee.ammo * pct);
+                attackee.ammo -= rslt.ammo;
+                attacker.ammo += rslt.ammo;
+            }
+            else if (choice < 0.75) {
+                rslt.food = Math.floor(attackee.food * pct);
+                attackee.food -= rslt.food;
+                attacker.food += rslt.food;
+            }
+            else {
+                var crew = Object.assign({}, attackee.crew);
+                crew.count = Math.floor(crew.count * pct);
+                if (crew.count < 1) {
+                    crew.count = 1;
+                }
+                attackee.crew.count -= crew.count;
+
+                if (attackerdef.crewsize < (attacker.crew.count + crew.count)) {
+                    crew.count = attackerdef.crewsize - attacker.crew.count;
+                }
+                rslt.crew = crew;
+
+                attacker.crew.count += crew.count;
+            }
+
+            return rslt;
+        }
+    }
+
 
     getDistance(attacker: Ship, attackee: Ship): number {
         var x: number = attacker.location.x - attackee.location.x;

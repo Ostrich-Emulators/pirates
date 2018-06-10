@@ -5,6 +5,7 @@ import { GameService } from '../../services/game.service';
 import { forkJoin } from 'rxjs/observable/forkJoin'
 import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
 import { Ship } from '../../../../../common/model/ship';
+import { BoardResult, BoardCode } from '../../../../../common/model/board-result';
 
 @Component({
   selector: 'app-game',
@@ -12,7 +13,7 @@ import { Ship } from '../../../../../common/model/ship';
   styleUrls: ['./game.component.css']
 })
 export class GameComponent implements OnInit {
-  private messages: string[];
+  private messages: string[] = [];
   private ship: Ship;
   constructor(private shipsvc: ShipService, private game: GameService) {
   }
@@ -25,7 +26,9 @@ export class GameComponent implements OnInit {
     });
 
     this.game.messages().subscribe(data => {
-      my.messages = data;
+      data.forEach(msg => { 
+        my.messages.push(msg);
+      });
     });
     this.game.combat().subscribe((data: CombatResult[]) => {
       if (!my.ship) {
@@ -37,7 +40,7 @@ export class GameComponent implements OnInit {
 
         var msg: string = '';
         var exploded: number = 0;
-        var hits: number = 0;
+        var hits: number = rslt.hits;
 
         rslt.hitcodes.forEach(val => {
           switch (val) {
@@ -87,5 +90,79 @@ export class GameComponent implements OnInit {
         my.messages.push(msg);
       });
     });
+    this.game.boarding().subscribe((data: BoardResult[]) => {
+      if (!my.ship) {
+        return;
+      }
+
+      data.forEach((rslt: BoardResult) => {
+        var iamattacker: boolean = (rslt.attacker.id === my.ship.id);
+
+        console.log(rslt);
+
+        if (rslt.code === BoardCode.REPELLED) {
+          my.messages.push((iamattacker
+            ? 'Our boarders were repelled!'
+            : 'We repelled the attackers!'));
+        }
+
+        if (rslt.code === BoardCode.PARTIAL_SUCCESS) {
+          console.log('partial success');
+          if (rslt.ammo) {
+            console.log('ammo');
+            if (iamattacker) {
+              my.messages.push('We stole ' + rslt.ammo + ' cannonballs');
+            }
+            else {
+              my.messages.push('Those rascals stole ' + rslt.ammo + ' cannonballs!');
+            }
+          }
+          if (rslt.gold) {
+            console.log('gold');
+            if (iamattacker) {
+              my.messages.push('We stole ' + rslt.gold + ' gold');
+            }
+            else {
+              my.messages.push('Those rascals stole ' + rslt.gold + ' gold!');
+            }
+          }
+          if (rslt.food) {
+            console.log('food');
+
+            if (iamattacker) {
+              my.messages.push('We stole ' + rslt.food + ' food rations');
+            }
+            else {
+              my.messages.push('Those rascals stole ' + rslt.food + ' food rations!');
+            }
+          }
+          if (rslt.crew) {
+            console.log('crew');
+
+            if (iamattacker) {
+              my.messages.push('We recruited ' + rslt.crew.count + ' new pirates!');
+            }
+            else {
+              my.messages.push('Those rascals imprisoned ' + rslt.crew.count + ' of our men!');
+            }
+          }
+        }
+        else if (rslt.code === BoardCode.TOTAL_SUCCESS) {
+          console.log('total success');
+          if (iamattacker) {
+            my.messages.push('We totally overpowered their crew. We got everything!');
+          }
+          else {
+            my.messages.push('We are ruined! They took everything!');
+          }
+        }
+        console.log('here I am');
+      });
+    });
+  }
+
+
+  getMessages(): string[]{
+    return this.messages;
   }
 }

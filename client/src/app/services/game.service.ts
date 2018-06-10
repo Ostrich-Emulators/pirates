@@ -10,6 +10,7 @@ import { Location } from '../../../../common/model/location'
 import { StatusResponse } from '../../../../common/model/status-response'
 import { CombatResult } from '../../../../common/model/combat-result';
 import { Collider } from '../../../../common/tools/collider';
+import { BoardResult } from '../../../../common/model/board-result';
 
 @Injectable()
 export class GameService {
@@ -20,6 +21,7 @@ export class GameService {
   private _myship: Subject<Ship> = new Subject<Ship>();
   private _messages: Subject<string[]> = new Subject<string[]>();
   private _combat: Subject<CombatResult[]> = new Subject<CombatResult[]>();
+  private _board: Subject<BoardResult[]> = new Subject<BoardResult[]>();
   private _monster: Subject<Location> = new Subject<Location>();
   private _pool: Subject<Location> = new Subject<Location>();
 
@@ -76,6 +78,10 @@ export class GameService {
         my._combat.next(data.combat);
       }
 
+      if (data.board && data.board.length > 0) {
+        my._board.next(data.board);
+      }
+
       if (data.monsterloc) {
         my._monster.next(data.monsterloc);
       }
@@ -96,6 +102,10 @@ export class GameService {
 
   combat(): Observable<CombatResult[]>{
     return this._combat;
+  }
+
+  boarding(): Observable<BoardResult[]> {
+    return this._board;
   }
 
   myplayer(): Player {
@@ -125,8 +135,9 @@ export class GameService {
   }
 
   board(at: Ship) { // try to board anothe rship
+    console.log('trying to board: ' + JSON.stringify(at));
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/board';
-    this.http.post(url, at.id).subscribe();
+    this.http.post(url, { targetid: at.id }).subscribe();
   }
 
   move(x: number, y: number) {

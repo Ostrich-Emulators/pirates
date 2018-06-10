@@ -56,6 +56,11 @@ export class Collider {
         var collisions: CollisionBody[] = [];
 
         var me: CollisionBody = (typeof tgt === 'string' ? this.bodies.get(tgt) : tgt);
+        if (null == me) {
+            console.error('why do I have a null tgt here?');
+            return collisions;
+        }
+
         this.bodies.forEach(body => { 
             if (me.id != body.id && my.collides( body, me ) ){
                 collisions.push(body);
