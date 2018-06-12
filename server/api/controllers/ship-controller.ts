@@ -77,9 +77,8 @@ export class ShipController {
 
     board(from: string, at: string) {
         this.shiplkp.forEach((val, key) => {
-            console.log(key + '==>' + JSON.stringify(val));
+            //console.debug(key + '==>' + JSON.stringify(val));
         });
-
 
         this.refreshShips();
         if (!this.shiplkp.has(from)) {

@@ -28,9 +28,16 @@ export class GameService {
   private BASEURL: string = 'http://localhost:30000';
 
   constructor(private http: HttpClient) {
-    if (null != localStorage.getItem('pirate')) {
-      this.me = JSON.parse(localStorage.getItem('pirate'));
+    // this stuff is really just for development restarts
+    if (null != localStorage.getItem('player')) {
+      this.me = JSON.parse(localStorage.getItem('player'));
       this._player.next(this.me);
+      this._myship.next(this.me.ship);
+
+      var my: GameService = this;
+      console.log( 'starting from localStorage data');
+      my.refreshData();
+      setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
     }
   }
 
@@ -44,7 +51,7 @@ export class GameService {
       (data: Player) => {
         console.log(data);
         my.me = data;
-        localStorage.setItem('pirate', JSON.stringify(data));
+        localStorage.setItem('player', JSON.stringify(data));
         my._player.next(my.me);
       },
       (err) => {

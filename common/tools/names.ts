@@ -1,6 +1,7 @@
 export class Names {
     private static shipidx = 0;
-    private static captainidx = 0;
+    private static captainMidx = 0;
+    private static captainFidx = 0;
 
     static SHIPS: string[] = [
         'Pigeon', 
@@ -70,79 +71,112 @@ export class Names {
         'Gainsborough'
     ]
 
-    static CAPTAINS = [
+    static CAPTAINS_M: string[] = [
         'Cannonball Jack',
-        "Elsdon 'The Honest' Thor",
-        "Derek 'Disfigured' Prescott",
-        "Butcher 'Softy' Camus",
-        "Renwick 'Crafty' Brent",
-        "Barnes 'Brown Tooth' Clayton",
-        "Delbert 'Brass' Preston",
-        "Farnell 'Con Artist' Crowley",
-        "Garyson 'Insanity' Aries",
-        "Hobbes 'Four Fingers' Bryce",
-        "Bishop 'Reaper' Noire",
-        "Corin 'Mumbling' Colton",
-        "Grace 'Quartermaster' Crowder",
-        "Jossie 'Scar Face' Atherton",
-        "Louisa 'Confidence' Salvotor",
-        "Aida 'The Brave' Butler",
-        "Buena 'Tricky' Peregrine",
-        "Ophelia 'Bird Eye' Leighton",
-        "Delilah 'Calmness' Rakshasas",
-        "Winifred 'Weird'o' Darth",
-        "Gael 'Treasure' Ashton",
-        "Madaline 'Yellow Teeth' Ramsey",
-        "Elvera 'Tormenting' Maxim",
-        "Justine 'Dazzling' Rutland",
-        "Queen 'Defiant' Kellam",
-        "Myrna 'Foxy' Kimberley",
-        "Cydney 'Brown Tooth' Gloom",
-        "Berry 'Mutiny' Nottley",
-        "Corin 'Rigger' Whatley",
-        "Patsy 'Slick 'n Sly' Ark",
-        "Mavis 'Keen' Darkwalker",
-        "Lindell 'Hooked' Sagar",
-        "Wolcott 'Twisting' Holmes",
-        "Dixon 'Shadow' Gnash",
-        "Knoll 'Cabin Boy' Hayward",
-        "Hardwick 'White Hair' Quway",
-        "Hadley 'Barbarian' Auron",
-        "Merton 'The Marked' Storm",
-        "Duane 'The Cold' Rudges",
-        "Burton 'Smiling' Black",
-        "Everest 'No-Tongue' Oakley",
-        "Coster 'Fraud' Camden",
-        "Ronald 'Sly' Ethel",
-        "Hall 'One Eye' Omen",
-        "Hancock 'The Stubborn' Snowdon",
-        "Bellamy 'Mad' Murray",
-        "Ravinger 'Crazy Eyes' Garthside",
-        "Elmore 'Mad Eye' Lincoln",
-        "Elwood 'Deceiver' Chaos",
-        "Fulton 'Roaring' Tyndall",
-        "Roark 'Ugly Mug' Mitchell",
-        "Ethelred 'Wrathful' Atherton",
-        "Avery 'Double-Crossed' Sherlock",
-        "Swaine 'Grim' Uberto",
-        "Hampden 'Naive' Lynk",
-        "Frick 'Soft Heart' Reeve",
-        "Hutton 'Gnarling' Birkenhead",
-        "Farr 'Tormented' Reed",
-        "Sedgley 'Golden Hair' Karn",
-        "Seabrook 'Grisly' Paddley",
-        "Huntley 'Devious' Stevens",
-        "Bulah 'The Rat' Johnson",
-        "Darlene 'Marooner' Tristan",
-        "Arlie 'Crippled' Graeme",
-        "Fern 'The Boar' Torp",
-        "Liddie 'The Wild' Petrik",
-        "Eleanora 'Cranky' Breeden",
-        "Sybil 'Merciless' Belzebob",
-        "Louella 'Cruelty' Mabbott",
-        "Aline 'The Lion' Webb",
-        "Winnie 'Tormented' Braxton",
-    ]
+        "Braxton 'Plankton' Parrish",
+        "Kent 'Gray Beard' Zeus",
+        "Hallam 'Smiling' Emsworth",
+        "Quinton 'Relentless' Vile",
+        "Hampden 'Nightmare' Swale",
+        "Harden 'Butcher' Penney",
+        "Montgomery 'The Confident' Rassler",
+        "Elford 'Deserter' Springfield",
+        "Mitford 'Mad' Upir",
+        "Dover 'Grim Reaper' Barlow",
+        "Willard 'The Honest' Shurman",
+        "Newman 'No Smile' Hornsby",
+        "Edison 'Cranky' Sutherland",
+        "Mabry 'Pirate' Atterton",
+        "Averill 'Jolly' Acton",
+        "Blakely 'Scurvy' Nutlee",
+        "Garland 'Iron Chest' Nunnally",
+        "Hawes 'Dawg' Fark",
+        "Barrett 'Crippled' Sweete",
+        "Fenton 'The Rat' Chrom",
+        "Gladstone 'Riot' Drachen",
+        "Huntington 'Ruthless' Pickering",
+        "Stancliff 'Lionheart' Stansfield",
+        "Reading 'Squealer' Nutlea",
+        "Huxford 'The Fox' Clayden",
+        "Fridolf 'Crew Member' Edge",
+        "Tupper 'Fraud' Stone",
+        "Earlham 'Foul' Smyth",
+        "Tedmund 'Swindler' Digby",
+        "Dale 'Trickster' Zeus",
+        "Winfield 'The Wall' Ogden",
+        "Linton 'Relentless' Haley",
+        "Atworth 'Scurvy' Langley",
+        "Yule 'Shady' Nunnally",
+        "Halley 'Crow's Nest' Breeden",
+        "Free 'The Legend' Charles",
+        "York 'Marooner' Clark",
+        "Auberon 'Marooner' Browning",
+        "Minster 'The Journey' Obsidian",
+        "Johnson 'Bribing' Swale",
+        "Chetwin 'The Confident' Chandler",
+        "Clay 'Whitemane' Tempest",
+        "Edbert 'Calmness' Hitch",
+        "Barker 'Haunted' Nightshade",
+        "Edgardo 'Shark Bait' Hayward",
+        "Kedrick 'No Smile' Savant",
+        "Mersey 'Traitor' Hayhurst",
+        "Ned 'Vicious' Merton",
+        "Osier 'Defiant' Vaughn",
+        "Renfred 'Raider' Tydes"
+    ];
+
+    static CAPTAINS_F: string[] = [
+        "Zenobia 'Shadow' Netley",
+        "Madelyn 'Trickster' Mace",
+        "Palma 'Haunted' Payne",
+        "Jennie 'Confidence' Lynk",
+        "Averil 'Butcher' Joshua",
+        "Albina 'One Eye' Lucius",
+        "Mittie 'Timbers' Whatley",
+        "Johnnie 'Brown Tooth' Hale",
+        "Winona 'Smiling' Garside",
+        "Myrtis 'Flamboyant' Tack",
+        "Florine 'Shadow' Bush",
+        "Shandy 'Slick' Hamlet",
+        "Golda 'The Rat' Addington",
+        "Norma 'The Stubborn' Livingstone",
+        "Libbie 'Merciless' Hamlet",
+        "Ray 'Hex' Clive",
+        "Rosemary 'Snitch' Talon",
+        "Jewel 'The Hero' Lore",
+        "Erwina 'Grommet' Godfrey",
+        "Sallie 'Harpy' Oxworth",
+        "Delphine 'Fishwife' Tyndall",
+        "Lonie 'Crippled' Incubus",
+        "Ada 'Bribing' Stryker",
+        "Eulalie 'Tormenting' Holt",
+        "Ethelyn 'First Mate' Torp",
+        "Claribel 'Whale-Eye' Thackeray",
+        "Verna 'Silver-Eye' Quye",
+        "Kathrine 'Renegade' Bunce",
+        "Erma 'Relentless' Hogan",
+        "Rhea 'Insanity' Vail",
+        "Storm 'Pieces of Eight' Myerscough",
+        "Adelia 'Hooked' Torp",
+        "Iva 'Four-Teeth' Nayte",
+        "Sherry 'The Fox' Zell",
+        "Bertrade 'The Journey' Zelgius",
+        "Alda 'Mumbling' Notleigh",
+        "Bridget 'Cross' Rowley",
+        "Mertie 'Weird'o' Smit",
+        "Luetta 'Immortal' Wright",
+        "Ludie 'Swashbuckler' Zayne",
+        "Una 'Deceiver' Copeland",
+        "Lorena 'The Hawk' Xander",
+        "Alene 'First Mate' Knotley",
+        "Verla 'Grim Reaper' Carlton",
+        "Beula 'Slick' Hammett",
+        "Ruby 'Shark Bait' Romulus",
+        "Parker 'Pirate' Redcap",
+        "Vena 'Fearless' Antone",
+        "Adelia 'The Witch' Ark",
+        "Pauline 'Defiance' Currington"
+    ];
 
     static ship(): string {
         var name = this.SHIPS[this.shipidx];
@@ -156,15 +190,15 @@ export class Names {
         return name;
     }
 
-    static captain(): string {
-        var name = this.CAPTAINS[this.captainidx];
-        this.captainidx += 1;
-        if (this.captainidx > this.CAPTAINS.length) {
-            this.captainidx = 0;
-        }
-
+    static captain(female: boolean = false): string {
         // just pick a random name for now
-        name = this.CAPTAINS[Math.floor(Math.random() * this.CAPTAINS.length)];
-        return name;
+        if (female) {
+            var name = this.CAPTAINS_F[Math.floor(Math.random() * this.CAPTAINS_F.length)];
+            return name;
+        }
+        else {
+            var name:string = this.CAPTAINS_M[Math.floor(Math.random() * this.CAPTAINS_M.length)];
+            return name;
+        }
     }
 };

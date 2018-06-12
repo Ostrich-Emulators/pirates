@@ -14,6 +14,7 @@ import { CombatEngine } from '../combat/combat-engine'
 import { Names } from '../../../common/tools/names'
 import { CombatResult } from '../../../common/model/combat-result';
 import { BoardResult, BoardCode } from '../../../common/model/board-result';
+import { ShipAi } from '../combat/ship-ai';
 
 var jimp = require('jimp')
 
@@ -35,6 +36,7 @@ export class Game {
     private combat: Map<string, CombatResult[]> = new Map<string, CombatResult[]>(); // playerid, results
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine();
+    private ai: ShipAi = new ShipAi();
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -69,7 +71,7 @@ export class Game {
         var ship = this.createShip(playernumber + '-1', pirate.avatar, type);
         ship.captain = pirate.name;
         ship.gold = 120;
-        ship.name = Names.ship();
+        ship.name = shipname;
         var player: Player = new Player(playernumber.toString(),
             pirate, ship, color);
         this.players.set(player.id, player);
@@ -152,7 +154,7 @@ export class Game {
             anchored: true,
             crew: crew,
             name: Names.ship(),
-            captain: Names.captain()
+            captain: Names.captain(Math.random() < 0.5)
         };
 
         return ship;
@@ -204,14 +206,20 @@ export class Game {
         console.log('generating ' + ships + ' new NPC ships')
         var ship = this.createShip('placed-1', "/assets/galleon.svg", ShipType.SMALL);
         ship.gold = Math.floor(Math.random() * 20);
-        ship.location.x = 145;
-        ship.location.y = 180;
+        ship.cannonrange = 40;
+        ship.ammo = 20;
+        ship.cannons = 4;
+        ship.location.x = 130;
+        ship.location.y = 210;
         this.nonplayerships.push(ship);
         this.addShipToCollisionSystem(ship);
 
         for (var i = 1; i < ships; i++) {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
+            ship.cannonrange = 40;
+            ship.ammo = 20;
+            ship.cannons = 4;
             ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
             ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
             this.nonplayerships.push(ship);
@@ -442,6 +450,7 @@ export class Game {
                 }
 
                 // if we overshoot our dst, stop
+                // FIXME: this doesn't always work
                 if (((ship.course.speedx < 0 && ship.location.x < ship.course.dstx) ||
                     (ship.course.speedy > 0 && ship.location.x > ship.course.dstx)) &&
                     ((ship.course.speedy < 0 && ship.location.y < ship.course.dsty) ||
@@ -467,7 +476,6 @@ export class Game {
         }
 
         var checkMonster = function () {
-            return;
             if (null != my.monsterloc) {
                 var monster: CollisionBody = my.collider.get('monster');
                 my.collider.checkCollisions(monster).forEach(body => {
@@ -481,11 +489,10 @@ export class Game {
         }
 
         var checkWhirlpool = function () {
-            return;
             if (null != my.poolloc) {
                 var poolcircle: CollisionBody = my.collider.get('whirlpool');
                 my.collider.checkCollisions(poolcircle).forEach(body => {
-                    my.pushMessage(body.src, 'Captured by the whirlpool!');
+                    my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
                     var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
                     body.src.location.x = loc.x;
                     body.src.location.y = loc.y;
@@ -494,6 +501,14 @@ export class Game {
         }
 
         setInterval(function () {
+            var playerships: Ship[] = [];
+            my.players.forEach(player => {
+                playerships.push(player.ship);
+            });
+            my.nonplayerships.forEach((ship: Ship) => {
+                my.ai.control(ship, playerships, my.collider, my);
+            });
+
             my.resolveCombat();
             my.resolveBoarding();
 
@@ -551,7 +566,7 @@ export class Game {
                 });
             }
             else {
-                my.poolloc = null;
+                my.monsterloc = null;
             }
         }, 60000);
     }

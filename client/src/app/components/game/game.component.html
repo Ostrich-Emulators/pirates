@@ -6,5 +6,7 @@
     <app-map></app-map>
   </div>
 </div>
-<textarea [ngModel]="messages"></textarea>
-<span *ngFor="let m of messages">{{m}}</span>
+<div class="messages">
+  <textarea [ngModel]="getLatestNews()"></textarea>
+  <span *ngFor="let m of messages" style="display:none">{{m}}</span>
+</div>

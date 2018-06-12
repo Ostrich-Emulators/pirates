@@ -38,7 +38,6 @@ export class GameComponent implements OnInit {
       data.forEach(rslt => {
         var iamattacker: boolean = (rslt.attacker.id === my.ship.id);
 
-        var msg: string = '';
         var exploded: number = 0;
         var hits: number = rslt.hits;
 
@@ -49,29 +48,23 @@ export class GameComponent implements OnInit {
               break;
             case HitCode.OUT_OF_RANGE:
               if (iamattacker) {
-                msg += 'The dogs scurried out of range before we could ready the cannons!\n';
+                my.messages.push( 'The dogs scurried out of range before we could ready the cannons!' );
               }
               else {
-                msg += 'Looks like we got out of range of their cannons!\n';
-              }
-              break;
-            case HitCode.MISSED:
-              if (!iamattacker) {
-                msg += 'That was close, but we sustained no damage in the attack\n';
+                my.messages.push( 'Looks like we got out of range of their cannons!' );
               }
               break;
             default:
-              hits += 1;
           }
         });
 
         if (exploded > 0) {
           if (iamattacker) {
             if (exploded > 1) {
-              msg += 'Several cannons exploded! We need more training\n';
+              my.messages.push( 'Several cannons exploded! We need more training' );
             }
             else {
-              msg += 'A cannon exploded!\n'
+              my.messages.push('A cannon exploded!');
             }
           }
         }
@@ -79,17 +72,21 @@ export class GameComponent implements OnInit {
         if (hits > 0) {
           if (iamattacker) {
             if (hits > 1) {
-              msg += 'Several cannons hit!\n';
+              my.messages.push( 'Several cannons hit!' );
             }
           }
           else {
-            msg += 'We\'ve been hit!';
+            my.messages.push( 'We\'ve been hit!' );
           }
         }
-
-        my.messages.push(msg);
+        else if (rslt.misses > 0) {
+          if (!iamattacker) {
+            my.messages.push('That was close, but all their shots missed');
+          }
+        }
       });
     });
+
     this.game.boarding().subscribe((data: BoardResult[]) => {
       if (!my.ship) {
         return;
@@ -102,11 +99,22 @@ export class GameComponent implements OnInit {
 
         if (rslt.code === BoardCode.REPELLED) {
           my.messages.push((iamattacker
-            ? 'Our boarders were repelled!'
-            : 'We repelled the attackers!'));
+            ? 'Our boarders were repelled. They are too strong for us to board!'
+            : 'We repelled the snivelling attackers. We are too strong for them!'));
         }
-
-        if (rslt.code === BoardCode.PARTIAL_SUCCESS) {
+        else if (rslt.code === BoardCode.OVERRUN) {
+          console.log('total success');
+          if (iamattacker) {
+            my.messages.push('We overpowered their crew. We got everything!');
+          }
+          else {
+            my.messages.push('We are ruined! They took everything!');
+          }
+        }
+        else if (rslt.code === BoardCode.DRAW) {
+          my.messages.push('Our boarders fought to a draw');
+        }
+        else{
           console.log('partial success');
           if (rslt.ammo) {
             console.log('ammo');
@@ -147,22 +155,16 @@ export class GameComponent implements OnInit {
             }
           }
         }
-        else if (rslt.code === BoardCode.TOTAL_SUCCESS) {
-          console.log('total success');
-          if (iamattacker) {
-            my.messages.push('We totally overpowered their crew. We got everything!');
-          }
-          else {
-            my.messages.push('We are ruined! They took everything!');
-          }
-        }
-        console.log('here I am');
       });
     });
   }
 
+  getLatestNews(): string {
+    var msgs: string = '';
+    for (var i = 0; i < Math.min(this.messages.length, 10); i++) {
+      msgs += this.messages[this.messages.length - 1 - i] + '\n';
+    }
 
-  getMessages(): string[]{
-    return this.messages;
+    return msgs;
   }
 }

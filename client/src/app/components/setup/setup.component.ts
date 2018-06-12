@@ -35,7 +35,7 @@ export class SetupComponent implements OnInit {
   }
 
   newcaptain() {
-    this.captain = Names.captain();
+    this.captain = Names.captain( this.female);
   }
 
   newname() {

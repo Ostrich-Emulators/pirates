@@ -3,8 +3,10 @@ import { Crew } from './crew'
 
 export enum BoardCode {
     REPELLED = 0,
-    PARTIAL_SUCCESS = 1,
-    TOTAL_SUCCESS = 2
+    OVERRUN = 1,
+    DRAW = 2,
+    ATTACKER_SUCCESS = 3,
+    DEFENDER_SUCCESS = 4
 }
 
 export interface BoardResult {
