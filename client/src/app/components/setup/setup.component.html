@@ -2,21 +2,23 @@
   Pirate Name:
   <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
   <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
-  <input [(ngModel)]="captain"><button (click)="newcaptain()">New Captain</button>
+  <input [(ngModel)]="captain">
+  <button (click)="newcaptain()">New Captain</button>
 </div>
 <div>
-  Ship Name: <input [(ngModel)]="shipname"><button (click)="newname()">New Name</button>
+  Ship Name:
+  <input [(ngModel)]="shipname">
+  <button (click)="newname()">New Name</button>
 </div>
 <div>
-  <br/>
   Avatar:
-   <ng-container *ngFor="let a of shipsvc.avatars">
-      <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
-   </ng-container>
+  <ng-container *ngFor="let a of shipsvc.avatars">
+    <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
+  </ng-container>
 </div>
 <div>
   Color:
-  <input [(ngModel)]="color">
+  <input [value]="color" [style.background]="color" [(colorPicker)]="color" />
 </div>
 
 <button class="btn btn-default" [disabled]="0===captain.length" (click)="sail()">Set Sail!</button>

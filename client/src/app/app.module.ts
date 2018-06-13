@@ -3,6 +3,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FlexLayoutModule } from '@angular/flex-layout';
+import { ColorPickerModule } from 'ngx-color-picker';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
@@ -38,7 +39,8 @@ import { ActionDisplayComponent } from './components/info-bar/action-display/act
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    FlexLayoutModule
+    FlexLayoutModule,
+    ColorPickerModule
   ],
   providers: [ShipService, GameService],
   bootstrap: [AppComponent]

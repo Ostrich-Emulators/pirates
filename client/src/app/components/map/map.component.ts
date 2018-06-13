@@ -10,6 +10,7 @@ import { Rectangle } from '../../../../../common/model/rectangle'
 import { HttpClient } from '@angular/common/http'
 import { Collider } from '../../../../../common/tools/collider'
 import { CollisionBody } from '../../../../../common/model/body';
+import { CombatResult } from '../../../../../common/model/combat-result';
 
 @Component({
   selector: 'app-map',
@@ -36,6 +37,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private longcollider: Collider = new Collider();
   private ballpaths: CannonBallPath[] = [];
   private ship: Ship;
+  private combat: CombatResult[] = [];
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http: HttpClient) { }
 
@@ -56,6 +58,14 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.gamesvc.myship().subscribe(data => {
       my.ship = data;
+    });
+
+    this.gamesvc.combat().subscribe(data => { 
+      data.forEach(c => { 
+        if (c.attacker.id === my.ship.id || c.attackee.id === my.ship.id) {
+          this.registerCombat( c );
+        }
+      });
     });
 
     this.gamesvc.ships().subscribe(data => {
@@ -128,10 +138,22 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.canvasctx.clearRect(0, 0, 740, 710);
       my.drawSpecials();
       my.moveShips((now - my.lastperf) / my.gamesvc.REFRESH_RATE);
+      my.drawCombat();
       my.lastperf = performance.now();
       window.requestAnimationFrame(looper);
     }
     looper();
+  }
+
+  registerCombat(combat: CombatResult) {
+    var my: MapComponent = this;
+    my.ballpaths.push({
+      srcx: combat.attacker.location.x,
+      srcy: combat.attacker.location.y,
+      dstx: combat.attackee.location.x,
+      dsty: combat.attackee.location.y,
+      turns: 40
+    });
   }
 
   drawSpecials() {
@@ -158,6 +180,31 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       my.canvasctx.stroke();
     }
+  }
+
+  drawCombat() {
+    var my: MapComponent = this;
+
+    my.ballpaths.forEach((cbp,idx) => {
+      //my.canvasctx.beginPath(); 
+      //my.canvasctx.moveTo(cbp.srcx, cbp.srcy);
+      //my.canvasctx.lineTo(cbp.dstx, cbp.dsty);
+      //my.canvasctx.stroke();
+
+
+      my.canvasctx.beginPath();
+      my.canvasctx.moveTo(cbp.srcx, cbp.srcy);
+      my.canvasctx.quadraticCurveTo(cbp.srcx, cbp.srcy - 40, cbp.dstx, cbp.dsty);
+      my.canvasctx.strokeStyle = 'white';
+      my.canvasctx.stroke();
+
+      cbp.turns -= 1;
+
+      if (cbp.turns <= 0) {
+        my.ballpaths.splice(idx, 1);
+      }
+    });
+
   }
 
   moveShips(speedratio: number) {
@@ -209,7 +256,7 @@ export class MapComponent implements OnInit, AfterViewInit {
               ship.location.x, ship.location.y, ship.cannonrange);
 
             rad.addColorStop(0, my.hexToRGBA(my.gamesvc.myplayer().color, 0.6));
-            rad.addColorStop(1, my.hexToRGBA(my.gamesvc.myplayer().color, 0));
+            rad.addColorStop(1, my.hexToRGBA(my.gamesvc.myplayer().color, 0.1));
             my.canvasctx.fillStyle = rad;
             my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannonrange, 0, 2 * Math.PI);
             my.canvasctx.fill();
@@ -237,6 +284,23 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   onhover(event: MouseEvent) {
+    var my: MapComponent = this;
+    /* this works, but need someplace to display it
+    var check: CollisionBody = {
+      id:'mousecheck',
+      getX: function () { return event.offsetX },
+      getY: function () { return event.offsetY },
+      getR: function () { return 15;}
+    };
+
+    var collisions = this.shortcollider.checkCollisions(check);
+    collisions.forEach(cb => { 
+      if (cb.src) {
+        console.log( cb.src.name );
+      }
+    });
+    */
+    
     if (this.iswater(event.offsetX, event.offsetY)) {
       // do something?
     }
