@@ -10,7 +10,7 @@ import { Rectangle } from '../../../../../common/model/rectangle'
 import { HttpClient } from '@angular/common/http'
 import { Collider } from '../../../../../common/tools/collider'
 import { CollisionBody } from '../../../../../common/model/body';
-import { CombatResult } from '../../../../../common/model/combat-result';
+import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
 
 @Component({
   selector: 'app-map',
@@ -36,8 +36,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   private shortcollider: Collider = new Collider();
   private longcollider: Collider = new Collider();
   private ballpaths: CannonBallPath[] = [];
+  private explosions: Explosion[] = [];
   private ship: Ship;
   private combat: CombatResult[] = [];
+  private static CANNONPATH_DURATION: number = 40;// 40 frames (2/3 second?)
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http: HttpClient) { }
 
@@ -60,10 +62,10 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.ship = data;
     });
 
-    this.gamesvc.combat().subscribe(data => { 
-      data.forEach(c => { 
+    this.gamesvc.combat().subscribe(data => {
+      data.forEach(c => {
         if (c.attacker.id === my.ship.id || c.attackee.id === my.ship.id) {
-          this.registerCombat( c );
+          this.registerCombat(c);
         }
       });
     });
@@ -147,12 +149,44 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   registerCombat(combat: CombatResult) {
     var my: MapComponent = this;
+
+    var expls = 0;
+    combat.hitcodes.forEach(hc => {
+      if (HitCode.CANNON_EXPLODED === hc) {
+        expls += 1;
+      }
+    });
+    if (expls > 0) {
+      // cannon exploded, so explode the attacker
+      my.explosions.push({
+        x: combat.attacker.location.x,
+        y: combat.attacker.location.y,
+        turns: MapComponent.CANNONPATH_DURATION,
+        delay: 0
+      });
+
+      if (expls > 1) {
+        for (var i = 1; i < expls; i++) {
+          my.explosions.push({
+            x: combat.attacker.location.x - 10 + Math.random() * 20,
+            y: combat.attacker.location.y - 10 + Math.random() * 20,
+            turns: MapComponent.CANNONPATH_DURATION,
+            delay: Math.ceil(Math.random() * 50)
+          });
+        }
+      }
+
+    }
+
     my.ballpaths.push({
       srcx: combat.attacker.location.x,
       srcy: combat.attacker.location.y,
       dstx: combat.attackee.location.x,
       dsty: combat.attackee.location.y,
-      turns: 40
+      ctrlx: (combat.attacker.location.x + combat.attackee.location.x) / 2,
+      ctrly: (combat.attacker.location.y + combat.attackee.location.y) / 2 - 40,
+      turns: MapComponent.CANNONPATH_DURATION,
+      rslt: combat
     });
   }
 
@@ -167,6 +201,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.canvasctx.beginPath();
       my.canvasctx.arc(my.monsterloc.x, my.monsterloc.y, 25, 0, 2 * Math.PI);
       my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      my.canvasctx.strokeStyle = 'black';
       my.canvasctx.stroke();
     }
 
@@ -177,7 +212,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.canvasctx.drawImage(my.whirlpoolimg, my.poolloc.x - imgw / 2, my.poolloc.y - imgh / 2, imgw, imgh);
       my.canvasctx.beginPath();
       my.canvasctx.arc(my.poolloc.x, my.poolloc.y, 30, 0, 2 * Math.PI);
-      my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+      my.canvasctx.strokeStyle = 'black';
       my.canvasctx.stroke();
     }
   }
@@ -185,26 +221,66 @@ export class MapComponent implements OnInit, AfterViewInit {
   drawCombat() {
     var my: MapComponent = this;
 
-    my.ballpaths.forEach((cbp,idx) => {
-      //my.canvasctx.beginPath(); 
-      //my.canvasctx.moveTo(cbp.srcx, cbp.srcy);
-      //my.canvasctx.lineTo(cbp.dstx, cbp.dsty);
-      //my.canvasctx.stroke();
+    my.explosions.forEach((exp, idx) => {
+      if (0 === exp.delay) {
+        my.canvasctx.beginPath();
+        my.canvasctx.arc(exp.x, exp.y, exp.turns / 2, 0, 2 * Math.PI);
+        my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+        my.canvasctx.fill();
 
+        exp.turns -= 1;
+        if (exp.turns <= 0) {
+          my.explosions.splice(idx, 1);
+        }
+      }
+      else {
+        exp.delay -= 1;
+      }
+    });
 
+    my.ballpaths.forEach((cbp, idx) => {
+
+      // draw an arched path to the target
       my.canvasctx.beginPath();
       my.canvasctx.moveTo(cbp.srcx, cbp.srcy);
-      my.canvasctx.quadraticCurveTo(cbp.srcx, cbp.srcy - 40, cbp.dstx, cbp.dsty);
+      my.canvasctx.quadraticCurveTo(cbp.ctrlx, cbp.ctrly, cbp.dstx, cbp.dsty);
       my.canvasctx.strokeStyle = 'white';
       my.canvasctx.stroke();
+
+      // draw a cannonball flying on that path
+      my.canvasctx.beginPath();
+      var loc: Location = my.getQuadraticBezierXYatT(cbp);
+      my.canvasctx.arc(loc.x, loc.y, 5, 0, 2 * Math.PI);
+      my.canvasctx.fillStyle = "rgba(0, 0, 0, 1)";
+      my.canvasctx.strokeStyle = 'black';
+      my.canvasctx.fill();
 
       cbp.turns -= 1;
 
       if (cbp.turns <= 0) {
+        if (cbp.rslt.hits > 0) {
+          my.explosions.push({
+            x: cbp.rslt.attackee.location.x,
+            y: cbp.rslt.attackee.location.y,
+            turns: MapComponent.CANNONPATH_DURATION,
+            delay: 0
+          });
+
+
+          if (cbp.rslt.hits > 1) {
+            for (var i = 0; i < cbp.rslt.hits; i++) {
+              my.explosions.push({
+                x: cbp.rslt.attackee.location.x - 10 + Math.random() * 20,
+                y: cbp.rslt.attackee.location.y - 10 + Math.random() * 20,
+                turns: MapComponent.CANNONPATH_DURATION,
+                delay: Math.ceil(Math.random() * 60)
+              });
+            }
+          }
+        }
         my.ballpaths.splice(idx, 1);
       }
     });
-
   }
 
   moveShips(speedratio: number) {
@@ -292,7 +368,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       getY: function () { return event.offsetY },
       getR: function () { return 15;}
     };
-
+  
     var collisions = this.shortcollider.checkCollisions(check);
     collisions.forEach(cb => { 
       if (cb.src) {
@@ -300,7 +376,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
     */
-    
+
     if (this.iswater(event.offsetX, event.offsetY)) {
       // do something?
     }
@@ -426,6 +502,30 @@ export class MapComponent implements OnInit, AfterViewInit {
     return 'rgba(' + parseInt(result[1], 16) + ',' + parseInt(result[2], 16)
       + ',' + parseInt(result[3], 16) + ',' + a + ')';
   }
+
+  getQuadraticBezierXYatT(cbp: CannonBallPath): Location {
+    var pct: number = cbp.turns / MapComponent.CANNONPATH_DURATION;
+    if (pct < 0.25) {
+      pct = 1;
+    }
+    else if (pct < 0.5) {
+      pct = 0.75;
+    }
+    else if (pct < 0.75) {
+      pct = 0.5;
+    }
+    else {
+      pct = 0.25;
+    }
+
+    // var x = Math.pow(1 - T, 2) * startPt.x + 2 * (1 - T) * T * controlPt.x + Math.pow(T, 2) * endPt.x;
+    // var y = Math.pow(1 - T, 2) * startPt.y + 2 * (1 - T) * T * controlPt.y + Math.pow(T, 2) * endPt.y;
+    // return ({ x: x, y: y });    
+
+    var x = Math.pow(1 - pct, 2) * cbp.srcx + 2 * (1 - pct) * pct * cbp.ctrlx + Math.pow(pct, 2) * cbp.dstx;
+    var y = Math.pow(1 - pct, 2) * cbp.srcy + 2 * (1 - pct) * pct * cbp.ctrly + Math.pow(pct, 2) * cbp.dsty;
+    return ({ x: x, y: y });
+  }
 }
 
 interface CannonBallPath {
@@ -433,5 +533,15 @@ interface CannonBallPath {
   srcy: number,
   dstx: number,
   dsty: number,
+  ctrlx: number,
+  ctrly: number,
+  turns: number,
+  rslt: CombatResult
+}
+
+interface Explosion {
+  x: number,
+  y: number,
+  delay: number,
   turns: number
 }

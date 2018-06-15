@@ -22,7 +22,7 @@ export class ShipAi {
       playerships.forEach(enemy => {
         var dist = my.distance(ship.location, enemy.location);
 
-        if (dist < ship.cannonrange / 2 && ship.ammo > 0 && ship.cannons > 0) {
+        if (dist < ship.cannonrange * 3 / 4 && ship.ammo > 0 && ship.cannons > 0) {
           // if a pirate is too close, blast 'em!
           game.fire(ship, enemy);
           my.act(ship);

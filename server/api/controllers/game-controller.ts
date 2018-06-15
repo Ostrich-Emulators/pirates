@@ -13,26 +13,26 @@ import { CombatResult } from '../../../common/model/combat-result';
 import { BoardResult } from '../../../common/model/board-result';
 
 export class GameController {
-    constructor( private game:Game) {
+    constructor(private game: Game) {
     }
 
-    one(playerid: string) :Player{
+    one(playerid: string): Player {
         return this.game.getPlayer(playerid);
     }
 
-    all(): Player[]{
+    all(): Player[] {
         return this.game.getPlayers();
     }
 
     create(body): Player {
-        return this.game.addPlayer(body.pirate, body.shipname, body.color );
+        return this.game.addPlayer(body.pirate, body.ship, body.color);
     }
 
-    status(playerid: string) :StatusResponse {
+    status(playerid: string): StatusResponse {
         var msgs: string[] = this.game.popMessages(playerid);
         var combat: CombatResult[] = this.game.popCombat(playerid);
         var board: BoardResult[] = this.game.popBoard(playerid);
- 
+
         var ships: Ship[] = [];
         // hide the actual hull strengths of other people's ships
         this.game.getNonPlayerShips().forEach(s => {
@@ -40,9 +40,9 @@ export class GameController {
             newship.hullStrength = Math.ceil(s.hullStrength);
             ships.push(newship);
         });
-        this.game.getPlayers().forEach(p => { 
+        this.game.getPlayers().forEach(p => {
             var newship: Ship = Object.assign({}, p.ship);
-            if (p.id != playerid) { 
+            if (p.id != playerid) {
                 newship.hullStrength = Math.ceil(p.ship.hullStrength);
             }
             ships.push(newship);

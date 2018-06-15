@@ -72,6 +72,7 @@ export class Game {
         ship.captain = pirate.name;
         ship.gold = 120;
         ship.name = shipname;
+        console.log(ship);
         var player: Player = new Player(playernumber.toString(),
             pirate, ship, color);
         this.players.set(player.id, player);
@@ -208,7 +209,7 @@ export class Game {
         ship.gold = Math.floor(Math.random() * 20);
         ship.cannonrange = 40;
         ship.ammo = 20;
-        ship.cannons = 4;
+        ship.cannons = 3;
         ship.location.x = 130;
         ship.location.y = 210;
         this.nonplayerships.push(ship);
@@ -217,9 +218,8 @@ export class Game {
         for (var i = 1; i < ships; i++) {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
-            ship.cannonrange = 40;
             ship.ammo = 20;
-            ship.cannons = 4;
+            ship.cannons = 3;
             ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
             ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
             this.nonplayerships.push(ship);
@@ -479,11 +479,13 @@ export class Game {
             if (null != my.monsterloc) {
                 var monster: CollisionBody = my.collider.get('monster');
                 my.collider.checkCollisions(monster).forEach(body => {
-                    if (body.id.substr(0, 1) !== '-') {
-                        my.pushMessage(body.src, 'Sea Monster Strike!');
+                    if ('whirlpool' !== body.id) {
+                        if (body.id.substr(0, 1) !== '-') {
+                            my.pushMessage(body.src, 'Sea Monster Strike!');
+                        }
+                        my.monsterships.push(body.src);
+                        body.src.anchored = true;
                     }
-                    my.monsterships.push(body.src);
-                    body.src.anchored = true;
                 });
             }
         }
@@ -492,10 +494,14 @@ export class Game {
             if (null != my.poolloc) {
                 var poolcircle: CollisionBody = my.collider.get('whirlpool');
                 my.collider.checkCollisions(poolcircle).forEach(body => {
-                    my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
-                    var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-                    body.src.location.x = loc.x;
-                    body.src.location.y = loc.y;
+                    if ('monster' !== body.id) {
+                        if (body.id.substr(0, 1) !== '-') {
+                            my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
+                        }
+                        var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                        body.src.location.x = loc.x;
+                        body.src.location.y = loc.y;
+                    }
                 });
             }
         }
