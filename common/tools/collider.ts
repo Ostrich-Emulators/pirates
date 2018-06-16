@@ -2,7 +2,6 @@ import { CollisionBody } from '../model/body'
 
 export class Collider {
     bodies: Map<string, CollisionBody> = new Map<string, CollisionBody>();
-    
 
     clear() {
         this.bodies.clear();

@@ -72,7 +72,7 @@ export class Game {
         ship.captain = pirate.name;
         ship.gold = 120;
         ship.name = shipname;
-        console.log(ship);
+        //console.log(ship);
         var player: Player = new Player(playernumber.toString(),
             pirate, ship, color);
         this.players.set(player.id, player);

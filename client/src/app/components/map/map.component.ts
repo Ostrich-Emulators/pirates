@@ -26,7 +26,6 @@ export class MapComponent implements OnInit, AfterViewInit {
   private poolloc: Location = null;
   private monsterloc: Location = null;
   private seamonsterimg;
-  private mapimg;
   private images: Map<string, any> = new Map<string, any>();
   private player: Player;
   private ships: Ship[] = [];
@@ -37,9 +36,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   private longcollider: Collider = new Collider();
   private ballpaths: CannonBallPath[] = [];
   private explosions: Explosion[] = [];
+  private sinkings: Sinking[] = [];
   private ship: Ship;
-  private combat: CombatResult[] = [];
   private static CANNONPATH_DURATION: number = 40;// 40 frames (2/3 second?)
+  private static EXPLOSION_DURATION: number = 40;// 40 frames (2/3 second?)
+  private static SINK_DURATION: number = 240;// 40 frames (2/3 second?)
 
   constructor(private shipsvc: ShipService, private gamesvc: GameService, private http: HttpClient) { }
 
@@ -72,7 +73,40 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.gamesvc.ships().subscribe(data => {
       //console.log('refreshing ships in map');
+      
+      // check for ships that have sunk
+      var oldshiplkp: Map<string, Ship> = new Map<string, Ship>();
+      var newshipids: Set<string> = new Set<string>();
+      for (var i = 0; i < my.ships.length; i++){
+        oldshiplkp.set(my.ships[i].id, Object.assign({}, my.ships[i]));
+      }
+      for (var i = 0; i < data.length; i++) {
+        newshipids.add(data[i].id);
+      }
+
       my.ships = data;
+
+      oldshiplkp.forEach((ship, id) => {
+        if (!newshipids.has(id)) {
+          // we have a missing ship! it must have sunk!
+          my.sinkings.push({
+            x: ship.location.x,
+            y: ship.location.y,
+            turns: MapComponent.SINK_DURATION,
+            avatar: ship.avatar
+          });
+        }
+      });
+
+      if (0 == oldshiplkp.size) {
+        my.sinkings.push({
+          x: 200,
+          y: 200,
+          turns: MapComponent.SINK_DURATION,
+          avatar: '/assets/avatar1.svg'
+        });
+      }
+
 
       my.longcollider.clear();
       my.shortcollider.clear();
@@ -161,7 +195,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       my.explosions.push({
         x: combat.attacker.location.x,
         y: combat.attacker.location.y,
-        turns: MapComponent.CANNONPATH_DURATION,
+        turns: MapComponent.EXPLOSION_DURATION,
         delay: 0
       });
 
@@ -170,8 +204,8 @@ export class MapComponent implements OnInit, AfterViewInit {
           my.explosions.push({
             x: combat.attacker.location.x - 10 + Math.random() * 20,
             y: combat.attacker.location.y - 10 + Math.random() * 20,
-            turns: MapComponent.CANNONPATH_DURATION,
-            delay: Math.ceil(Math.random() * 50)
+            turns: MapComponent.EXPLOSION_DURATION,
+            delay: Math.ceil(Math.random() * MapComponent.EXPLOSION_DURATION)
           });
         }
       }
@@ -221,6 +255,35 @@ export class MapComponent implements OnInit, AfterViewInit {
   drawCombat() {
     var my: MapComponent = this;
 
+    my.sinkings.forEach((sink, idx) => { 
+      my.canvasctx.save();
+      // first half of duration, rotate the image slightly
+      // second half: sink the ship
+      var pct: number = (1 - (sink.turns / MapComponent.SINK_DURATION));
+      var rotation: number = (pct < 0.5 ? pct : 0.5);
+      my.canvasctx.translate(sink.x + 12, sink.y + 12);
+      my.canvasctx.rotate(rotation * Math.PI);
+      my.canvasctx.translate(-12, -12);
+      console.log('sinking ship');
+      console.log(sink);
+      if (pct < 0.5) {
+        // rotate the (teetering) ship
+        my.canvasctx.drawImage(my.images[sink.avatar], 0, 0, 24, 24);
+      }
+      else {
+        // sink the ship
+        my.canvasctx.drawImage(my.images[sink.avatar], 0, 0, 24, 24);
+      }
+
+      sink.turns -= 1;
+      if (sink.turns <= 0) {
+        //my.sinkings.splice(idx, 1);
+        sink.turns = MapComponent.SINK_DURATION;
+      }
+
+      my.canvasctx.restore();
+    });
+
     my.explosions.forEach((exp, idx) => {
       if (0 === exp.delay) {
         my.canvasctx.beginPath();
@@ -262,7 +325,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           my.explosions.push({
             x: cbp.rslt.attackee.location.x,
             y: cbp.rslt.attackee.location.y,
-            turns: MapComponent.CANNONPATH_DURATION,
+            turns: MapComponent.EXPLOSION_DURATION,
             delay: 0
           });
 
@@ -272,8 +335,8 @@ export class MapComponent implements OnInit, AfterViewInit {
               my.explosions.push({
                 x: cbp.rslt.attackee.location.x - 10 + Math.random() * 20,
                 y: cbp.rslt.attackee.location.y - 10 + Math.random() * 20,
-                turns: MapComponent.CANNONPATH_DURATION,
-                delay: Math.ceil(Math.random() * 60)
+                turns: MapComponent.EXPLOSION_DURATION,
+                delay: Math.ceil(Math.random() * MapComponent.EXPLOSION_DURATION)
               });
             }
           }
@@ -544,4 +607,11 @@ interface Explosion {
   y: number,
   delay: number,
   turns: number
+}
+
+interface Sinking {
+  x: number,
+  y: number,
+  turns: number,
+  avatar: string
 }
