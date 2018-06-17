@@ -72,6 +72,7 @@ export class ShipService {
 
 
     if (!(my.ship.ammo > 0 && my.ship.cannons > 0)) {
+      my.targets.next([]);
       return;
     }
 

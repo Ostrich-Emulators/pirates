@@ -98,16 +98,6 @@ export class MapComponent implements OnInit, AfterViewInit {
         }
       });
 
-      if (0 == oldshiplkp.size) {
-        my.sinkings.push({
-          x: 200,
-          y: 200,
-          turns: MapComponent.SINK_DURATION,
-          avatar: '/assets/avatar1.svg'
-        });
-      }
-
-
       my.longcollider.clear();
       my.shortcollider.clear();
 
@@ -139,7 +129,6 @@ export class MapComponent implements OnInit, AfterViewInit {
     my.whirlpoolimg = new Image();
     my.whirlpoolimg.src = '/assets/whirlpool.png';
 
-    my.mapimg = new Image(740, 710);
     my.map.nativeElement.height = 710;
     my.map.nativeElement.width = 740;
 
@@ -261,23 +250,34 @@ export class MapComponent implements OnInit, AfterViewInit {
       // second half: sink the ship
       var pct: number = (1 - (sink.turns / MapComponent.SINK_DURATION));
       var rotation: number = (pct < 0.5 ? pct : 0.5);
-      my.canvasctx.translate(sink.x + 12, sink.y + 12);
+      my.canvasctx.translate(sink.x, sink.y);
       my.canvasctx.rotate(rotation * Math.PI);
       my.canvasctx.translate(-12, -12);
-      console.log('sinking ship');
-      console.log(sink);
+      var img = my.images[sink.avatar];
       if (pct < 0.5) {
         // rotate the (teetering) ship
-        my.canvasctx.drawImage(my.images[sink.avatar], 0, 0, 24, 24);
+        my.canvasctx.drawImage(img, 0, 0, 24, 24);
       }
       else {
-        // sink the ship
-        my.canvasctx.drawImage(my.images[sink.avatar], 0, 0, 24, 24);
+        // sink the ship into the sea
+
+        // we want to slowly draw less of the ship,
+        // but we want to start with 100%, and go down to 0%
+        // but pct is >0.5 at this point
+        var imgpct: number = (sink.turns * 2 / MapComponent.SINK_DURATION);
+
+        // this code looks like x & y are reversed, until you
+        // realize that the canvas is rotated 90 degrees
+        my.canvasctx.drawImage(img,
+          // srcX: number, srcY: number, srcW: number, srcH: number, 
+          0, 0, 700 * imgpct, 700, // no idea where these 700s come from: the svgs are 512px square
+          // dstX: number, dstY: number, dstW: number, dstH: number
+          24 * (1 - imgpct), 0, 24 * imgpct, 24);
       }
 
       sink.turns -= 1;
       if (sink.turns <= 0) {
-        //my.sinkings.splice(idx, 1);
+        my.sinkings.splice(idx, 1);
         sink.turns = MapComponent.SINK_DURATION;
       }
 
