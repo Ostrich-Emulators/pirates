@@ -40,10 +40,14 @@ export class GameController {
             newship.hullStrength = Math.ceil(s.hullStrength);
             ships.push(newship);
         });
+        var pshipid: string;
         this.game.getPlayers().forEach(p => {
             var newship: Ship = Object.assign({}, p.ship);
             if (p.id != playerid) {
                 newship.hullStrength = Math.ceil(p.ship.hullStrength);
+            }
+            else {
+                pshipid = p.ship.id;
             }
             ships.push(newship);
         });
@@ -54,7 +58,8 @@ export class GameController {
             poolloc: this.game.poolloc,
             monsterloc: this.game.monsterloc,
             combat: combat,
-            board: board
+            board: board,
+            playershipid: pshipid
         };
     }
 }

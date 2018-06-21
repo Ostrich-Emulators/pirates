@@ -4,6 +4,7 @@ import { CombatResult, HitCode } from '../../../common/model/combat-result';
 import { BoardResult, BoardCode } from '../../../common/model/board-result';
 import { ShipDefinition } from '../../../common/model/ship-definition';
 import { Crew } from '../../../common/model/crew';
+import { Calculators } from '../../../common/tools/calculators';
 
 export class CombatEngine {
     resolve(pair: ShipPair): CombatResult {
@@ -22,12 +23,11 @@ export class CombatEngine {
 
 
         // if the attackee is too far away, don't fire
-        var distance = this.getDistance(attacker, attackee);
+        var distance = Calculators.distance(attacker.location, attackee.location);
         if (distance > attacker.cannonrange) {
             result.hitcodes.push(HitCode.OUT_OF_RANGE);
             return result;
         }
-
 
         var cannonsInAttack = Math.min(attacker.cannons, attacker.ammo);
         attacker.ammo -= cannonsInAttack;
@@ -97,6 +97,14 @@ export class CombatEngine {
             }
         }
 
+        // if the hullstrength is too low, the crew might abandon ship
+        if (attackee.hullStrength < 1) {
+            if (Math.random() < (1 - attackee.hullStrength)) {
+                attackee.crew.count = 0;
+                console.log(attackee.id + ' crew abandoned ship!');
+            }
+        }
+
         return result;
     }
 
@@ -111,7 +119,7 @@ export class CombatEngine {
 
         console.log('resolving ' + pair.one.id + ' boarding '
             + pair.two.id);
-        
+
         var attacker: Ship = pair.one;
         var attackee: Ship = pair.two;
 
@@ -168,7 +176,7 @@ export class CombatEngine {
             }
 
             // various things happen:
-            if ( choice > ratio ) {
+            if (choice > ratio) {
                 // attacker advantage
                 if (choice - 0.25 < ratio) {
                     return rslt; // DRAW
@@ -237,15 +245,8 @@ export class CombatEngine {
         };
     }
 
-
-    getDistance(attacker: Ship, attackee: Ship): number {
-        var x: number = attacker.location.x - attackee.location.x;
-        var y: number = attacker.location.y - attackee.location.y;
-        return Math.sqrt(x * x + y * y);
-    }
-
     getDistanceFactor(attacker: Ship, attackee: Ship): number {
-        var distance = this.getDistance(attacker, attackee);
+        var distance = Calculators.distance(attacker.location, attackee.location);
 
         var ratio: number = (1 - distance / attacker.cannonrange);
         console.log('distance:' + distance + '; range: ' + attacker.cannonrange + '; ratio: ' + ratio);

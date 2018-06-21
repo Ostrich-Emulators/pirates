@@ -73,11 +73,11 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.gamesvc.ships().subscribe(data => {
       //console.log('refreshing ships in map');
-      
+
       // check for ships that have sunk
       var oldshiplkp: Map<string, Ship> = new Map<string, Ship>();
       var newshipids: Set<string> = new Set<string>();
-      for (var i = 0; i < my.ships.length; i++){
+      for (var i = 0; i < my.ships.length; i++) {
         oldshiplkp.set(my.ships[i].id, Object.assign({}, my.ships[i]));
       }
       for (var i = 0; i < data.length; i++) {
@@ -146,6 +146,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
     my.images['/assets/galleon.svg'] = new Image();
     my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
+    my.images['/assets/abandoned.svg'] = new Image();
+    my.images['/assets/abandoned.svg'].src = '/assets/abandoned.svg';
 
     var img = new Image(740, 710);
     img.src = '/assets/map-guide.png';
@@ -244,7 +246,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   drawCombat() {
     var my: MapComponent = this;
 
-    my.sinkings.forEach((sink, idx) => { 
+    my.sinkings.forEach((sink, idx) => {
       my.canvasctx.save();
       // first half of duration, rotate the image slightly
       // second half: sink the ship
@@ -351,7 +353,6 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     // two loops: update ship locations, then draw ships
     my.ships.forEach((ship: Ship) => {
-      var shipimg = my.images[ship.avatar];
       if (!ship.anchored) {
         var speedx = ship.course.speedx * speedratio;
         var speedy = ship.course.speedy * speedratio;
@@ -369,7 +370,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       (my.shortcollider.checkCollisions(my.ship.id).length > 0);
 
     my.ships.forEach((ship: Ship) => {
-      var shipimg = my.images[ship.avatar];
+      console.log(ship.id + '=>' + ship.crew.count);
+      var shipimg = my.images[ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg'];
       var ismyship: boolean = (ship.id === my.ship.id);
       if (ismyship) {
         shipimg = my.myshipimg;

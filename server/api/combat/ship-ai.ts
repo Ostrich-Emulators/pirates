@@ -27,6 +27,10 @@ export class ShipAi {
   }
 
   private canAct(s: Ship): boolean {
+    if (s.crew.count < 1) {
+      return false;
+    }
+
     if (this.lastAction.has(s.id)) {
       // we can do something once every 2 seconds
       var d: Date = new Date();

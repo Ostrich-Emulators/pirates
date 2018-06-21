@@ -41,7 +41,7 @@ export class ShipService {
     });
 
     var others: string[] = ['/assets/galleon.svg', '/assets/abandoned.svg'];
-    others.forEach(av => { 
+    others.forEach(av => {
       http.get(av, { responseType: 'text' }).subscribe(data => {
         my.svgxmls.set(av, "data:image/svg+xml;charset=utf-8," + data);
         var im = new Image();

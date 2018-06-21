@@ -7,6 +7,7 @@ import { BoardResult } from './board-result';
 export interface StatusResponse {
     messages: string[],
     ships: Ship[],
+    playershipid: string,
     poolloc?: Location,
     monsterloc?: Location,
     combat?: CombatResult[],

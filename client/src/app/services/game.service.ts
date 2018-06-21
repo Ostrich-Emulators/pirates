@@ -35,19 +35,19 @@ export class GameService {
       this._myship.next(this.me.ship);
 
       var my: GameService = this;
-      console.log( 'starting from localStorage data');
+      console.log('starting from localStorage data');
       my.refreshData();
       setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
     }
   }
 
   start(name: string, female: boolean, avatar: string,
-    shipname: string, color: string): Observable<Player>{
+    shipname: string, color: string): Observable<Player> {
     var my: GameService = this;
     var pirate: Pirate = { name: name, female: female, avatar: avatar };
     var url = this.BASEURL + '/players';
 
-    this.http.put(url, { pirate: pirate, ship: shipname, color:color }).subscribe(
+    this.http.put(url, { pirate: pirate, ship: shipname, color: color }).subscribe(
       (data: Player) => {
         console.log(data);
         my.me = data;
@@ -58,10 +58,10 @@ export class GameService {
         console.error('something happened!');
         console.error(err);
       });
-    
+
     my.refreshData();
     setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
-  
+
     return this._player;
   }
 
@@ -70,7 +70,7 @@ export class GameService {
     var my: GameService = this;
     this.http.get(this.BASEURL + '/game/status/' + this.me.id).subscribe((data: StatusResponse) => {
       data.ships.forEach(shp => {
-        if (shp.id === this.me.ship.id) {
+        if (shp.id === data.playershipid) {
           my.me.ship = shp;
           my._myship.next(shp);
         }
@@ -81,7 +81,7 @@ export class GameService {
         my._messages.next(data.messages);
       }
 
-      if (data.combat && data.combat.length>0) {
+      if (data.combat && data.combat.length > 0) {
         my._combat.next(data.combat);
       }
 
@@ -103,11 +103,11 @@ export class GameService {
     return this._ships;
   }
 
-  messages(): Observable<string[]>{
+  messages(): Observable<string[]> {
     return this._messages;
   }
 
-  combat(): Observable<CombatResult[]>{
+  combat(): Observable<CombatResult[]> {
     return this._combat;
   }
 
@@ -118,7 +118,7 @@ export class GameService {
   myplayer(): Player {
     return this.me;
   }
-  
+
   mypirate(): Pirate {
     var pi = this.me.pirate;
     return pi;
@@ -128,11 +128,11 @@ export class GameService {
     return this._myship;
   }
 
-  monsterloc(): Observable<Location>{
+  monsterloc(): Observable<Location> {
     return this._monster;
   }
 
-  poolloc(): Observable<Location>{
+  poolloc(): Observable<Location> {
     return this._pool;
   }
 

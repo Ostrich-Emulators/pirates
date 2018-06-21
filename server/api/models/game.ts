@@ -324,28 +324,41 @@ export class Game {
             // update the ships involved in the combat (for player ships)
             my.players.forEach(p => {
                 if (result.attackee.id === p.ship.id) {
-                    if (result.attackee.hullStrength < 0) {
+                    var sunk = (result.attackee.hullStrength < 0);
+                    var abandoned = (result.attackee.crew.count < 1);
+
+                    if (sunk || abandoned) {
                         var shipname: string = Names.ship();
+                        var newnum: number = Number.parseInt(p.ship.id.replace(/.*-/, ''));
                         my.pushMessage(p.id, result.attackee.name +
-                            ' has been sunk, but we\'ve comandeered another: ' +
-                            shipname);
-                        var s: Ship = this.createShip(p.id + '-1', p.pirate.avatar,
+                            ' has been ' + (sunk ? 'sunk' : 'abandoned') +
+                            ' but we\'ve comandeered another: ' + shipname);
+                        var s: Ship = this.createShip(p.id + '-' + (newnum + 1), p.pirate.avatar,
                             ShipType.SMALL);
+                        my.addShipToCollisionSystem(s);
                         s.name = shipname;
                         result.attackee = s;
                     }
+
                     p.setShip(result.attackee);
                 }
                 if (result.attacker.id === p.ship.id) {
-                    if (result.attacker.hullStrength < 0) {
+                    var sunk = (result.attacker.hullStrength < 0);
+                    var abandoned = (result.attacker.crew.count < 1);
+
+                    if (sunk || abandoned) {
                         var shipname: string = Names.ship();
-                        my.pushMessage(p.id, result.attackee.name +
-                            ' has been sunk, but we\'ve comandeered another: ' +
-                            shipname);
-                        var s: Ship = this.createShip(p.id + '-1', p.pirate.avatar,
+                        var newnum: number = Number.parseInt(p.ship.id.replace(/.*-/, ''));
+                        my.pushMessage(p.id, result.attacker.name +
+                            ' has been ' + (sunk ? 'sunk' : 'abandoned') +
+                            ' but we\'ve comandeered another: ' + shipname);
+                        var s: Ship = this.createShip(p.id + '-' + (newnum + 1), p.pirate.avatar,
                             ShipType.SMALL);
+                        my.addShipToCollisionSystem(s);
                         s.name = shipname;
+                        result.attacker = s;
                     }
+
                     p.setShip(result.attacker);
                 }
             });
@@ -358,6 +371,11 @@ export class Game {
                         if (result.hits > 0) {
                             my.pushMessage(result.attacker,
                                 result.attackee.name + ' has been hit!');
+                        }
+
+                        if (result.attackee.crew.count < 1) {
+                            my.pushMessage(result.attacker,
+                                result.attackee.name + ' has been abandoned!');
                         }
                     }
                     else {
