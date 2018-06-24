@@ -59,6 +59,7 @@ export class ShipController {
             speedy: speedy
         };
         this.one(shipid).anchored = false;
+        this.one(shipid).docked = false;
     }
 
     fire(from: string, at: string) {

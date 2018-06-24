@@ -23,5 +23,6 @@ export interface Ship {
     gold?: number,
     location: Location,
     course?: Course,
-    anchored: boolean
+    anchored: boolean,
+    docked: boolean
 }

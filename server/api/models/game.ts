@@ -69,6 +69,8 @@ export class Game {
         var playernumber: number = this.players.size + 1;
 
         var ship = this.createShip(playernumber + '-1', pirate.avatar, type);
+        ship.location.x = 245;
+        ship.location.y = 225;
         ship.captain = pirate.name;
         ship.gold = 120;
         ship.name = shipname;
@@ -153,6 +155,7 @@ export class Game {
             storage: def.storage,
             location: { x: 100, y: 200 },
             anchored: true,
+            docked: false,
             crew: crew,
             name: Names.ship(),
             captain: Names.captain(Math.random() < 0.5)
@@ -260,7 +263,10 @@ export class Game {
         return (0xFF == pixel);
     }
     iscity(pixel): boolean {
-        return (0xFF00FF == pixel);
+        // city color (green) doesn't always work!
+        //return (0xFF00FF == pixel);
+        return (0xFF00FF == pixel || !(this.isinland(pixel) || this.isoutofbounds(pixel)
+            || this.iswater(pixel)));
     }
     isoutofbounds(pixel): boolean {
         return (0xFFFFFFFF == pixel);
@@ -448,16 +454,25 @@ export class Game {
         var my: Game = this;
         console.log('starting game loop');
         var updateShipLocation = function (ship: Ship, player?: Player) {
-            if (!ship.anchored) {
+            if (!(ship.anchored || ship.docked)) {
                 var newx = ship.location.x + ship.course.speedx;
                 var newy = ship.location.y + ship.course.speedy;
 
-                var pixel = my.mapguide.getPixelColor(newx, newy);
+                var pixel: number = my.mapguide.getPixelColor(newx, newy);
+                //console.log('pixel at (' + Math.floor(newx) +
+                  //  ',' + Math.floor(newy) + '): ' + pixel.toString(16)+ '('+pixel+')');
                 if (my.isnavigable(pixel)) {
                     ship.location.x = newx;
                     ship.location.y = newy;
+
+                    if (my.iscity(pixel)) {
+                        console.log('in city!');
+                        ship.anchored = true;
+                        ship.docked = true;
+                    }
                 }
                 else {
+                    console.log('not navigable?');
                     ship.anchored = true;
                     if (my.isinland(pixel)) {
                         ship.hullStrength -= 1;
@@ -467,16 +482,13 @@ export class Game {
                     }
                 }
 
-                // if we overshoot our dst, stop
-                // FIXME: this doesn't always work
-                if (((ship.course.speedx < 0 && ship.location.x < ship.course.dstx) ||
-                    (ship.course.speedy > 0 && ship.location.x > ship.course.dstx)) &&
-                    ((ship.course.speedy < 0 && ship.location.y < ship.course.dsty) ||
-                        (ship.course.speedy > 0 && ship.location.y > ship.course.dsty))) {
+                var nextx = ship.location.x + ship.course.speedx;
+                var nexty = ship.location.y + ship.course.speedy;
+                if ((Math.abs(nextx - ship.course.dstx) < 1) &&
+                    ((Math.abs(nexty - ship.course.dsty) < 1))) {
                     ship.anchored = true;
-                    // move ship exactly to our dst (just tidying up a bit)
-                    //ship.location.x = ship.course.dstx;
-                    //ship.location.y = ship.course.dsty;
+                    ship.location.x = ship.course.dstx;
+                    ship.location.y = ship.course.dsty;
                 }
             }
         }
