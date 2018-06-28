@@ -370,7 +370,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       (my.shortcollider.checkCollisions(my.ship.id).length > 0);
 
     my.ships.forEach((ship: Ship) => {
-      console.log(ship.id + '=>' + ship.crew.count);
+      // console.log(ship.id + '=>' + ship.crew.count);
       var shipimg = my.images[ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg'];
       var ismyship: boolean = (ship.id === my.ship.id);
       if (ismyship) {

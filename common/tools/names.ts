@@ -178,6 +178,39 @@ export class Names {
         "Pauline 'Defiance' Currington"
     ];
 
+    static CITIES: string[] = [
+        'Huuxby',
+        'Watset',
+        'Bripus',
+        'Ozienland',
+        'Iucruoxsea',
+        'Qrork',
+        'Dok',
+        'Couver',
+        'Kraablam',
+        'Plaefrando',
+        'Choedale',
+        'Ziafsall',
+        'Puekton',
+        'Eiprepson',
+        'Iheaphis',
+        'Volk',
+        'Curgh',
+        'Iwrose',
+        'Hidresa',
+        'Yhazence',
+        'Pewood',
+        'Slosburn',
+        'Briogan',
+        'Oekherrough',
+        'Aecuuport',
+        'Efico',
+        'Tria',
+        'Phane',
+        'Usuful',
+        'Slajanbu'
+    ];
+
     static ship(): string {
         var name = this.SHIPS[this.shipidx];
         this.shipidx += 1;
@@ -200,5 +233,10 @@ export class Names {
             var name:string = this.CAPTAINS_M[Math.floor(Math.random() * this.CAPTAINS_M.length)];
             return name;
         }
+    }
+
+    static city() {
+        var name: string = this.CITIES[Math.floor(Math.random() * this.CITIES.length)];
+        return name;
     }
 };

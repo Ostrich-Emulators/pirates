@@ -1,8 +1,8 @@
 import { Ship } from './ship'
-import { ShipPair } from './ship-pair'
 import { Location } from './location'
 import { CombatResult } from './combat-result';
 import { BoardResult } from './board-result';
+import { City } from './city'
 
 export interface StatusResponse {
     messages: string[],
@@ -11,5 +11,5 @@ export interface StatusResponse {
     poolloc?: Location,
     monsterloc?: Location,
     combat?: CombatResult[],
-    board?: BoardResult[]
+    board?: BoardResult[],
 }

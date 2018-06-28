@@ -2,6 +2,7 @@
   <div id="info-bar" fxFlex="25%">
     <app-info-bar></app-info-bar>
   </div>
+  <div *ngIf="ship?.docked">Docked at {{ ship.docked.name }}</div>
   <div id="main-map" fxFlex>
     <app-map></app-map>
   </div>

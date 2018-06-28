@@ -1,7 +1,5 @@
 import { Player } from '../../../common/model/player'
 import { Location } from '../../../common/model/location'
-import { Rectangle } from '../../../common/model/rectangle'
-import { Circle } from '../../../common/model/circle'
 import { Pirate } from '../../../common/model/pirate'
 import { ShipType } from '../../../common/model/ship-type.enum'
 import { ShipDefinition } from '../../../common/model/ship-definition'
@@ -15,6 +13,8 @@ import { Names } from '../../../common/tools/names'
 import { CombatResult } from '../../../common/model/combat-result';
 import { BoardResult, BoardCode } from '../../../common/model/board-result';
 import { ShipAi } from '../combat/ship-ai';
+import { City } from '../../../common/model/city'
+import { Calculators } from '../../../common/tools/calculators';
 
 var jimp = require('jimp')
 
@@ -37,6 +37,7 @@ export class Game {
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine();
     private ai: ShipAi = new ShipAi();
+    private cities: City[] = [];
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -50,6 +51,26 @@ export class Game {
         { x: 200, y: 183 }];
     private MPCT: number = 0.9;
     private WPCT: number = 0.9;
+
+    constructor() {
+        var CITYLOCATIONS: Location[] = [
+            { x: 532, y: 82 },
+            { x: 289, y: 202 },
+            { x: 307, y: 497 }
+        ];
+        for (var i = 0; i < CITYLOCATIONS.length; i++){
+            this.cities.push({
+                name: Names.city(),
+                location: CITYLOCATIONS[i],
+                
+                melee: Math.random() * 20 + 10,
+                hull: Math.random() * 20 + 20,
+                sail: Math.random() * 15 + 20,
+                sailing: Math.random() * 50 + 50,
+                ammo: Math.random() * 1 + 1
+            });
+        }
+    }
 
     getPlayers(): Player[] {
         var p: Player[] = [];
@@ -155,7 +176,6 @@ export class Game {
             storage: def.storage,
             location: { x: 100, y: 200 },
             anchored: true,
-            docked: false,
             crew: crew,
             name: Names.ship(),
             captain: Names.captain(Math.random() < 0.5)
@@ -450,11 +470,15 @@ export class Game {
         }
     }
 
+    isdocked(s: Ship): boolean {
+        return ( s.docked && null != s.docked );
+    }
+
     start() {
         var my: Game = this;
         console.log('starting game loop');
         var updateShipLocation = function (ship: Ship, player?: Player) {
-            if (!(ship.anchored || ship.docked)) {
+            if (!(ship.anchored || my.isdocked( ship )) {
                 var newx = ship.location.x + ship.course.speedx;
                 var newy = ship.location.y + ship.course.speedy;
 
@@ -466,9 +490,23 @@ export class Game {
                     ship.location.y = newy;
 
                     if (my.iscity(pixel)) {
-                        console.log('in city!');
+                        var city: City;
+                        var mindist: number = 1000000000;
+                        for (var i = 0; i < my.cities.length; i++){
+                            var dist: number = Calculators.distance(ship.location,
+                                my.cities[i].location);
+                            if (dist < mindist) {
+                                dist = mindist;
+                                city = my.cities[i];
+                            }
+                        }
+
+                        console.log('in city! ' + city.name);
                         ship.anchored = true;
-                        ship.docked = true;
+                        ship.docked = city;
+                    }
+                    else {
+                        ship.docked = null;
                     }
                 }
                 else {

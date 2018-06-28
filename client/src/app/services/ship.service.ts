@@ -5,7 +5,6 @@ import { Ship } from '../../../../common/model/ship'
 import { GameService } from './game.service';
 import { Collider } from '../../../../common/tools/collider';
 import { Subject } from 'rxjs/Subject';
-import { CollisionBody } from '../../../../common/model/body';
 import { Observable } from 'rxjs/Observable';
 
 @Injectable()
@@ -72,8 +71,8 @@ export class ShipService {
     my.longcollider.clear();
     my.shortcollider.clear();
 
-
-    if (!(my.ship.ammo > 0 && my.ship.cannons > 0)) {
+    var isdocked: boolean = (null != my.ship.docked);
+    if (!(my.ship.ammo > 0 && my.ship.cannons > 0 && isdocked)) {
       my.targets.next([]);
       return;
     }

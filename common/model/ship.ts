@@ -2,6 +2,7 @@ import { ShipType } from './ship-type.enum'
 import { Location } from './location'
 import { Course } from './course'
 import { Crew } from './crew'
+import { City }  from './city'
 
 export interface Ship {
     id:string,
@@ -24,5 +25,5 @@ export interface Ship {
     location: Location,
     course?: Course,
     anchored: boolean,
-    docked: boolean
+    docked?: City
 }
