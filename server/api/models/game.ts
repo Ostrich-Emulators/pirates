@@ -58,9 +58,12 @@ export class Game {
             { x: 289, y: 202 },
             { x: 307, y: 497 }
         ];
+        
+        var names:string[]=Names.city(CITYLOCATIONS.length),
+
         for (var i = 0; i < CITYLOCATIONS.length; i++){
             this.cities.push({
-                name: Names.city(),
+                name: names[i],
                 location: CITYLOCATIONS[i],
                 
                 melee: Math.random() * 20 + 10,
@@ -496,7 +499,7 @@ export class Game {
                             var dist: number = Calculators.distance(ship.location,
                                 my.cities[i].location);
                             if (dist < mindist) {
-                                dist = mindist;
+                                mindist = dist;
                                 city = my.cities[i];
                             }
                         }

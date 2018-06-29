@@ -235,8 +235,22 @@ export class Names {
         }
     }
 
-    static city() {
-        var name: string = this.CITIES[Math.floor(Math.random() * this.CITIES.length)];
-        return name;
+    static city(count?: number): string[] {
+        if (!count) {
+            count = 1;
+        }
+
+        var names: string[] = [];
+        var idx = 0;
+        var taken: Set<string> = new Set<string>();
+        while (idx < count) {
+            var name: string = this.CITIES[Math.floor(Math.random() * this.CITIES.length)];
+            if (!taken.has(name)) {
+                names.push(name);
+                idx++;
+            }
+        }
+
+        return names;
     }
 };
