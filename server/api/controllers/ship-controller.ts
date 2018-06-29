@@ -59,7 +59,6 @@ export class ShipController {
             speedy: speedy
         };
         this.one(shipid).anchored = false;
-        this.one(shipid).docked = false;
     }
 
     fire(from: string, at: string) {
@@ -91,5 +90,9 @@ export class ShipController {
             return;
         }
         this.game.board(this.shiplkp.get(from), this.shiplkp.get(at));
+    }
+
+    undock(shipid: string) {
+        this.one(shipid).docked = null;
     }
 }

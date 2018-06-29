@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ShipService } from '../../services/ship.service';
 import { GameService } from '../../services/game.service';
 
-import { forkJoin } from 'rxjs/observable/forkJoin'
 import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
 import { Ship } from '../../../../../common/model/ship';
 import { BoardResult, BoardCode } from '../../../../../common/model/board-result';

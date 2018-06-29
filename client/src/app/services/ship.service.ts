@@ -71,8 +71,8 @@ export class ShipService {
     my.longcollider.clear();
     my.shortcollider.clear();
 
-    var isdocked: boolean = (null != my.ship.docked);
-    if (!(my.ship.ammo > 0 && my.ship.cannons > 0 && isdocked)) {
+    //var isdocked: boolean = (null != my.ship.docked);
+    if (!(my.ship.ammo > 0 && my.ship.cannons > 0 )) {
       my.targets.next([]);
       return;
     }

@@ -19,6 +19,7 @@ import { CrewDisplayComponent } from './components/info-bar/crew-display/crew-di
 import { ShipDisplayComponent } from './components/info-bar/ship-display/ship-display.component';
 import { SupplyDisplayComponent } from './components/info-bar/supply-display/supply-display.component';
 import { ActionDisplayComponent } from './components/info-bar/action-display/action-display.component';
+import { CityComponent } from './components/city/city.component';
 
 
 @NgModule({
@@ -32,7 +33,8 @@ import { ActionDisplayComponent } from './components/info-bar/action-display/act
     CrewDisplayComponent,
     ShipDisplayComponent,
     SupplyDisplayComponent,
-    ActionDisplayComponent
+    ActionDisplayComponent,
+    CityComponent
   ],
   imports: [
     HttpClientModule,

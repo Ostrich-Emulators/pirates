@@ -152,4 +152,9 @@ export class GameService {
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/course';
     this.http.post(url, loc).subscribe();
   }
+
+  undock() {
+    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/undock';
+    this.http.post(url, null).subscribe();
+  }
 }

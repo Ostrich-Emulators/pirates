@@ -48,6 +48,10 @@ app.route('/ships/:shipId/fire')
     .post(function (req, res) {
         res.json(shipcontroller.fire(req.params.shipId, req.body.targetid));
     });
+app.route('/ships/:shipId/undock')
+    .post(function (req, res) {
+        res.json(shipcontroller.undock(req.params.shipId));
+    });
 app.route('/ships/:shipId/board')
     .post(function (req, res) {
         res.json(shipcontroller.board(req.params.shipId, req.body.targetid));
