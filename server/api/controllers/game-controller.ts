@@ -8,7 +8,7 @@ import { Crew } from '../../../common/model/crew';
 import { Ship } from '../../../common/model/ship';
 import { ShipPair } from '../../../common/model/ship-pair';
 import { StatusResponse } from '../../../common/model/status-response';
-import { Game } from '../models/game';
+import { Game } from '../engine/game';
 import { CombatResult } from '../../../common/model/combat-result';
 import { BoardResult } from '../../../common/model/board-result';
 

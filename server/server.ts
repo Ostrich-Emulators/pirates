@@ -4,7 +4,7 @@ var cors = require('cors')
 var jimp = require('jimp')
 var bodyParser = require('body-parser')
 
-import { Game } from "./api/models/game"
+import { Game } from "./api/engine/game"
 import { GameController } from "./api/controllers/game-controller"
 import { ShipController } from './api/controllers/ship-controller'
 import { Player } from "../common/model/player"
@@ -55,6 +55,10 @@ app.route('/ships/:shipId/undock')
 app.route('/ships/:shipId/board')
     .post(function (req, res) {
         res.json(shipcontroller.board(req.params.shipId, req.body.targetid));
+    });
+app.route('/ships/:shipId/buy')
+    .post(function (req, res) {
+        res.json(shipcontroller.buy(req.params.shipId, req.body));
     });
 
 app.route('/players')

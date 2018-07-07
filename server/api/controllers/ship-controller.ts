@@ -1,8 +1,9 @@
 'use strict';
 
-import { Game } from '../models/game'
+import { Game } from '../engine/game'
 import { Ship } from '../../../common/model/ship'
 import { Location } from '../../../common/model/location';
+import { City } from '../../../common/model/city';
 
 export class ShipController {
     private shiplkp: Map<string, Ship> = new Map<string, Ship>();
@@ -94,5 +95,24 @@ export class ShipController {
 
     undock(shipid: string) {
         this.one(shipid).docked = null;
+    }
+
+    buy(shipid: string, citybuy: City) {
+        if (!this.shiplkp.has(shipid)) {
+            console.error('unknown ship: ' + shipid);
+            return;
+        }
+
+        var ship: Ship = this.one(shipid);
+        var city: City;
+        for (var i: number = 0; i < this.game.cities.length; i++){
+            if (ship.docked.name === this.game.cities[i].name) {
+                city = this.game.cities[i];
+            }
+        }
+
+        if (city) {
+            this.game.training.train(ship, city, citybuy );
+        }
     }
 }

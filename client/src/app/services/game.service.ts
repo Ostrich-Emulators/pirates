@@ -11,6 +11,7 @@ import { StatusResponse } from '../../../../common/model/status-response'
 import { CombatResult } from '../../../../common/model/combat-result';
 import { Collider } from '../../../../common/tools/collider';
 import { BoardResult } from '../../../../common/model/board-result';
+import { City } from '../../../../common/model/city';
 
 @Injectable()
 export class GameService {
@@ -157,4 +158,10 @@ export class GameService {
     var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/undock';
     this.http.post(url, null).subscribe();
   }
+
+  buy(city: City) {
+    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/buy';
+    this.http.post(url, city).subscribe();
+  }
+
 }

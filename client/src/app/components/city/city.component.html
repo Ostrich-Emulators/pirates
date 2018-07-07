@@ -1,3 +1,21 @@
-<p>
+<div *ngIf="ship">
   <button (click)="gamesvc.undock()">Leave {{city.name}}</button>
-</p>
+  <form>
+    <fieldset>
+      <legend>Train</legend>
+      <button (click)="train('melee')" [disabled]="ship.gold<city.melee">Fighting ({{city.melee|number:'1.0-0'}})</button>
+      <p></p>
+      <button (click)="train('sailing')" [disabled]="ship.gold<city.sailing">Sailing ({{city.sailing|number:'1.0-0'}})</button>
+    </fieldset>
+    <fieldset>
+      <legend>Repair</legend>
+      <button (click)="train('hull')" [disabled]="ship.gold<city.hull">Hull ({{city.hull|number:'1.0-0'}})</button>
+      <p></p>
+      <button (click)="train('sail')" [disabled]="ship.gold<city.sail">Sail ({{city.sail|number:'1.0-0'}})</button>
+    </fieldset>
+    <fieldset>
+      <legend>Supply</legend>
+      <button (click)="train('ammo')" [disabled]="ship.gold<city.ammo">Ammo ({{city.ammo|number:'1.0-0'}})</button>
+    </fieldset>
+  </form>
+</div>

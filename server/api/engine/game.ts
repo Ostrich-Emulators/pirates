@@ -6,15 +6,16 @@ import { ShipDefinition } from '../../../common/model/ship-definition'
 import { Ship } from '../../../common/model/ship'
 import { CollisionBody } from '../../../common/model/body'
 import { Collider } from '../../../common/tools/collider'
-import { SeaMonster } from './seamonster'
+import { SeaMonster } from '../models/seamonster'
 import { ShipPair } from '../../../common/model/ship-pair'
-import { CombatEngine } from '../combat/combat-engine'
 import { Names } from '../../../common/tools/names'
 import { CombatResult } from '../../../common/model/combat-result';
 import { BoardResult, BoardCode } from '../../../common/model/board-result';
-import { ShipAi } from '../combat/ship-ai';
 import { City } from '../../../common/model/city'
 import { Calculators } from '../../../common/tools/calculators';
+import { ShipAi } from './ship-ai';
+import { CombatEngine } from './combat-engine'
+import { TrainingEngine } from './training'
 
 var jimp = require('jimp')
 
@@ -37,7 +38,8 @@ export class Game {
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine();
     private ai: ShipAi = new ShipAi();
-    private cities: City[] = [];
+    training: TrainingEngine = new TrainingEngine();
+    cities: City[] = [];
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -481,7 +483,7 @@ export class Game {
         var my: Game = this;
         console.log('starting game loop');
         var updateShipLocation = function (ship: Ship, player?: Player) {
-            if (!(ship.anchored || my.isdocked( ship )) {
+            if (!(ship.anchored || my.isdocked(ship))) {
                 var newx = ship.location.x + ship.course.speedx;
                 var newy = ship.location.y + ship.course.speedy;
 
@@ -515,6 +517,7 @@ export class Game {
                 else {
                     console.log('not navigable?');
                     ship.anchored = true;
+
                     if (my.isinland(pixel)) {
                         ship.hullStrength -= 1;
                         if (player) {
@@ -523,8 +526,10 @@ export class Game {
                     }
                 }
 
+
                 var nextx = ship.location.x + ship.course.speedx;
                 var nexty = ship.location.y + ship.course.speedy;
+                // FIXME: this doesn't work
                 if ((Math.abs(nextx - ship.course.dstx) < 1) &&
                     ((Math.abs(nexty - ship.course.dsty) < 1))) {
                     ship.anchored = true;
@@ -620,7 +625,7 @@ export class Game {
         setInterval(function () {
             my.collider.remove('whirlpool');
             if (Math.random() < my.WPCT) {
-                my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)]
+                my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
                 my.collider.add({
                     id: 'whirlpool',
                     getX: function (): number { return my.poolloc.x; },
