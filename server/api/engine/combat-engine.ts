@@ -5,8 +5,28 @@ import { BoardResult, BoardCode } from '../../../common/model/board-result';
 import { ShipDefinition } from '../../../common/model/ship-definition';
 import { Crew } from '../../../common/model/crew';
 import { Calculators } from '../../../common/tools/calculators';
+import { Game } from './game';
 
 export class CombatEngine {
+    private lastfiring: Map<string, number> = new Map<string, number>(); // shipid, last fire turn
+
+    constructor(private game: Game) { }
+
+    cannonsAreLoaded(attacker: Ship): boolean {
+        if (this.lastfiring.has(attacker.id)) {
+            var okafter = this.lastfiring.get(attacker.id) + attacker.cannons.reloadspeed;
+            return (this.game.TURN > okafter);
+        }
+        return true;
+    }
+
+    readyToFire(attacker: Ship): boolean {
+        return (this.cannonsAreLoaded(attacker) &&
+            attacker.crew.count > 0 &&
+            attacker.ammo > 0);
+    }
+
+
     resolve(pair: ShipPair): CombatResult {
         console.log('resolving ' + pair.one.id + ' attacking '
             + pair.two.id + ' (hs:' + pair.two.hullStrength + ')');
@@ -24,12 +44,14 @@ export class CombatEngine {
 
         // if the attackee is too far away, don't fire
         var distance = Calculators.distance(attacker.location, attackee.location);
-        if (distance > attacker.cannonrange) {
+        if (distance > attacker.cannons.range) {
             result.hitcodes.push(HitCode.OUT_OF_RANGE);
             return result;
         }
 
-        var cannonsInAttack = Math.min(attacker.cannons, attacker.ammo);
+        this.lastfiring.set(attacker.id, this.game.TURN);
+
+        var cannonsInAttack = Math.min(attacker.cannons.count, attacker.ammo);
         attacker.ammo -= cannonsInAttack;
 
         // each cannon has a small chance of exploding during firing, depending on
@@ -39,7 +61,7 @@ export class CombatEngine {
         for (var cannon = 0; cannon < cannonsInAttack; cannon++) {
             if (Math.random() < explosionpct) {
                 result.hitcodes.push(HitCode.CANNON_EXPLODED);
-                attacker.cannons -= 1;
+                attacker.cannons.count -= 1;
                 console.log('cannon exploded!');
             }
         }
@@ -62,7 +84,7 @@ export class CombatEngine {
                 var targetpct = Math.random();
                 if (targetpct < 0.01) {
                     result.hitcodes.push(HitCode.HIT_CANNON);
-                    attackee.cannons -= Math.min(1, attackee.cannons);
+                    attackee.cannons.count -= Math.min(1, attackee.cannons.count);
                     msg += ' disabling a cannon';
                 }
                 else if (targetpct < 0.03) {
@@ -248,8 +270,8 @@ export class CombatEngine {
     getDistanceFactor(attacker: Ship, attackee: Ship): number {
         var distance = Calculators.distance(attacker.location, attackee.location);
 
-        var ratio: number = (1 - distance / attacker.cannonrange);
-        console.log('distance:' + distance + '; range: ' + attacker.cannonrange + '; ratio: ' + ratio);
+        var ratio: number = (1 - distance / attacker.cannons.range);
+        console.log('distance:' + distance + '; range: ' + attacker.cannons.range + '; ratio: ' + ratio);
 
         // idea: if we're within 25% of our cannon range, we have
         // 100% hit chance. If we're at 100% of our cannon range,

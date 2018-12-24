@@ -2,13 +2,12 @@ import { ShipType } from './ship-type.enum'
 import { Location } from './location'
 import { Course } from './course'
 import { Crew } from './crew'
-import { City }  from './city'
+import { City } from './city'
+import { Cannon } from './cannon'
 
 export interface Ship {
     id:string,
     type: ShipType,
-    cannons: number,
-    cannonrange: number,
     speed: number,
     manueverability: number,
     hullStrength: number,
@@ -17,7 +16,8 @@ export interface Ship {
     ammo: number,
     storage: number,
     crew: Crew,
-    
+    cannons: Cannon,
+
     name: string, // name of the ship
     captain: string, // name of the ship's captain (mostly for NPC ships)
     avatar: string,

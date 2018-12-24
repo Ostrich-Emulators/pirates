@@ -108,7 +108,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           src: ship,
           getX: function (): number { return ship.location.x },
           getY: function (): number { return ship.location.y },
-          getR: function (): number { return (ismyship ? ship.cannonrange : 15) }
+          getR: function (): number { return (ismyship ? ship.cannons.range : 15) }
         });
         my.shortcollider.add({
           id: ship.id,
@@ -363,7 +363,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     var showCannonTargetting: boolean =
-      (my.ship.ammo > 0 && my.ship.cannons > 0
+      (my.ship.ammo > 0 && my.ship.cannons.count > 0
         && my.longcollider.checkCollisions(my.ship.id).length > 0);
 
     var showBoardTargetting: boolean =
@@ -394,12 +394,12 @@ export class MapComponent implements OnInit, AfterViewInit {
 
             var rad = my.canvasctx.createRadialGradient(
               ship.location.x, ship.location.y, 1,
-              ship.location.x, ship.location.y, ship.cannonrange);
+              ship.location.x, ship.location.y, ship.cannons.range);
 
             rad.addColorStop(0, my.hexToRGBA(my.gamesvc.myplayer().color, 0.6));
             rad.addColorStop(1, my.hexToRGBA(my.gamesvc.myplayer().color, 0.1));
             my.canvasctx.fillStyle = rad;
-            my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannonrange, 0, 2 * Math.PI);
+            my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannons.range, 0, 2 * Math.PI);
             my.canvasctx.fill();
           }
           if (showBoardTargetting) {

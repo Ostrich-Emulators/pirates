@@ -1,5 +1,5 @@
 export interface ShipDefinition {
-    cannons: number,
+    maxcannons: number,
     crewsize: number,
     storage: number,
     speed: number,

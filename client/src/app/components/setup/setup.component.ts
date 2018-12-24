@@ -45,7 +45,7 @@ export class SetupComponent implements OnInit {
   sail() {
     this.gamesvc.start(this.captain, this.female, this.avatar,
       this.shipname, this.color ).subscribe(data => {
-      this.router.navigate(['/game']);
+        this.router.navigate(['/game']);
     });
   }
 }

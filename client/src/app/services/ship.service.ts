@@ -72,7 +72,7 @@ export class ShipService {
     my.shortcollider.clear();
 
     //var isdocked: boolean = (null != my.ship.docked);
-    if (!(my.ship.ammo > 0 && my.ship.cannons > 0 )) {
+    if (!(my.ship.ammo > 0 && my.ship.cannons.range > 0 )) {
       my.targets.next([]);
       return;
     }
@@ -84,7 +84,7 @@ export class ShipService {
         src: ship,
         getX: function (): number { return ship.location.x },
         getY: function (): number { return ship.location.y },
-        getR: function (): number { return (ismyship ? ship.cannonrange : 15) }
+        getR: function (): number { return (ismyship ? ship.cannons.range : 15) }
       });
       my.shortcollider.add({
         id: ship.id,

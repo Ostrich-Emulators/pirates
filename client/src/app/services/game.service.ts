@@ -54,14 +54,14 @@ export class GameService {
         my.me = data;
         localStorage.setItem('player', JSON.stringify(data));
         my._player.next(my.me);
+
+        my.refreshData();
+        setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
       },
       (err) => {
         console.error('something happened!');
         console.error(err);
       });
-
-    my.refreshData();
-    setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
 
     return this._player;
   }

@@ -16,10 +16,13 @@ import { Calculators } from '../../../common/tools/calculators';
 import { ShipAi } from './ship-ai';
 import { CombatEngine } from './combat-engine'
 import { TrainingEngine } from './training'
+import { Cannon } from '../../../common/model/cannon';
+import { Crew } from '../../../common/model/crew';
 
 var jimp = require('jimp')
 
 export class Game {
+    private TURN_NUM: number = 0;
     private SHIP_RADIUS: number = 15;
     private POOL_RADIUS: number = 30;
     private MONSTER_RADIUS: number = 25;
@@ -28,18 +31,18 @@ export class Game {
     private monster: SeaMonster;
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
-    private collider: Collider = new Collider();
     private monsterships: Ship[] = [];
+    cities: City[] = [];
     private mapguide: any;
     private messages: Map<string, string[]> = new Map<string, string[]>(); // playerid, messages
     private fireQueue: ShipPair[] = [];
     private boardQueue: ShipPair[] = [];
     private combat: Map<string, CombatResult[]> = new Map<string, CombatResult[]>(); // playerid, results
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
-    private combatengine: CombatEngine = new CombatEngine();
-    private ai: ShipAi = new ShipAi();
+    private combatengine: CombatEngine = new CombatEngine(this);
+    private ai: ShipAi = new ShipAi(this, this.combatengine);
     training: TrainingEngine = new TrainingEngine();
-    cities: City[] = [];
+    private collider: Collider = new Collider();
 
     private WLOCATIONS: Location[] = [
         { x: 313, y: 316 },
@@ -54,6 +57,10 @@ export class Game {
     private MPCT: number = 0.9;
     private WPCT: number = 0.9;
 
+    get TURN(): number {
+        return this.TURN_NUM;
+    }
+
     constructor() {
         var CITYLOCATIONS: Location[] = [
             { x: 532, y: 82 },
@@ -61,7 +68,7 @@ export class Game {
             { x: 307, y: 497 }
         ];
         
-        var names:string[]=Names.city(CITYLOCATIONS.length),
+        var names: string[] = Names.city(CITYLOCATIONS.length);
 
         for (var i = 0; i < CITYLOCATIONS.length; i++){
             this.cities.push({
@@ -128,7 +135,7 @@ export class Game {
         switch (type) {
             case (ShipType.BIG):
                 return {
-                    cannons: 20,
+                    maxcannons: 20,
                     crewsize: 50,
                     storage: 1000,
                     speed: 0.2,
@@ -137,7 +144,7 @@ export class Game {
                 };
             case (ShipType.MEDIUM):
                 return {
-                    cannons: 12,
+                    maxcannons: 12,
                     crewsize: 20,
                     storage: 500,
                     speed: 0.4,
@@ -146,7 +153,7 @@ export class Game {
                 };
             case (ShipType.SMALL):
                 return {
-                    cannons: 8,
+                    maxcannons: 8,
                     crewsize: 10,
                     storage: 250,
                     speed: 1,
@@ -159,17 +166,23 @@ export class Game {
     createShip(id: string, avatar: string, type: ShipType): Ship {
         var def: ShipDefinition = this.shipdef(type);
 
-        var crew = {
+        var crew: Crew = {
             count: def.crewsize,
             meleeSkill: 25,
             sailingSkill: 25
         };
 
+        var cannons: Cannon = {
+            firepower: 1,
+            reloadspeed: 5,
+            range: 60,
+            count: def.maxcannons
+        };
+
         var ship: Ship = {
             id: id,
             type: type,
-            cannons: def.cannons,
-            cannonrange: 60,
+            cannons: cannons,
             speed: def.speed,
             manueverability: def.manueverability,
             hullStrength: def.hull,
@@ -235,9 +248,9 @@ export class Game {
         console.log('generating ' + ships + ' new NPC ships')
         var ship = this.createShip('placed-1', "/assets/galleon.svg", ShipType.SMALL);
         ship.gold = Math.floor(Math.random() * 20);
-        ship.cannonrange = 40;
+        ship.cannons.range = 40;
         ship.ammo = 20;
-        ship.cannons = 3;
+        ship.cannons.count = 3;
         ship.location.x = 130;
         ship.location.y = 210;
         this.nonplayerships.push(ship);
@@ -247,7 +260,7 @@ export class Game {
             var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
             ship.gold = Math.floor(Math.random() * 20);
             ship.ammo = 20;
-            ship.cannons = 3;
+            ship.cannons.count = 3;
             ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
             ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
             this.nonplayerships.push(ship);
@@ -337,7 +350,12 @@ export class Game {
     }
 
     fire(from: Ship, to: Ship) {
-        this.fireQueue.push({ one: from, two: to });
+        if (this.combatengine.readyToFire(from)) {
+            this.fireQueue.push({ one: from, two: to });
+        }
+        else {
+            console.log(JSON.stringify(from) + ' not ready to fire!');
+        }
     }
 
     board(from: Ship, to: Ship) {
@@ -515,7 +533,7 @@ export class Game {
                     }
                 }
                 else {
-                    console.log('not navigable?');
+                    //console.log('not navigable?');
                     ship.anchored = true;
 
                     if (my.isinland(pixel)) {
@@ -583,6 +601,8 @@ export class Game {
         }
 
         setInterval(function () {
+            my.TURN_NUM += 1;
+
             var playerships: Ship[] = [];
             my.players.forEach(player => {
                 playerships.push(player.ship);
