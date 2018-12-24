@@ -26,8 +26,10 @@ export class Game {
     private SHIP_RADIUS: number = 15;
     private POOL_RADIUS: number = 30;
     private MONSTER_RADIUS: number = 25;
-    poolloc: Location = null;
-    monsterloc: Location = null;
+    poolloc: Location = { x: -10000, y: -10000 };
+    monsterloc: Location = { x: -20000, y: -20000 };
+    private monsterbody: CollisionBody;
+    private poolbody: CollisionBody;
     private monster: SeaMonster;
     private players: Map<string, Player> = new Map<string, Player>();
     private nonplayerships: Ship[] = [];
@@ -54,8 +56,8 @@ export class Game {
         { x: 385, y: 587 },
         { x: 108, y: 386 },
         { x: 200, y: 183 }];
-    private MPCT: number = 0.9;
-    private WPCT: number = 0.9;
+    private MPCT: number = 1;
+    private WPCT: number = 1;
 
     get TURN(): number {
         return this.TURN_NUM;
@@ -203,39 +205,42 @@ export class Game {
     }
 
     debugImageTo(file: string): any {
+        console.log('into debug img');
+        
         var img;
         var my: Game = this;
 
         return jimp.read('map.png').then(function (image) {
             img = image;
-            //my.shipbodies.forEach(ship => {
-            //    console.log('writing ship: ' + ship.src.id + ' at ' + JSON.stringify(rect));
-            //    //image.scan(rect.x, rect.y, rect.width, rect.height, function (x, y, idx) {
-            //    image.scan(ship.getX(), ship.getY(), 4, 4, function (x, y, idx) {
-            //        image.bitmap.data[idx] = 0;
-            //        image.bitmap.data[idx + 1] = 0;
-            //        image.bitmap.data[idx + 2] = 0;
-            //    });
-            //});
-
-            if (null != my.poolloc) {
-                console.log('pool rect: ' + JSON.stringify(my.poolloc));
-                var rect = my.poolloc;
-                image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
-                    image.bitmap.data[idx] = 0x87;
-                    image.bitmap.data[idx + 1] = 0xAD;
-                    image.bitmap.data[idx + 2] = 0x4F;
-                });
-            }
-            if (null != my.monsterloc) {
-                console.log('monster rect: ' + JSON.stringify(my.monsterloc));
-                var rect = my.monsterloc;
-                image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
-                    image.bitmap.data[idx] = 0xDC;
-                    image.bitmap.data[idx + 1] = 0x91;
-                    image.bitmap.data[idx + 2] = 0x58;
-                });
-            }
+            my.collider.bodies.forEach(ship => {
+                if (!(ship == my.monsterbody || ship == my.poolbody)) {
+                    var x = ship.getX();
+                    var y = ship.getY();
+                    var w = 4;
+                        
+                    console.log('writing ship: ' + ship.src.id + ' at ' + '(' + x + ',' + y + ')');
+                    image.scan(ship.getX(), ship.getY(), 4, 4, function (x, y, idx) {
+                        image.bitmap.data[idx] = 0;
+                        image.bitmap.data[idx + 1] = 0;
+                        image.bitmap.data[idx + 2] = 0;
+                    });
+                }
+            });
+            
+            console.log('pool rect: ' + JSON.stringify(my.poolloc));
+            var rect = my.poolloc;
+            image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
+                image.bitmap.data[idx] = 0x87;
+                image.bitmap.data[idx + 1] = 0xAD;
+                image.bitmap.data[idx + 2] = 0x4F;
+            });
+            console.log('monster rect: ' + JSON.stringify(my.monsterloc));
+            var rect = my.monsterloc;
+            image.scan(rect.x, rect.y, 20, 20, function (x, y, idx) {
+                image.bitmap.data[idx] = 0xDC;
+                image.bitmap.data[idx + 1] = 0x91;
+                image.bitmap.data[idx + 2] = 0x58;
+            });
 
             return image.write(file);
         });
@@ -293,6 +298,11 @@ export class Game {
     isnavigable(pixel): boolean {
         return (this.iswater(pixel) || this.iscity(pixel));
     }
+
+    getPixel(x: number, y: number): any {
+        return this.mapguide.getPixelColor(x, y);
+    }
+
     iswater(pixel): boolean {
         return (0xFFFF == pixel || 0xFF0000FF == pixel);
     }
@@ -505,7 +515,7 @@ export class Game {
                 var newx = ship.location.x + ship.course.speedx;
                 var newy = ship.location.y + ship.course.speedy;
 
-                var pixel: number = my.mapguide.getPixelColor(newx, newy);
+                var pixel: number = my.getPixel(newx, newy);
                 //console.log('pixel at (' + Math.floor(newx) +
                   //  ',' + Math.floor(newy) + '): ' + pixel.toString(16)+ '('+pixel+')');
                 if (my.isnavigable(pixel)) {
@@ -570,34 +580,29 @@ export class Game {
         }
 
         var checkMonster = function () {
-            if (null != my.monsterloc) {
-                var monster: CollisionBody = my.collider.get('monster');
-                my.collider.checkCollisions(monster).forEach(body => {
-                    if ('whirlpool' !== body.id) {
-                        if (body.id.substr(0, 1) !== '-') {
-                            my.pushMessage(body.src, 'Sea Monster Strike!');
-                        }
-                        my.monsterships.push(body.src);
-                        body.src.anchored = true;
+            my.collider.checkCollisions(my.monsterbody).forEach(body => {
+                if (my.poolbody !== body) {
+                    if (body.id.substr(0, 1) !== '-') {
+                        my.pushMessage(body.src, 'Sea Monster Strike!');
                     }
-                });
-            }
-        }
+                    my.monsterships.push(body.src);
+                    body.src.anchored = true;
+                }
+            });
+        };
+        
 
         var checkWhirlpool = function () {
-            if (null != my.poolloc) {
-                var poolcircle: CollisionBody = my.collider.get('whirlpool');
-                my.collider.checkCollisions(poolcircle).forEach(body => {
-                    if ('monster' !== body.id) {
-                        if (body.id.substr(0, 1) !== '-') {
-                            my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
-                        }
-                        var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-                        body.src.location.x = loc.x;
-                        body.src.location.y = loc.y;
+            my.collider.checkCollisions(my.poolbody).forEach(body => {
+                if (my.monsterbody !== body) {
+                    if (body.id.substr(0, 1) !== '-') {
+                        my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
                     }
-                });
-            }
+                    var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                    body.src.location.x = loc.x;
+                    body.src.location.y = loc.y;
+                }
+            });
         }
 
         setInterval(function () {
@@ -628,48 +633,37 @@ export class Game {
         }, 100);
 
         my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-        my.collider.add({
+        my.poolbody = {
             id: 'whirlpool',
             getX: function (): number { return my.poolloc.x; },
             getY: function (): number { return my.poolloc.y; },
             getR: function (): number { return my.POOL_RADIUS; }
-        });
+        };
+        
         my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-        my.collider.add({
+        my.monsterbody = {
             id: 'monster',
             getX: function (): number { return my.monsterloc.x; },
             getY: function (): number { return my.monsterloc.y; },
             getR: function (): number { return my.MONSTER_RADIUS; }
-        });
+        
+        };
+        my.collider.add(my.poolbody);
+        my.collider.add(my.monsterbody);
 
         setInterval(function () {
-            my.collider.remove('whirlpool');
-            if (Math.random() < my.WPCT) {
-                my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
-                my.collider.add({
-                    id: 'whirlpool',
-                    getX: function (): number { return my.poolloc.x; },
-                    getY: function (): number { return my.poolloc.y; },
-                    getR: function (): number { return my.POOL_RADIUS; }
-                });
-            }
-            else {
-                my.poolloc = null;
-            }
+            my.poolloc = (Math.random() < my.WPCT
+                ? my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)]
+                : { x: -10000, y: -10000 }
+            );
+            console.log('poolloc is now: ' + JSON.stringify(my.poolloc));
 
-            my.collider.remove('monster');
-            if (Math.random() < my.MPCT) {
-                my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
-                my.collider.add({
-                    id: 'monster',
-                    getX: function (): number { return my.monsterloc.x; },
-                    getY: function (): number { return my.monsterloc.y; },
-                    getR: function (): number { return my.MONSTER_RADIUS; }
-                });
-            }
-            else {
-                my.monsterloc = null;
-            }
+            my.monsterloc = (Math.random() < my.MPCT
+                ? my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)]
+                : { x: -20000, y: -20000 }
+            );
+            console.log('monsterloc is now: ' + JSON.stringify(my.monsterloc));
+
         }, 60000);
     }
 }

@@ -65,6 +65,11 @@ export class Collider {
                 collisions.push(body);
             }
         });
+
+        if (collisions.length > 0) {
+            console.log(tgt);
+            console.log(collisions);
+        }
         return collisions;
     }
 

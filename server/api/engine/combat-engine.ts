@@ -22,6 +22,7 @@ export class CombatEngine {
 
     readyToFire(attacker: Ship): boolean {
         return (this.cannonsAreLoaded(attacker) &&
+            attacker.cannons.count > 0 &&
             attacker.crew.count > 0 &&
             attacker.ammo > 0);
     }

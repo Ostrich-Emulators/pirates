@@ -13,8 +13,7 @@ export class ShipAi {
     if (this.combateng.readyToFire(ship)) {
       playerships.forEach(enemy => {
         var dist = Calculators.distance(ship.location, enemy.location);
-
-        if (dist < ship.cannons.range * 3 / 4 && ship.ammo > 0 && ship.cannons.count > 0) {
+        if (dist < ship.cannons.range * 3 / 4) {
           // if a pirate is too close, blast 'em!
           game.fire(ship, enemy);
           fired = true;
@@ -60,7 +59,7 @@ export class ShipAi {
           movey -= dist;
           break;
         default:
-          // don't move
+        // don't move
       }
       var diffx = movex;
       var diffy = movey;
@@ -76,14 +75,22 @@ export class ShipAi {
         speedy = 0 - speedy;
       }
 
-      ship.course = {
-        dstx: ship.location.x + movex,
-        dsty: ship.location.y + movey,
-        speedx: speedx,
-        speedy: speedy
-      };
+      var dstx: number = ship.location.x + movex;
+      var dsty: number = ship.location.y + movey;
+      if (this.game.isnavigable(this.game.getPixel(dstx, dsty))){
+        ship.course = {
+          dstx: ship.location.x + movex,
+          dsty: ship.location.y + movey,
+          speedx: speedx,
+          speedy: speedy
+        };
+      }
+      else {
+        movex = 0;
+        movey = 0;
+      }
 
-      ship.anchored = (0 === (movex + movey));
+      ship.anchored = (0 === (movex + movey));  
     }
   }
 }
