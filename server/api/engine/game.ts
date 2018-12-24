@@ -174,7 +174,7 @@ export class Game {
 
         var cannons: Cannon = {
             firepower: 1,
-            reloadspeed: 5,
+            reloadspeed: 15,
             range: 60,
             count: def.maxcannons
         };
