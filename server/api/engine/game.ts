@@ -18,6 +18,7 @@ import { CombatEngine } from './combat-engine'
 import { TrainingEngine } from './training'
 import { Cannon } from '../../../common/model/cannon';
 import { Crew } from '../../../common/model/crew';
+import { stringify } from 'querystring';
 
 var jimp = require('jimp')
 
@@ -206,23 +207,20 @@ export class Game {
 
     debugImageTo(file: string): any {
         console.log('into debug img');
-        
-        var img;
         var my: Game = this;
 
         return jimp.read('map.png').then(function (image) {
-            img = image;
             my.collider.bodies.forEach(ship => {
                 if (!(ship == my.monsterbody || ship == my.poolbody)) {
                     var x = ship.getX();
                     var y = ship.getY();
-                    var w = 4;
+                    var npc: boolean = (ship.id.startsWith('-'));
                         
                     console.log('writing ship: ' + ship.src.id + ' at ' + '(' + x + ',' + y + ')');
-                    image.scan(ship.getX(), ship.getY(), 4, 4, function (x, y, idx) {
-                        image.bitmap.data[idx] = 0;
-                        image.bitmap.data[idx + 1] = 0;
-                        image.bitmap.data[idx + 2] = 0;
+                    image.scan(ship.getX(), ship.getY(), 8, 8, function (x, y, idx) {
+                        image.bitmap.data[idx] = (npc ? 0x54 : 0xEF);
+                        image.bitmap.data[idx + 1] = (npc ? 0xE1 : 0x0A);
+                        image.bitmap.data[idx + 2] = (npc ? 0x49 : 0x5B);
                     });
                 }
             });
@@ -242,7 +240,16 @@ export class Game {
                 image.bitmap.data[idx + 2] = 0x58;
             });
 
-            return image.write(file);
+            return new Promise((resolve, reject) => { 
+                return image.write(file, (err) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve();
+                    }
+                });
+            });
         });
     }
 
@@ -251,7 +258,7 @@ export class Game {
      */
     generateNonPlayerShips(ships: number) {
         console.log('generating ' + ships + ' new NPC ships')
-        var ship = this.createShip('placed-1', "/assets/galleon.svg", ShipType.SMALL);
+        var ship = this.createShip('-100-1', "/assets/galleon.svg", ShipType.SMALL);
         ship.gold = Math.floor(Math.random() * 20);
         ship.cannons.range = 40;
         ship.ammo = 20;
@@ -266,8 +273,14 @@ export class Game {
             ship.gold = Math.floor(Math.random() * 20);
             ship.ammo = 20;
             ship.cannons.count = 3;
-            ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
-            ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
+            if (Math.random() < 0.5) {
+                ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
+                ship.location.y = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].y;
+            }
+            else {
+                ship.location.x = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].x;
+                ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
+            }
             this.nonplayerships.push(ship);
             this.addShipToCollisionSystem(ship);
         }
@@ -567,19 +580,35 @@ export class Game {
             }
         }
 
-        var checkShipCollisions = function () {
+        var checkShipCollisions = function ( lastLocationLookup:Map<string,Location> ) {
             my.collider.getCollisions().forEach(en => {
                 if (!('whirlpool' === en.first.id || 'whirlpool' === en.second.id
                     || 'monster' === en.first.id || 'monster' === en.second.id)) {
                     // do anything here?
 
-                    //my.pushMessage(en.first.src, 'encountered ship!');
-                    //my.pushMessage(en.second.src, 'encountered ship!');
+                    var damage: number = Math.random();
+                    en.first.src.hullStrength -= damage;
+                    en.second.src.hullStrength -= damage;
+                    en.first.src.anchored = true;
+                    en.second.src.anchored = true;
+
+                    my.removeIfNeeded(en.first);
+                    my.removeIfNeeded(en.second);
+
+                    en.first.src.location.x = lastLocationLookup.get(en.first.src.id).x;
+                    en.first.src.location.y = lastLocationLookup.get(en.first.src.id).y;
+                    
+                    en.second.src.location.x = lastLocationLookup.get(en.second.src.id).x;
+                    en.second.src.location.y = lastLocationLookup.get(en.second.src.id).y;
+
+                    my.pushMessage(en.first.src, 'We\'ve collided with '+en.second.src.name+'!');
+                    my.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
                 }
             });
         }
 
         var checkMonster = function () {
+            var fought: boolean = false;
             my.collider.checkCollisions(my.monsterbody).forEach(body => {
                 if (my.poolbody !== body) {
                     if (body.id.substr(0, 1) !== '-') {
@@ -587,8 +616,17 @@ export class Game {
                     }
                     my.monsterships.push(body.src);
                     body.src.anchored = true;
+                    body.src.hullStrength -= Math.random();
+                    my.removeIfNeeded(body);
+
+                    fought = true;
                 }
             });
+
+            if (fought) {
+                my.monsterloc.x = -1000;
+                my.monsterloc.y = -1000;
+            }
         };
         
 
@@ -619,17 +657,20 @@ export class Game {
             my.resolveCombat();
             my.resolveBoarding();
 
+            var lastLocationLookup: Map<string,Location> = new Map<string, Location>();
             my.players.forEach(player => {
                 var ship = player.ship;
+                lastLocationLookup.set(ship.id, { x: ship.location.x, y: ship.location.y });
                 updateShipLocation(ship, player);
             });
             my.nonplayerships.forEach((ship: Ship) => {
+                lastLocationLookup.set(ship.id, { x: ship.location.x, y: ship.location.y });
                 updateShipLocation(ship);
             });
 
             checkWhirlpool();
             checkMonster();
-            checkShipCollisions();
+            checkShipCollisions(lastLocationLookup);
         }, 100);
 
         my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
@@ -665,5 +706,24 @@ export class Game {
             console.log('monsterloc is now: ' + JSON.stringify(my.monsterloc));
 
         }, 60000);
+    }
+
+    removeIfNeeded(ship: CollisionBody) {
+        if (ship.src.hullStrength <= 0) {
+            this.collider.remove(ship);
+ 
+            this.nonplayerships.forEach((sh,idx) => { 
+                if (sh.id === ship.src.id) {
+                    this.nonplayerships.splice(idx, 1);
+                }
+            });
+
+            this.players.forEach(player => { 
+                if (player.ship.id === ship.src.id) {
+                    console.log("our ship sank, but this isn't handled yet");
+                }
+            });
+ 
+        }
     }
 }

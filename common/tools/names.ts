@@ -72,6 +72,8 @@ export class Names {
     ]
 
     static CAPTAINS_M: string[] = [
+        "Kellen 'El Gato Blanco'",
+        "Cesc 'El Huracán con Pies'",
         'Cannonball Jack',
         "Braxton 'Plankton' Parrish",
         "Kent 'Gray Beard' Zeus",

@@ -3,6 +3,7 @@ import * as express from "express"
 var cors = require('cors')
 var jimp = require('jimp')
 var bodyParser = require('body-parser')
+var fs = require( 'fs')
 
 import { Game } from "./api/engine/game"
 import { GameController } from "./api/controllers/game-controller"
@@ -21,13 +22,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 var game: Game = new Game();
-game.generateNonPlayerShips(1);
+game.generateNonPlayerShips(5);
 var shipcontroller: ShipController = new ShipController(game);
 var gamecontroller: GameController = new GameController(game);
 
 app.route('/mapimg')
     .get(function (req, res) {
-        game.debugImageTo('/tmp/img.png').then(function () { 
+        var file = '/tmp/img.png';
+        game.debugImageTo(file).then(function () { 
             res.sendFile('/tmp/img.png');
         });
     })
