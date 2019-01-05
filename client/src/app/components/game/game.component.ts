@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { ShipService } from '../../services/ship.service';
 import { GameService } from '../../services/game.service';
 
 import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
@@ -14,7 +13,7 @@ import { BoardResult, BoardCode } from '../../../../../common/model/board-result
 export class GameComponent implements OnInit {
   private messages: string[] = [];
   private ship: Ship;
-  constructor(private shipsvc: ShipService, private game: GameService) {
+  constructor(private game: GameService) {
   }
 
   ngOnInit() {

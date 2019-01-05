@@ -86,6 +86,12 @@ app.route('/players/:playerId')
     .get(function (req, res) {
         res.json(gamecontroller.one(req.params.playerId));
     });
+
+app.route('/players/:playerId/ships')
+    .get(function (req, res) {
+        res.json(shipcontroller.shipsfor(req.params.playerId));
+    });
+
 app.route('/game/status/:playerId')
     .get(function (req, res) {
         res.json(gamecontroller.status( req.params.playerId));

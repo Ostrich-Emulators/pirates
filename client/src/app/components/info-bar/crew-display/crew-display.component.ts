@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { ShipService } from '../../../services/ship.service';
 import { GameService } from '../../../services/game.service';
 import { Crew } from '../../../../../../common/model/crew';
 
@@ -11,7 +10,7 @@ import { Crew } from '../../../../../../common/model/crew';
 export class CrewDisplayComponent implements OnInit {
   private crew: Crew;
 
-  constructor(private shipsvc: ShipService, private gamesvc: GameService) { }
+  constructor(private gamesvc: GameService) { }
 
   ngOnInit() {
     var my: CrewDisplayComponent = this;

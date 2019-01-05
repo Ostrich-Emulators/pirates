@@ -3,8 +3,8 @@
     <app-info-bar></app-info-bar>
   </div>
   <div id="main-area" fxFlex>
-    <app-city *ngIf="ship?.docked" [city]="ship.docked"></app-city>
-    <app-map *ngIf="!ship?.docked"></app-map>
+    <app-city *ngIf="ship.docked" [city]="ship.docked"></app-city>
+    <app-map *ngIf="!ship.docked"></app-map>
   </div>
 </div>
 <div class="messages">

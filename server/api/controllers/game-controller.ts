@@ -24,8 +24,11 @@ export class GameController {
         return this.game.getPlayers();
     }
 
-    create(body): Player {
-        return this.game.addPlayer(body.pirate, body.ship, body.color);
+    create(body): any {
+        var player: Player = this.game.addPlayer(body.pirate, body.ship, body.color);
+        var ship: Ship[] = this.game.getShipsForPlayer(player.id);
+
+        return { player: player, ship: ship };
     }
 
     status(playerid: string): StatusResponse {
@@ -41,13 +44,14 @@ export class GameController {
             ships.push(newship);
         });
         var pshipid: string;
-        this.game.getPlayers().forEach(p => {
-            var newship: Ship = Object.assign({}, p.ship);
-            if (p.id != playerid) {
-                newship.hullStrength = Math.ceil(p.ship.hullStrength);
+        
+        this.game.pships.forEach(ship => { 
+            var newship: Ship = Object.assign({}, ship);
+            if (ship.ownerid === playerid) {
+                pshipid = ship.id;
             }
-            else {
-                pshipid = p.ship.id;
+            else{
+                newship.hullStrength = Math.ceil(ship.hullStrength);
             }
             ships.push(newship);
         });

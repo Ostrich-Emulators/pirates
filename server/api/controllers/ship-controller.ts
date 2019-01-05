@@ -14,8 +14,8 @@ export class ShipController {
     refreshShips() {
         var my: ShipController = this;
         my.shiplkp.clear();
-        this.game.getPlayers().forEach(player => {
-            my.shiplkp.set(player.ship.id, player.ship);
+        this.game.pships.forEach(ship => { 
+            my.shiplkp.set(ship.id, ship);
         });
         this.game.getNonPlayerShips().forEach(ship => {
             my.shiplkp.set(ship.id, ship);
@@ -25,6 +25,10 @@ export class ShipController {
     one(shipid: string): Ship {
         this.refreshShips();
         return this.shiplkp.get(shipid);
+    }
+
+    shipsfor(playerid: string): Ship[] {
+        return this.game.getShipsForPlayer(playerid);
     }
 
     all(): Ship[]{

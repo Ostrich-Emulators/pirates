@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { GameService } from '../../../services/game.service';
-import { ShipService } from '../../../services/ship.service';
+import { TargettingService } from '../../../services/targetting.service';
 import { Ship } from '../../../../../../common/model/ship';
 
 @Component({
@@ -11,7 +11,7 @@ import { Ship } from '../../../../../../common/model/ship';
 export class ActionDisplayComponent implements OnInit {
   private targets: Ship[];
 
-  constructor(private gamesvc: GameService, private shipsvc: ShipService) { }
+  constructor(private gamesvc: GameService, private shipsvc: TargettingService) { }
 
   ngOnInit() {
     var my: ActionDisplayComponent = this;

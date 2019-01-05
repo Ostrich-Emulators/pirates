@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 
-import { ShipService } from '../../../services/ship.service';
 import { GameService } from '../../../services/game.service';
 import { Ship } from '../../../../../../common/model/ship';
 
@@ -12,7 +11,7 @@ import { Ship } from '../../../../../../common/model/ship';
 export class ShipDisplayComponent implements OnInit {
   private ship: Ship;
 
-  constructor(private shipsvc: ShipService, private gamesvc: GameService) { }
+  constructor(private gamesvc: GameService) { }
 
   ngOnInit() {
     var my: ShipDisplayComponent = this;

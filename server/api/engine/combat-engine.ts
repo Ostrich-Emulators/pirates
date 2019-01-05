@@ -42,7 +42,6 @@ export class CombatEngine {
             misses: 0
         };
 
-
         // if the attackee is too far away, don't fire
         var distance = Calculators.distance(attacker.location, attackee.location);
         if (distance > attacker.cannons.range) {

@@ -6,7 +6,8 @@ import { City } from './city'
 import { Cannon } from './cannon'
 
 export interface Ship {
-    id:string,
+    id: string,
+    ownerid: string, // player who controls this ship (or null for NPC ships)
     type: ShipType,
     speed: number,
     manueverability: number,

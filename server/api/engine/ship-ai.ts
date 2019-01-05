@@ -77,7 +77,7 @@ export class ShipAi {
 
       var dstx: number = ship.location.x + movex;
       var dsty: number = ship.location.y + movey;
-      if (this.game.isnavigable(this.game.getPixel(dstx, dsty))){
+      if (this.game.map.isnavigable(this.game.map.getPixel(dstx, dsty))){
         ship.course = {
           dstx: ship.location.x + movex,
           dsty: ship.location.y + movey,

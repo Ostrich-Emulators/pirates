@@ -9,93 +9,109 @@ import { Player } from '../../../../common/model/player'
 import { Location } from '../../../../common/model/location'
 import { StatusResponse } from '../../../../common/model/status-response'
 import { CombatResult } from '../../../../common/model/combat-result';
-import { Collider } from '../../../../common/tools/collider';
 import { BoardResult } from '../../../../common/model/board-result';
 import { City } from '../../../../common/model/city';
+import { Subscription } from 'rxjs/Subscription';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class GameService {
-  public REFRESH_RATE: number = 250;
-  private me: Player;
-  private _player: Subject<Player> = new Subject<Player>();
+  public REFRESH_RATE: number = 2500;
+  private _player: BehaviorSubject<Player>;
+  private _myship: BehaviorSubject<Ship>;
   private _ships: Subject<Ship[]> = new Subject<Ship[]>();
-  private _myship: Subject<Ship> = new Subject<Ship>();
   private _messages: Subject<string[]> = new Subject<string[]>();
   private _combat: Subject<CombatResult[]> = new Subject<CombatResult[]>();
   private _board: Subject<BoardResult[]> = new Subject<BoardResult[]>();
   private _monster: Subject<Location> = new Subject<Location>();
   private _pool: Subject<Location> = new Subject<Location>();
+  private playerid: String;
+  private shipid: String;
 
   private BASEURL: string = 'http://localhost:30000';
 
   constructor(private http: HttpClient) {
+    console.log('game service ctor');
     // this stuff is really just for development restarts
-    if (null != localStorage.getItem('player')) {
-      this.me = JSON.parse(localStorage.getItem('player'));
-      this._player.next(this.me);
-      this._myship.next(this.me.ship);
-
-      var my: GameService = this;
+    if (null != sessionStorage.getItem('player')) {
       console.log('starting from localStorage data');
-      my.refreshData();
+
+      var player: Player = JSON.parse(sessionStorage.getItem('player'));
+      var ship: Ship = JSON.parse(sessionStorage.getItem('ship'));
+      this.playerid = player.id;
+
+      this._player = new BehaviorSubject<Player>(player);
+      this._myship = new BehaviorSubject<Ship>(ship);
+
+      console.log(player);
+      console.log(ship);
+
+      this.refreshData();
+      var my: GameService = this;
       setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
     }
   }
 
   start(name: string, female: boolean, avatar: string,
-    shipname: string, color: string): Observable<Player> {
+    shipname: string, color: string): Observable<boolean> {
     var my: GameService = this;
     var pirate: Pirate = { name: name, female: female, avatar: avatar };
     var url = this.BASEURL + '/players';
 
+    var obs: Subject<boolean> = new Subject<boolean>();
     this.http.put(url, { pirate: pirate, ship: shipname, color: color }).subscribe(
-      (data: Player) => {
+      (data: any) => {
         console.log(data);
-        my.me = data;
-        localStorage.setItem('player', JSON.stringify(data));
-        my._player.next(my.me);
+        var player: Player = data.player;
+        this.playerid = player.id;
+        var ship: Ship = data.ship;
 
-        my.refreshData();
+        sessionStorage.setItem('player', JSON.stringify(player));
+        sessionStorage.setItem('ship', JSON.stringify(ship));
+
         setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
+        this.refreshData();
+
+        this._myship = new BehaviorSubject<Ship>(ship);
+        this._player = new BehaviorSubject<Player>(player);
+        obs.next(true);
       },
       (err) => {
         console.error('something happened!');
         console.error(err);
       });
 
-    return this._player;
+    return obs;
   }
 
   refreshData() {
-    //console.log('into refreshdata');
-    var my: GameService = this;
-    this.http.get(this.BASEURL + '/game/status/' + this.me.id).subscribe((data: StatusResponse) => {
+    console.log('into refreshdata');
+    this.http.get(this.BASEURL + '/game/status/' + this.playerid).subscribe((data: StatusResponse) => {
       data.ships.forEach(shp => {
-        if (shp.id === data.playershipid) {
-          my.me.ship = shp;
-          my._myship.next(shp);
+        if (shp.ownerid === this.playerid) {
+          this._myship.next(shp);
         }
       });
-      my._ships.next(data.ships);
+      this._ships.next(data.ships);
 
       if (data.messages.length > 0) {
-        my._messages.next(data.messages);
+        this._messages.next(data.messages);
       }
 
       if (data.combat && data.combat.length > 0) {
-        my._combat.next(data.combat);
+        this._combat.next(data.combat);
       }
 
       if (data.board && data.board.length > 0) {
-        my._board.next(data.board);
+        this._board.next(data.board);
       }
 
       if (data.monsterloc) {
-        my._monster.next(data.monsterloc);
+        this._monster.next(data.monsterloc);
       }
 
       if (data.poolloc) {
-        my._pool.next(data.poolloc);
+        this._pool.next(data.poolloc);
       }
     });
   }
@@ -116,17 +132,12 @@ export class GameService {
     return this._board;
   }
 
-  myplayer(): Player {
-    return this.me;
-  }
-
-  mypirate(): Pirate {
-    var pi = this.me.pirate;
-    return pi;
-  }
-
   myship(): Observable<Ship> {
     return this._myship;
+  }
+
+  myplayer(): Observable<Player>{
+    return this._player;
   }
 
   monsterloc(): Observable<Location> {
@@ -138,30 +149,29 @@ export class GameService {
   }
 
   fire(at: Ship) {
-    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/fire';
+    var url: string = this.BASEURL + '/ships/' + this.shipid + '/fire';
     this.http.post(url, { targetid: at.id }).subscribe();
   }
 
   board(at: Ship) { // try to board anothe rship
     console.log('trying to board: ' + JSON.stringify(at));
-    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/board';
+    var url: string = this.BASEURL + '/ships/' + this.shipid + '/board';
     this.http.post(url, { targetid: at.id }).subscribe();
   }
 
   move(x: number, y: number) {
     var loc: Location = { x: x, y: y };
-    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/course';
+    var url: string = this.BASEURL + '/ships/' + this.shipid + '/course';
     this.http.post(url, loc).subscribe();
   }
 
   undock() {
-    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/undock';
+    var url: string = this.BASEURL + '/ships/' + this.shipid + '/undock';
     this.http.post(url, null).subscribe();
   }
 
   buy(city: City) {
-    var url: string = this.BASEURL + '/ships/' + this.me.ship.id + '/buy';
+    var url: string = this.BASEURL + '/ships/' + this.shipid + '/buy';
     this.http.post(url, city).subscribe();
   }
-
 }

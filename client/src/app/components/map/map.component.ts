@@ -1,15 +1,13 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core'
-import { ShipService } from '../../services/ship.service'
 import { GameService } from '../../services/game.service'
-import { forkJoin } from 'rxjs/observable/forkJoin'
-import { Observable } from 'rxjs/Observable'
+import { TargettingService } from '../../services/targetting.service';
+import { AvatarService } from '../../services/avatar.service';
+
 import { Player } from '../../../../../common/model/player'
 import { Ship } from '../../../../../common/model/ship'
 import { Location } from '../../../../../common/model/location'
-import { Rectangle } from '../../../../../common/model/rectangle'
 import { HttpClient } from '@angular/common/http'
 import { Collider } from '../../../../../common/tools/collider'
-import { CollisionBody } from '../../../../../common/model/body';
 import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
 
 @Component({
@@ -42,30 +40,41 @@ export class MapComponent implements OnInit, AfterViewInit {
   private static EXPLOSION_DURATION: number = 40;// 40 frames (2/3 second?)
   private static SINK_DURATION: number = 240;// 40 frames (2/3 second?)
 
-  constructor(private shipsvc: ShipService, private gamesvc: GameService, private http: HttpClient) { }
+  constructor(private targetting: TargettingService, private gamesvc: GameService,
+    private imgsvc:AvatarService, private http: HttpClient) { }
 
   ngOnInit() {
-    var my: MapComponent = this;
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
     this.canvasctx = this.map.nativeElement.getContext('2d');
-    this.player = this.gamesvc.myplayer();
-    this.ship = this.player.ship;
+    this.gamesvc.myplayer().subscribe(d => { 
+      this.player = d;
+    });
 
     this.gamesvc.poolloc().subscribe(data => {
-      my.poolloc = data;
+      this.poolloc = data;
     });
 
     this.gamesvc.monsterloc().subscribe(data => {
-      my.monsterloc = data;
+      this.monsterloc = data;
     });
 
     this.gamesvc.myship().subscribe(data => {
-      my.ship = data;
+      this.ship = data;
+
+      this.imgsvc.avatars.forEach(av => {
+        if (av === this.ship.avatar) {
+          this.http.get(av, { responseType: 'text' }).subscribe(data => {
+            this.myshipimg = new Image();
+            this.myshipimg.src = "data:image/svg+xml;charset=utf-8,"
+              + data.replace(/fill="#ffffff"/, 'fill="' + this.player.color + '"');
+          });
+        }
+      });
     });
 
     this.gamesvc.combat().subscribe(data => {
       data.forEach(c => {
-        if (c.attacker.id === my.ship.id || c.attackee.id === my.ship.id) {
+        if (c.attacker.id === this.ship.id || c.attackee.id === this.ship.id) {
           this.registerCombat(c);
         }
       });
@@ -77,19 +86,19 @@ export class MapComponent implements OnInit, AfterViewInit {
       // check for ships that have sunk
       var oldshiplkp: Map<string, Ship> = new Map<string, Ship>();
       var newshipids: Set<string> = new Set<string>();
-      for (var i = 0; i < my.ships.length; i++) {
-        oldshiplkp.set(my.ships[i].id, Object.assign({}, my.ships[i]));
+      for (var i = 0; i < this.ships.length; i++) {
+        oldshiplkp.set(this.ships[i].id, Object.assign({}, this.ships[i]));
       }
       for (var i = 0; i < data.length; i++) {
         newshipids.add(data[i].id);
       }
 
-      my.ships = data;
+      this.ships = data;
 
       oldshiplkp.forEach((ship, id) => {
         if (!newshipids.has(id)) {
           // we have a missing ship! it must have sunk!
-          my.sinkings.push({
+          this.sinkings.push({
             x: ship.location.x,
             y: ship.location.y,
             turns: MapComponent.SINK_DURATION,
@@ -98,19 +107,19 @@ export class MapComponent implements OnInit, AfterViewInit {
         }
       });
 
-      my.longcollider.clear();
-      my.shortcollider.clear();
+      this.longcollider.clear();
+      this.shortcollider.clear();
 
-      my.ships.forEach(ship => {
-        var ismyship: boolean = (ship.id === my.player.ship.id);
-        my.longcollider.add({
+      this.ships.forEach(ship => {
+        var ismyship: boolean = (ship.id === this.ship.id);
+        this.longcollider.add({
           id: ship.id,
           src: ship,
           getX: function (): number { return ship.location.x },
           getY: function (): number { return ship.location.y },
           getR: function (): number { return (ismyship ? ship.cannons.range : 15) }
         });
-        my.shortcollider.add({
+        this.shortcollider.add({
           id: ship.id,
           src: ship,
           getX: function (): number { return ship.location.x },
@@ -124,30 +133,22 @@ export class MapComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     var my: MapComponent = this;
 
-    my.seamonsterimg = new Image();
-    my.seamonsterimg.src = '/assets/seamonster.png';
-    my.whirlpoolimg = new Image();
-    my.whirlpoolimg.src = '/assets/whirlpool.png';
+    this.seamonsterimg = new Image();
+    this.seamonsterimg.src = '/assets/seamonster.png';
+    this.whirlpoolimg = new Image();
+    this.whirlpoolimg.src = '/assets/whirlpool.png';
 
-    my.map.nativeElement.height = 710;
-    my.map.nativeElement.width = 740;
+    this.map.nativeElement.height = 710;
+    this.map.nativeElement.width = 740;
 
-    my.shipsvc.avatars.forEach(av => {
-      my.images[av] = new Image();
-      my.images[av].src = av;
-
-      if (av === my.player.ship.avatar) {
-        my.http.get(av, { responseType: 'text' }).subscribe(data => {
-          my.myshipimg = new Image();
-          my.myshipimg.src = "data:image/svg+xml;charset=utf-8,"
-            + data.replace(/fill="#ffffff"/, 'fill="' + my.player.color + '"');
-        });
-      }
+    this.imgsvc.avatars.forEach(av => {
+      this.images[av] = new Image();
+      this.images[av].src = av;
     });
-    my.images['/assets/galleon.svg'] = new Image();
-    my.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
-    my.images['/assets/abandoned.svg'] = new Image();
-    my.images['/assets/abandoned.svg'].src = '/assets/abandoned.svg';
+    this.images['/assets/galleon.svg'] = new Image();
+    this.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
+    this.images['/assets/abandoned.svg'] = new Image();
+    this.images['/assets/abandoned.svg'].src = '/assets/abandoned.svg';
 
     var img = new Image(740, 710);
     img.src = '/assets/map-guide.png';
@@ -369,9 +370,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     var showBoardTargetting: boolean =
       (my.shortcollider.checkCollisions(my.ship.id).length > 0);
 
-    my.ships.forEach((ship: Ship) => {
+    this.ships.forEach((ship: Ship) => {
       // console.log(ship.id + '=>' + ship.crew.count);
-      var shipimg = my.images[ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg'];
+      var shipimg = this.images[ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg'];
       var ismyship: boolean = (ship.id === my.ship.id);
       if (ismyship) {
         shipimg = my.myshipimg;
@@ -390,27 +391,27 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         if (ismyship) {
           if (showCannonTargetting) {
-            my.canvasctx.beginPath();
+            this.canvasctx.beginPath();
 
             var rad = my.canvasctx.createRadialGradient(
               ship.location.x, ship.location.y, 1,
               ship.location.x, ship.location.y, ship.cannons.range);
 
-            rad.addColorStop(0, my.hexToRGBA(my.gamesvc.myplayer().color, 0.6));
-            rad.addColorStop(1, my.hexToRGBA(my.gamesvc.myplayer().color, 0.1));
-            my.canvasctx.fillStyle = rad;
-            my.canvasctx.arc(ship.location.x, ship.location.y, ship.cannons.range, 0, 2 * Math.PI);
-            my.canvasctx.fill();
+            rad.addColorStop(0, this.hexToRGBA(my.player.color, 0.6));
+            rad.addColorStop(1, this.hexToRGBA(my.player.color, 0.1));
+            this.canvasctx.fillStyle = rad;
+            this.canvasctx.arc(ship.location.x, ship.location.y, ship.cannons.range, 0, 2 * Math.PI);
+            this.canvasctx.fill();
           }
           if (showBoardTargetting) {
-            my.canvasctx.beginPath();
-            my.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
-            my.canvasctx.fillStyle = my.hexToRGBA(my.gamesvc.myplayer().color, 0.35);
-            my.canvasctx.fill();
+            this.canvasctx.beginPath();
+            this.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
+            this.canvasctx.fillStyle = my.hexToRGBA(this.player.color, 0.35);
+            this.canvasctx.fill();
           }
         }
 
-        my.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,
+        this.canvasctx.drawImage(shipimg, ship.location.x - 12, ship.location.y - 12,
           24, 24);
       }
     });
@@ -481,8 +482,7 @@ export class MapComponent implements OnInit, AfterViewInit {
    * @param y final y
    */
   sailTo(x: number, y: number) {
-    var my: MapComponent = this;
-    var ship: Ship = my.player.ship;
+    var ship: Ship = this.ship;
     if (ship.anchored) {
       console.log('setting sail!');
     }

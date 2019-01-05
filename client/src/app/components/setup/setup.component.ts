@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core'
 import { Router } from '@angular/router'
 
-import { ShipService } from '../../services/ship.service'
+import { AvatarService } from '../../services/avatar.service'
 import { GameService } from '../../services/game.service'
 
 import { Names } from '../../../../../common/tools/names'
@@ -18,9 +18,9 @@ export class SetupComponent implements OnInit {
   shipname: string = Names.ship();
   color: string = '#5F87FF';
 
-  constructor(private shipsvc: ShipService, private gamesvc:GameService, private router: Router) {
-    var avidx = Math.random() * shipsvc.avatars.length;
-    this.avatar = shipsvc.avatars[Math.floor(avidx)];
+  constructor(private imgsvc: AvatarService, private gamesvc: GameService, private router: Router) {
+    var avidx = Math.random() * imgsvc.avatars.length;
+    this.avatar = imgsvc.avatars[Math.floor(avidx)];
   }
 
   ngOnInit() {

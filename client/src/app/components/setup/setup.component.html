@@ -12,7 +12,7 @@
 </div>
 <div>
   Avatar:
-  <ng-container *ngFor="let a of shipsvc.avatars">
+  <ng-container *ngFor="let a of imgsvc.avatars">
     <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
   </ng-container>
 </div>
