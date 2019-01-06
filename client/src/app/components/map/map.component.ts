@@ -30,8 +30,6 @@ export class MapComponent implements OnInit, AfterViewInit {
   private lastlocs: Map<string, Location> = new Map<string, Location>();
   private myshipimg; // image of my ship
   private lastperf = 0;
-  private shortcollider: Collider = new Collider();
-  private longcollider: Collider = new Collider();
   private ballpaths: CannonBallPath[] = [];
   private explosions: Explosion[] = [];
   private sinkings: Sinking[] = [];
@@ -105,27 +103,6 @@ export class MapComponent implements OnInit, AfterViewInit {
             avatar: ship.avatar
           });
         }
-      });
-
-      this.longcollider.clear();
-      this.shortcollider.clear();
-
-      this.ships.forEach(ship => {
-        var ismyship: boolean = (ship.id === this.ship.id);
-        this.longcollider.add({
-          id: ship.id,
-          src: ship,
-          getX: function (): number { return ship.location.x },
-          getY: function (): number { return ship.location.y },
-          getR: function (): number { return (ismyship ? ship.cannons.range : 15) }
-        });
-        this.shortcollider.add({
-          id: ship.id,
-          src: ship,
-          getX: function (): number { return ship.location.x },
-          getY: function (): number { return ship.location.y },
-          getR: function (): number { return 15 }
-        });
       });
     });
   }
@@ -350,32 +327,26 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   moveShips(speedratio: number) {
-    var my: MapComponent = this;
-
     // two loops: update ship locations, then draw ships
-    my.ships.forEach((ship: Ship) => {
+    this.ships.forEach((ship: Ship) => {
       if (!ship.anchored) {
         var speedx = ship.course.speedx * speedratio;
         var speedy = ship.course.speedy * speedratio;
         ship.location.x += speedx;
         ship.location.y += speedy;
-        my.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
+        this.lastlocs.set(ship.id, { x: ship.location.x, y: ship.location.y });
       }
     });
 
-    var showCannonTargetting: boolean =
-      (my.ship.ammo > 0 && my.ship.cannons.count > 0
-        && my.longcollider.checkCollisions(my.ship.id).length > 0);
-
-    var showBoardTargetting: boolean =
-      (my.shortcollider.checkCollisions(my.ship.id).length > 0);
+    var showCannonTargetting: boolean = this.targetting.firingRange();
+    var showBoardTargetting: boolean = this.targetting.boardingRange();
 
     this.ships.forEach((ship: Ship) => {
       // console.log(ship.id + '=>' + ship.crew.count);
       var shipimg = this.images[ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg'];
-      var ismyship: boolean = (ship.id === my.ship.id);
+      var ismyship: boolean = (ship.id === this.ship.id);
       if (ismyship) {
-        shipimg = my.myshipimg;
+        shipimg = this.myshipimg;
       }
 
       if (shipimg) {
@@ -393,12 +364,12 @@ export class MapComponent implements OnInit, AfterViewInit {
           if (showCannonTargetting) {
             this.canvasctx.beginPath();
 
-            var rad = my.canvasctx.createRadialGradient(
+            var rad = this.canvasctx.createRadialGradient(
               ship.location.x, ship.location.y, 1,
               ship.location.x, ship.location.y, ship.cannons.range);
 
-            rad.addColorStop(0, this.hexToRGBA(my.player.color, 0.6));
-            rad.addColorStop(1, this.hexToRGBA(my.player.color, 0.1));
+            rad.addColorStop(0, this.hexToRGBA(this.player.color, 0.6));
+            rad.addColorStop(1, this.hexToRGBA(this.player.color, 0.1));
             this.canvasctx.fillStyle = rad;
             this.canvasctx.arc(ship.location.x, ship.location.y, ship.cannons.range, 0, 2 * Math.PI);
             this.canvasctx.fill();
@@ -406,7 +377,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           if (showBoardTargetting) {
             this.canvasctx.beginPath();
             this.canvasctx.arc(ship.location.x, ship.location.y, 17, 0, 2 * Math.PI);
-            this.canvasctx.fillStyle = my.hexToRGBA(this.player.color, 0.35);
+            this.canvasctx.fillStyle = this.hexToRGBA(this.player.color, 0.35);
             this.canvasctx.fill();
           }
         }

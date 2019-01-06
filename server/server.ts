@@ -70,13 +70,13 @@ app.route('/players')
     .put(function (req, res) {
         console.log('into create player');
         console.log(req.body);
-        var player: Player = gamecontroller.create(req.body);
+        var playerAndShip  = gamecontroller.create(req.body);
         if (1 === game.getPlayers().length) {
             game.start();
         }
 
         shipcontroller.refreshShips();
-        res.json(player);
+        res.json(playerAndShip);
     })
     .post(function (req, res) {
         res.json(gamecontroller.create(req.body));

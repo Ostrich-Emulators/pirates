@@ -51,17 +51,16 @@ export class Collider {
     }
 
     checkCollisions(tgt: CollisionBody|string): CollisionBody[] {
-        var my: Collider = this;
         var collisions: CollisionBody[] = [];
 
         var me: CollisionBody = (typeof tgt === 'string' ? this.bodies.get(tgt) : tgt);
         if (null == me) {
-            console.error('why do I have a null tgt here?');
+            console.error('why do I have a null me here? tgt:'+JSON.stringify(tgt));
             return collisions;
         }
 
         this.bodies.forEach(body => { 
-            if (me.id != body.id && my.collides( body, me ) ){
+            if (me.id != body.id && this.collides( body, me ) ){
                 collisions.push(body);
             }
         });

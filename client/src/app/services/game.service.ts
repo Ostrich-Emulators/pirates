@@ -16,7 +16,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class GameService {
-  public REFRESH_RATE: number = 2500;
+  public REFRESH_RATE: number = 250;
   private _player: BehaviorSubject<Player>;
   private _myship: BehaviorSubject<Ship>;
   private _ships: Subject<Ship[]> = new Subject<Ship[]>();
@@ -27,6 +27,7 @@ export class GameService {
   private _pool: Subject<Location> = new Subject<Location>();
   private playerid: String;
   private shipid: String;
+  private allships: Ship[] = [];
 
   private BASEURL: string = 'http://localhost:30000';
 
@@ -65,6 +66,7 @@ export class GameService {
         var player: Player = data.player;
         this.playerid = player.id;
         var ship: Ship = data.ship;
+        this.shipid = ship.id;
 
         sessionStorage.setItem('player', JSON.stringify(player));
         sessionStorage.setItem('ship', JSON.stringify(ship));
@@ -85,14 +87,18 @@ export class GameService {
   }
 
   refreshData() {
-    console.log('into refreshdata');
+    //console.log('into refreshdata');
     this.http.get(this.BASEURL + '/game/status/' + this.playerid).subscribe((data: StatusResponse) => {
       data.ships.forEach(shp => {
         if (shp.ownerid === this.playerid) {
           this._myship.next(shp);
+          this.shipid = shp.id;
         }
       });
-      this._ships.next(data.ships);
+
+      // FIXME: maybe figure out who's sunk since the last update?
+      this.allships = data.ships;
+      this._ships.next(this.allships);
 
       if (data.messages.length > 0) {
         this._messages.next(data.messages);

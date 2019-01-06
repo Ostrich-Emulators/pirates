@@ -19,12 +19,12 @@ export class TargettingService {
   private ships: Ship[] = [];
 
   constructor(private http: HttpClient, gamesvc: GameService) {
-    gamesvc.ships().subscribe(data => {
-      this.ships = data;
-    });
-
     gamesvc.myship().subscribe(data => {
       this.ship = data;
+    });
+
+    gamesvc.ships().subscribe(data => {
+      this.ships = data;
     });
 
     // refresh targetting every second instead of 4x a second
@@ -34,7 +34,6 @@ export class TargettingService {
         my.refreshTargetting();
       }
     }, 500);
-
   }
 
   private refreshTargetting() {
@@ -97,6 +96,27 @@ export class TargettingService {
   canFire(s: Ship): boolean {
     return (this.targetting.has(s) ? this.targetting.get(s).fire : false);
   }
+
+  firingRange(): boolean {
+    var ok: boolean = false;
+    this.targetting.forEach(t => { 
+      if (t.fire) {
+        ok = true;
+      }
+    });
+    return ok;
+  }
+
+  boardingRange(): boolean {
+    var ok: boolean = false;
+    this.targetting.forEach(t => {
+      if (t.board) {
+        ok = true;
+      }
+    });
+    return ok;
+  }
+
 }
 
 interface targetting {

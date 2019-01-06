@@ -14,10 +14,8 @@ export class ShipDisplayComponent implements OnInit {
   constructor(private gamesvc: GameService) { }
 
   ngOnInit() {
-    var my: ShipDisplayComponent = this;
     this.gamesvc.myship().subscribe(data => {
-      // console.log(data);
-      my.ship = data;
+      this.ship = data;
     });
   }
 }

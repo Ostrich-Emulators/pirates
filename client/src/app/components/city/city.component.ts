@@ -16,7 +16,6 @@ export class CityComponent implements OnInit {
   ngOnInit() {
     console.log(this.city);
     this.gamesvc.myship().subscribe(data => { 
-      console.log('new ship:' + JSON.stringify(data));
       this.ship = data;
     });
   }

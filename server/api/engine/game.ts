@@ -19,6 +19,7 @@ import { TrainingEngine } from './training'
 import { Cannon } from '../../../common/model/cannon';
 import { Crew } from '../../../common/model/crew';
 import { MapEngine } from './map-engine';
+import { timingSafeEqual } from 'crypto';
 
 export class Game {
     private TURN_NUM: number = 0;
@@ -41,7 +42,8 @@ export class Game {
     private combatengine: CombatEngine = new CombatEngine(this);
     private ai: ShipAi = new ShipAi(this, this.combatengine);
     training: TrainingEngine = new TrainingEngine();
-    private collider: Collider = new Collider();
+    private specialscollider: Collider = new Collider();
+    private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
 
     private WLOCATIONS: Location[] = [
@@ -101,7 +103,7 @@ export class Game {
     }
 
     debugImageTo(file: string): Promise<any>{
-        return this.map.debugImageTo(file, this, this.collider,
+        return this.map.debugImageTo(file, this, this.specialscollider,
             this.monsterbody, this.poolbody);
     }
 
@@ -122,13 +124,23 @@ export class Game {
 
     addShipToCollisionSystem(ship: Ship) {
         var radius = this.SHIP_RADIUS;
-        this.collider.add({
+        this.specialscollider.add({
             id: ship.id,
             src: ship,
             getX: function (): number { return ship.location.x },
             getY: function (): number { return ship.location.y },
             getR: function (): number { return radius }
         });
+
+        this.shipcollider.add({
+            id: ship.id,
+            src: ship,
+            getX: function (): number { return ship.location.x },
+            getY: function (): number { return ship.location.y },
+            getR: function (): number { return radius / 2 }
+        });
+
+
     }
 
     shipdef(type: ShipType): ShipDefinition {
@@ -382,10 +394,10 @@ export class Game {
             }
 
             if (attackersunk) {
-                this.collider.remove(result.attacker.id);
+                this.removeShip(result.attacker);
             }
             if (attackeesunk) {
-                this.collider.remove(result.attackee.id);
+                this.removeShip(result.attackee);
             }
 
             // notify users of combat results
@@ -490,36 +502,34 @@ export class Game {
             }
         }
 
-        var checkShipCollisions = function ( lastLocationLookup:Map<string,Location> ) {
-            my.collider.getCollisions().forEach(en => {
-                if (!('whirlpool' === en.first.id || 'whirlpool' === en.second.id
-                    || 'monster' === en.first.id || 'monster' === en.second.id)) {
-                    // do anything here?
+        var checkShipCollisions = function (lastLocationLookup: Map<string, Location>) {
+            
+            my.shipcollider.getCollisions().forEach(en => {
+                // do anything here?
 
-                    var damage: number = Math.random();
-                    var firstok = my.damageShip(en.first.src, damage);
-                    var secondok = my.damageShip(en.second.src, damage);
+                var damage: number = 0;//Math.random();
+                var firstok = my.damageShip(en.first.src, damage);
+                var secondok = my.damageShip(en.second.src, damage);
 
-                    if (firstok) {
-                        en.first.src.location.x = lastLocationLookup.get(en.first.src.id).x;
-                        en.first.src.location.y = lastLocationLookup.get(en.first.src.id).y;
-                    }
-                    if (secondok) {
-                        en.second.src.location.x = lastLocationLookup.get(en.second.src.id).x;
-                        en.second.src.location.y = lastLocationLookup.get(en.second.src.id).y;
-                    }
-
-                    my.pushMessage(en.first.src, 'We\'ve collided with '+en.second.src.name+'!');
-                    my.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
-
-                    // FIXME: allocate new ships if needed
+                if (firstok) {
+                    en.first.src.location.x = lastLocationLookup.get(en.first.src.id).x;
+                    en.first.src.location.y = lastLocationLookup.get(en.first.src.id).y;
                 }
+                if (secondok) {
+                    en.second.src.location.x = lastLocationLookup.get(en.second.src.id).x;
+                    en.second.src.location.y = lastLocationLookup.get(en.second.src.id).y;
+                }
+
+                my.pushMessage(en.first.src, 'We\'ve collided with ' + en.second.src.name + '!');
+                my.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
+
+                // FIXME: allocate new ships if needed
             });
         }
 
         var checkMonster = function () {
             var fought: boolean = false;
-            my.collider.checkCollisions(my.monsterbody).forEach(body => {
+            my.specialscollider.checkCollisions(my.monsterbody).forEach(body => {
                 if (my.poolbody !== body) {
                     if (body.id.substr(0, 1) !== '-') {
                         my.pushMessage(body.src, 'Sea Monster Strike!');
@@ -537,7 +547,7 @@ export class Game {
         };
 
         var checkWhirlpool = function () {
-            my.collider.checkCollisions(my.poolbody).forEach(body => {
+            my.specialscollider.checkCollisions(my.poolbody).forEach(body => {
                 if (my.monsterbody !== body) {
                     if (body.id.substr(0, 1) !== '-') {
                         my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
@@ -553,7 +563,7 @@ export class Game {
             my.TURN_NUM += 1;
 
             my.nonplayerships.forEach((ship: Ship) => {
-                my.ai.control(ship, my.playerships, my.collider, my);
+                my.ai.control(ship, my.playerships, my.specialscollider, my);
             });
 
             my.resolveCombat();
@@ -590,8 +600,8 @@ export class Game {
             getR: function (): number { return my.MONSTER_RADIUS; }
         
         };
-        my.collider.add(my.poolbody);
-        my.collider.add(my.monsterbody);
+        my.specialscollider.add(my.poolbody);
+        my.specialscollider.add(my.monsterbody);
 
         setInterval(function () {
             my.poolloc = (Math.random() < my.WPCT
@@ -620,23 +630,29 @@ export class Game {
         ship.hullStrength -= amt;
         if (ship.hullStrength <= 0) {
             remains = false;
-            this.collider.remove(ship.id);
-            if (null === ship.ownerid) {
-                this.nonplayerships.forEach((sh, idx) => {
-                    if (sh.id === ship.id) {
-                        this.nonplayerships.splice(idx, 1);
-                    }
-                });
-            }
-            else { // player ship got sunk
-                this.playerships.forEach((sh, idx) => { 
-                    if (sh.id === ship.id) {
-                        this.playerships.splice(idx, 1);
-                    }
-                });
-            } 
+            this.removeShip(ship);
         }
         return remains;
+    }
+
+    removeShip(ship: Ship) {
+        this.specialscollider.remove(ship.id);
+        this.shipcollider.remove(ship.id);
+
+        if (null === ship.ownerid) {
+            this.nonplayerships.forEach((sh, idx) => {
+                if (sh.id === ship.id) {
+                    this.nonplayerships.splice(idx, 1);
+                }
+            });
+        }
+        else { // player ship got sunk
+            this.playerships.forEach((sh, idx) => {
+                if (sh.id === ship.id) {
+                    this.playerships.splice(idx, 1);
+                }
+            });
+        } 
     }
 
     allocateNewShip(p: Player, type: ShipType, shipnum?: number, name?: string) : Ship{
@@ -652,4 +668,6 @@ export class Game {
         this.addShipToCollisionSystem(ship);
         return ship;
     }
+
+
 }
