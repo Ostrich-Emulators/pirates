@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core'
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
+import { Observable, Subject, BehaviorSubject } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 import { Ship } from '../../../../common/model/ship'
 import { Pirate } from '../../../../common/model/pirate'
@@ -11,8 +11,6 @@ import { StatusResponse } from '../../../../common/model/status-response'
 import { CombatResult } from '../../../../common/model/combat-result';
 import { BoardResult } from '../../../../common/model/board-result';
 import { City } from '../../../../common/model/city';
-import { Subscription } from 'rxjs/Subscription';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class GameService {
@@ -60,7 +58,7 @@ export class GameService {
     var url = this.BASEURL + '/players';
 
     var obs: Subject<boolean> = new Subject<boolean>();
-    this.http.put(url, { pirate: pirate, ship: shipname, color: color }).subscribe(
+    this.http.put(url, { pirate: pirate, ship: shipname, color: color }).pipe(take(1)).subscribe(
       (data: any) => {
         console.log(data);
         var player: Player = data.player;

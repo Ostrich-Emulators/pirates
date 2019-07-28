@@ -7,7 +7,6 @@ import { Player } from '../../../../../common/model/player'
 import { Ship } from '../../../../../common/model/ship'
 import { Location } from '../../../../../common/model/location'
 import { HttpClient } from '@angular/common/http'
-import { Collider } from '../../../../../common/tools/collider'
 import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
 
 @Component({
@@ -16,8 +15,8 @@ import { CombatResult, HitCode } from '../../../../../common/model/combat-result
   styleUrls: ['./map.component.css']
 })
 export class MapComponent implements OnInit, AfterViewInit {
-  @ViewChild('map', { read: ElementRef }) map: ElementRef;
-  @ViewChild('mapguide', { read: ElementRef }) mapguide: ElementRef;
+  @ViewChild('map', { read: ElementRef, static: true }) map: ElementRef;
+  @ViewChild('mapguide', { read: ElementRef, static: true }) mapguide: ElementRef;
   private offscreenctx: CanvasRenderingContext2D;
   private canvasctx: CanvasRenderingContext2D;
   private whirlpoolimg;
