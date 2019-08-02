@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core'
-import { HttpClient } from '@angular/common/http'
 
 import { Ship } from '../../../../common/model/ship'
 import { GameService } from './game.service';
@@ -17,7 +16,7 @@ export class TargettingService {
   private ship: Ship;
   private ships: Ship[] = [];
 
-  constructor(private http: HttpClient, gamesvc: GameService) {
+  constructor(gamesvc: GameService) {
     gamesvc.myship().subscribe(data => {
       this.ship = data;
     });
@@ -27,10 +26,9 @@ export class TargettingService {
     });
 
     // refresh targetting every second instead of 4x a second
-    var my: TargettingService = this;
-    setInterval(function () {
-      if (my.ships && my.ship) {
-        my.refreshTargetting();
+    setInterval(()=> {
+      if (this.ships && this.ship) {
+        this.refreshTargetting();
       }
     }, 500);
   }
@@ -115,7 +113,6 @@ export class TargettingService {
     });
     return ok;
   }
-
 }
 
 interface targetting {

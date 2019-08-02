@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GameService } from './game.service';
 import { HttpClient } from '@angular/common/http';
+import { take } from 'rxjs/operators';
 
 @Injectable()
 export class AvatarService {
@@ -18,32 +19,39 @@ export class AvatarService {
   private svgxmls: Map<string, string> = new Map<string, string>();
   private images: Map<string, any> = new Map<string, any>();
 
-
   constructor(private http: HttpClient, gamesvc: GameService) { 
-
+    console.log('avatar service ctor');
     this.avatars.forEach(av => {
-      http.get(av, { responseType: 'text' }).subscribe(data => {
-        this.svgxmls.set(av, "data:image/svg+xml;charset=utf-8," + data);
-        var im = new Image();
-        im.src = data;
-        this.images.set(av, im);
-      });
+      http.get(av, { responseType: 'text' }).pipe(take(1)).subscribe(
+        (data) => {
+          this.svgxmls.set(av, "data:image/svg+xml;charset=utf-8," + data);
+          var im = new Image();
+          im.src = data;
+          this.images.set(av, im);
+        },
+        (err) => {
+          console.log('error getting ', av);
+        });
     });
 
     var others: string[] = ['/assets/galleon.svg', '/assets/abandoned.svg'];
     others.forEach(av => {
-      http.get(av, { responseType: 'text' }).subscribe(data => {
-        this.svgxmls.set(av, "data:image/svg+xml;charset=utf-8," + data);
-        var im = new Image();
-        im.src = data;
-        this.images.set(av, im);
-      });
+      http.get(av, { responseType: 'text' }).pipe(take(1)).subscribe(
+        (data) => {
+          this.svgxmls.set(av, "data:image/svg+xml;charset=utf-8," + data);
+          var im = new Image();
+          im.src = data;
+          this.images.set(av, im);
+        },
+        (err) => {
+          console.log('error getting ', av);
+        });
     });
   }
 
-
   getImage(avatar: string, fghex?: string, bghex?: string): any {
-    console.log('getting ' + avatar);
+    console.log('getImage ' + avatar);
+    console.log(this.svgxmls);
     if (fghex || bghex) {
       console.log('changing colors');
       var svg = this.svgxmls.get(avatar);
@@ -59,14 +67,14 @@ export class AvatarService {
       return im;
     }
     else {
-      console.log('getting standard');
+      console.log('getting standard', avatar);
+      console.log(this.svgxmls.get(avatar));
       return this.svgxmls.get(avatar).substr("data:image/svg+xml;charset=utf-8,".length);
     }
   }
 
-  getAllImages() {
-    var ret: any[] = [];
-    this.images.forEach(img => { ret.push(img) });
-    return ret;
+  getAllImages(): any[] {
+    console.log('getall images');
+    return Array.from(this.images.values());
   }
 }

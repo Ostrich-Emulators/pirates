@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnInit } from '@angular/core'
+import { Component, ElementRef, ViewChild, AfterViewInit, OnInit, OnDestroy } from '@angular/core'
 import { GameService } from '../../services/game.service'
 import { TargettingService } from '../../services/targetting.service';
 import { AvatarService } from '../../services/avatar.service';
@@ -6,15 +6,16 @@ import { AvatarService } from '../../services/avatar.service';
 import { Player } from '../../../../../common/model/player'
 import { Ship } from '../../../../../common/model/ship'
 import { Location } from '../../../../../common/model/location'
-import { HttpClient } from '@angular/common/http'
 import { CombatResult, HitCode } from '../../../../../common/model/combat-result';
+import { takeUntil } from 'rxjs/operators';
+import { componentDestroyed } from "@w11k/ngx-componentdestroyed";
 
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.css']
 })
-export class MapComponent implements OnInit, AfterViewInit {
+export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('map', { read: ElementRef, static: true }) map: ElementRef;
   @ViewChild('mapguide', { read: ElementRef, static: true }) mapguide: ElementRef;
   private offscreenctx: CanvasRenderingContext2D;
@@ -23,7 +24,6 @@ export class MapComponent implements OnInit, AfterViewInit {
   private poolloc: Location = null;
   private monsterloc: Location = null;
   private seamonsterimg;
-  private images: Map<string, any> = new Map<string, any>();
   private player: Player;
   private ships: Ship[] = [];
   private lastlocs: Map<string, Location> = new Map<string, Location>();
@@ -36,40 +36,36 @@ export class MapComponent implements OnInit, AfterViewInit {
   private static CANNONPATH_DURATION: number = 40;// 40 frames (2/3 second?)
   private static EXPLOSION_DURATION: number = 40;// 40 frames (2/3 second?)
   private static SINK_DURATION: number = 240;// 40 frames (2/3 second?)
+  
 
   constructor(private targetting: TargettingService, private gamesvc: GameService,
-    private imgsvc:AvatarService, private http: HttpClient) { }
+    private imgsvc:AvatarService ) { }
 
+  
+  ngOnDestroy(): void {
+  }
+  
   ngOnInit() {
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
     this.canvasctx = this.map.nativeElement.getContext('2d');
-    this.gamesvc.myplayer().subscribe(d => { 
+    this.gamesvc.myplayer().pipe(takeUntil(componentDestroyed(this))).subscribe(d => { 
       this.player = d;
     });
 
-    this.gamesvc.poolloc().subscribe(data => {
+    this.gamesvc.poolloc().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
       this.poolloc = data;
     });
 
-    this.gamesvc.monsterloc().subscribe(data => {
+    this.gamesvc.monsterloc().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
       this.monsterloc = data;
     });
 
-    this.gamesvc.myship().subscribe(data => {
+    this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
       this.ship = data;
-
-      this.imgsvc.avatars.forEach(av => {
-        if (av === this.ship.avatar) {
-          this.http.get(av, { responseType: 'text' }).subscribe(data => {
-            this.myshipimg = new Image();
-            this.myshipimg.src = "data:image/svg+xml;charset=utf-8,"
-              + data.replace(/fill="#ffffff"/, 'fill="' + this.player.color + '"');
-          });
-        }
-      });
+      this.myshipimg = this.imgsvc.getImage(this.ship.avatar, this.player.color);
     });
 
-    this.gamesvc.combat().subscribe(data => {
+    this.gamesvc.combat().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
       data.forEach(c => {
         if (c.attacker.id === this.ship.id || c.attackee.id === this.ship.id) {
           this.registerCombat(c);
@@ -77,7 +73,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       });
     });
 
-    this.gamesvc.ships().subscribe(data => {
+    this.gamesvc.ships().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
       //console.log('refreshing ships in map');
 
       // check for ships that have sunk
@@ -107,8 +103,6 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    var my: MapComponent = this;
-
     this.seamonsterimg = new Image();
     this.seamonsterimg.src = '/assets/seamonster.png';
     this.whirlpoolimg = new Image();
@@ -117,41 +111,30 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.map.nativeElement.height = 710;
     this.map.nativeElement.width = 740;
 
-    this.imgsvc.avatars.forEach(av => {
-      this.images[av] = new Image();
-      this.images[av].src = av;
-    });
-    this.images['/assets/galleon.svg'] = new Image();
-    this.images['/assets/galleon.svg'].src = '/assets/galleon.svg';
-    this.images['/assets/abandoned.svg'] = new Image();
-    this.images['/assets/abandoned.svg'].src = '/assets/abandoned.svg';
-
     var img = new Image(740, 710);
     img.src = '/assets/map-guide.png';
-    img.onload = function () {
-      my.mapguide.nativeElement.height = img.naturalHeight;
-      my.mapguide.nativeElement.width = img.naturalWidth;
-      my.offscreenctx.drawImage(img, 0, 0);
+    img.onload = () => {
+      this.mapguide.nativeElement.height = img.naturalHeight;
+      this.mapguide.nativeElement.width = img.naturalWidth;
+      this.offscreenctx.drawImage(img, 0, 0);
       img.style.display = 'none';
-    };
+    }
 
     // start the animation frame
-    var looper = function () {
+    var looper = () => {
       // first, erase everything no matter what
       var now = performance.now();
-      my.canvasctx.clearRect(0, 0, 740, 710);
-      my.drawSpecials();
-      my.moveShips((now - my.lastperf) / my.gamesvc.REFRESH_RATE);
-      my.drawCombat();
-      my.lastperf = performance.now();
+      this.canvasctx.clearRect(0, 0, 740, 710);
+      this.drawSpecials();
+      this.moveShips((now - this.lastperf) / this.gamesvc.REFRESH_RATE);
+      this.drawCombat();
+      this.lastperf = performance.now();
       window.requestAnimationFrame(looper);
     }
     looper();
   }
 
   registerCombat(combat: CombatResult) {
-    var my: MapComponent = this;
-
     var expls = 0;
     combat.hitcodes.forEach(hc => {
       if (HitCode.CANNON_EXPLODED === hc) {
@@ -160,7 +143,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
     if (expls > 0) {
       // cannon exploded, so explode the attacker
-      my.explosions.push({
+      this.explosions.push({
         x: combat.attacker.location.x,
         y: combat.attacker.location.y,
         turns: MapComponent.EXPLOSION_DURATION,
@@ -169,7 +152,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       if (expls > 1) {
         for (var i = 1; i < expls; i++) {
-          my.explosions.push({
+          this.explosions.push({
             x: combat.attacker.location.x - 10 + Math.random() * 20,
             y: combat.attacker.location.y - 10 + Math.random() * 20,
             turns: MapComponent.EXPLOSION_DURATION,
@@ -180,7 +163,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     }
 
-    my.ballpaths.push({
+    this.ballpaths.push({
       srcx: combat.attacker.location.x,
       srcy: combat.attacker.location.y,
       dstx: combat.attackee.location.x,
@@ -193,49 +176,45 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   drawSpecials() {
-    var my: MapComponent = this;
+    if (null != this.monsterloc) {
+      var imgh = this.seamonsterimg.naturalHeight;
+      var imgw = this.seamonsterimg.naturalWidth;
 
-    if (null != my.monsterloc) {
-      var imgh = my.seamonsterimg.naturalHeight;
-      var imgw = my.seamonsterimg.naturalWidth;
-
-      my.canvasctx.drawImage(my.seamonsterimg, my.monsterloc.x - imgw / 2, my.monsterloc.y - imgh / 2, imgw, imgh);
-      my.canvasctx.beginPath();
-      my.canvasctx.arc(my.monsterloc.x, my.monsterloc.y, 25, 0, 2 * Math.PI);
-      my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-      my.canvasctx.strokeStyle = 'black';
-      my.canvasctx.stroke();
+      this.canvasctx.drawImage(this.seamonsterimg, this.monsterloc.x - imgw / 2, this.monsterloc.y - imgh / 2, imgw, imgh);
+      this.canvasctx.beginPath();
+      this.canvasctx.arc(this.monsterloc.x, this.monsterloc.y, 25, 0, 2 * Math.PI);
+      this.canvasctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      this.canvasctx.strokeStyle = 'black';
+      this.canvasctx.stroke();
     }
 
-    if (null != my.poolloc) {
-      var imgh = my.whirlpoolimg.naturalHeight;
-      var imgw = my.whirlpoolimg.naturalWidth;
+    if (null != this.poolloc) {
+      var imgh = this.whirlpoolimg.naturalHeight;
+      var imgw = this.whirlpoolimg.naturalWidth;
 
-      my.canvasctx.drawImage(my.whirlpoolimg, my.poolloc.x - imgw / 2, my.poolloc.y - imgh / 2, imgw, imgh);
-      my.canvasctx.beginPath();
-      my.canvasctx.arc(my.poolloc.x, my.poolloc.y, 30, 0, 2 * Math.PI);
-      my.canvasctx.fillStyle = "rgba(0, 0, 0, 0.25)";
-      my.canvasctx.strokeStyle = 'black';
-      my.canvasctx.stroke();
+      this.canvasctx.drawImage(this.whirlpoolimg, this.poolloc.x - imgw / 2, this.poolloc.y - imgh / 2, imgw, imgh);
+      this.canvasctx.beginPath();
+      this.canvasctx.arc(this.poolloc.x, this.poolloc.y, 30, 0, 2 * Math.PI);
+      this.canvasctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+      this.canvasctx.strokeStyle = 'black';
+      this.canvasctx.stroke();
     }
   }
 
   drawCombat() {
-    var my: MapComponent = this;
-
-    my.sinkings.forEach((sink, idx) => {
-      my.canvasctx.save();
+    this.sinkings.forEach((sink, idx) => {
+      this.canvasctx.save();
       // first half of duration, rotate the image slightly
       // second half: sink the ship
       var pct: number = (1 - (sink.turns / MapComponent.SINK_DURATION));
       var rotation: number = (pct < 0.5 ? pct : 0.5);
-      my.canvasctx.translate(sink.x, sink.y);
-      my.canvasctx.rotate(rotation * Math.PI);
-      my.canvasctx.translate(-12, -12);
-      var img = my.images[sink.avatar];
+      this.canvasctx.translate(sink.x, sink.y);
+      this.canvasctx.rotate(rotation * Math.PI);
+      this.canvasctx.translate(-12, -12);
+      var img = this.imgsvc.getImage(sink.avatar);
       if (pct < 0.5) {
         // rotate the (teetering) ship
-        my.canvasctx.drawImage(img, 0, 0, 24, 24);
+        this.canvasctx.drawImage(img, 0, 0, 24, 24);
       }
       else {
         // sink the ship into the sea
@@ -247,7 +226,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         // this code looks like x & y are reversed, until you
         // realize that the canvas is rotated 90 degrees
-        my.canvasctx.drawImage(img,
+        this.canvasctx.drawImage(img,
           // srcX: number, srcY: number, srcW: number, srcH: number, 
           0, 0, 700 * imgpct, 700, // no idea where these 700s come from: the svgs are 512px square
           // dstX: number, dstY: number, dstW: number, dstH: number
@@ -256,23 +235,23 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       sink.turns -= 1;
       if (sink.turns <= 0) {
-        my.sinkings.splice(idx, 1);
+        this.sinkings.splice(idx, 1);
         sink.turns = MapComponent.SINK_DURATION;
       }
 
-      my.canvasctx.restore();
+      this.canvasctx.restore();
     });
 
-    my.explosions.forEach((exp, idx) => {
+    this.explosions.forEach((exp, idx) => {
       if (0 === exp.delay) {
-        my.canvasctx.beginPath();
-        my.canvasctx.arc(exp.x, exp.y, exp.turns / 2, 0, 2 * Math.PI);
-        my.canvasctx.fillStyle = "rgba(255, 0, 0, 0.5)";
-        my.canvasctx.fill();
+        this.canvasctx.beginPath();
+        this.canvasctx.arc(exp.x, exp.y, exp.turns / 2, 0, 2 * Math.PI);
+        this.canvasctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+        this.canvasctx.fill();
 
         exp.turns -= 1;
         if (exp.turns <= 0) {
-          my.explosions.splice(idx, 1);
+          this.explosions.splice(idx, 1);
         }
       }
       else {
@@ -280,28 +259,28 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
 
-    my.ballpaths.forEach((cbp, idx) => {
+    this.ballpaths.forEach((cbp, idx) => {
 
       // draw an arched path to the target
-      my.canvasctx.beginPath();
-      my.canvasctx.moveTo(cbp.srcx, cbp.srcy);
-      my.canvasctx.quadraticCurveTo(cbp.ctrlx, cbp.ctrly, cbp.dstx, cbp.dsty);
-      my.canvasctx.strokeStyle = 'white';
-      my.canvasctx.stroke();
+      this.canvasctx.beginPath();
+      this.canvasctx.moveTo(cbp.srcx, cbp.srcy);
+      this.canvasctx.quadraticCurveTo(cbp.ctrlx, cbp.ctrly, cbp.dstx, cbp.dsty);
+      this.canvasctx.strokeStyle = 'white';
+      this.canvasctx.stroke();
 
       // draw a cannonball flying on that path
-      my.canvasctx.beginPath();
-      var loc: Location = my.getQuadraticBezierXYatT(cbp);
-      my.canvasctx.arc(loc.x, loc.y, 5, 0, 2 * Math.PI);
-      my.canvasctx.fillStyle = "rgba(0, 0, 0, 1)";
-      my.canvasctx.strokeStyle = 'black';
-      my.canvasctx.fill();
+      this.canvasctx.beginPath();
+      var loc: Location = this.getQuadraticBezierXYatT(cbp);
+      this.canvasctx.arc(loc.x, loc.y, 5, 0, 2 * Math.PI);
+      this.canvasctx.fillStyle = "rgba(0, 0, 0, 1)";
+      this.canvasctx.strokeStyle = 'black';
+      this.canvasctx.fill();
 
       cbp.turns -= 1;
 
       if (cbp.turns <= 0) {
         if (cbp.rslt.hits > 0) {
-          my.explosions.push({
+          this.explosions.push({
             x: cbp.rslt.attackee.location.x,
             y: cbp.rslt.attackee.location.y,
             turns: MapComponent.EXPLOSION_DURATION,
@@ -311,7 +290,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
           if (cbp.rslt.hits > 1) {
             for (var i = 0; i < cbp.rslt.hits; i++) {
-              my.explosions.push({
+              this.explosions.push({
                 x: cbp.rslt.attackee.location.x - 10 + Math.random() * 20,
                 y: cbp.rslt.attackee.location.y - 10 + Math.random() * 20,
                 turns: MapComponent.EXPLOSION_DURATION,
@@ -320,7 +299,7 @@ export class MapComponent implements OnInit, AfterViewInit {
             }
           }
         }
-        my.ballpaths.splice(idx, 1);
+        this.ballpaths.splice(idx, 1);
       }
     });
   }
@@ -342,7 +321,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.ships.forEach((ship: Ship) => {
       // console.log(ship.id + '=>' + ship.crew.count);
-      var shipimg = this.images[ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg'];
+      var shipimg = this.imgsvc.getImage(ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg');
       var ismyship: boolean = (ship.id === this.ship.id);
       if (ismyship) {
         shipimg = this.myshipimg;

@@ -5,6 +5,7 @@ import { AvatarService } from '../../services/avatar.service'
 import { GameService } from '../../services/game.service'
 
 import { Names } from '../../../../../common/tools/names'
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-setup',
@@ -44,7 +45,7 @@ export class SetupComponent implements OnInit {
 
   sail() {
     this.gamesvc.start(this.captain, this.female, this.avatar,
-      this.shipname, this.color ).subscribe(data => {
+      this.shipname, this.color ).pipe(take(1)).subscribe(data => {
         this.router.navigate(['/game']);
     });
   }

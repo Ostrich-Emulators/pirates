@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core'
+import { Injectable, OnDestroy } from '@angular/core'
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { take, takeUntil } from 'rxjs/operators';
 
 import { Ship } from '../../../../common/model/ship'
 import { Pirate } from '../../../../common/model/pirate'
@@ -11,6 +11,7 @@ import { StatusResponse } from '../../../../common/model/status-response'
 import { CombatResult } from '../../../../common/model/combat-result';
 import { BoardResult } from '../../../../common/model/board-result';
 import { City } from '../../../../common/model/city';
+import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 
 @Injectable()
 export class GameService {
@@ -46,9 +47,11 @@ export class GameService {
       console.log(ship);
 
       this.refreshData();
-      var my: GameService = this;
-      setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
+      setInterval(() => { this.refreshData(); }, this.REFRESH_RATE);
     }
+  }
+
+  ngOnDestroy() {
   }
 
   start(name: string, female: boolean, avatar: string,
@@ -58,24 +61,23 @@ export class GameService {
     var url = this.BASEURL + '/players';
 
     var obs: Subject<boolean> = new Subject<boolean>();
-    this.http.put(url, { pirate: pirate, ship: shipname, color: color }).pipe(take(1)).subscribe(
-      (data: any) => {
-        console.log(data);
-        var player: Player = data.player;
-        this.playerid = player.id;
-        var ship: Ship = data.ship;
-        this.shipid = ship.id;
+    this.http.put(url, { pirate: pirate, ship: shipname, color: color }).pipe(take(1)).subscribe((data:any) => {
+      console.log(data);
+      var player: Player = data.player;
+      this.playerid = player.id;
+      var ship: Ship = data.ship;
+      this.shipid = ship.id;
 
-        sessionStorage.setItem('player', JSON.stringify(player));
-        sessionStorage.setItem('ship', JSON.stringify(ship));
+      sessionStorage.setItem('player', JSON.stringify(player));
+      sessionStorage.setItem('ship', JSON.stringify(ship));
 
-        setInterval(function () { my.refreshData(); }, this.REFRESH_RATE);
-        this.refreshData();
+      setInterval(() => { my.refreshData(); }, this.REFRESH_RATE);
+      this.refreshData();
 
-        this._myship = new BehaviorSubject<Ship>(ship);
-        this._player = new BehaviorSubject<Player>(player);
-        obs.next(true);
-      },
+      this._myship = new BehaviorSubject<Ship>(ship);
+      this._player = new BehaviorSubject<Player>(player);
+      obs.next(true);
+    },
       (err) => {
         console.error('something happened!');
         console.error(err);
@@ -86,7 +88,7 @@ export class GameService {
 
   refreshData() {
     //console.log('into refreshdata');
-    this.http.get(this.BASEURL + '/game/status/' + this.playerid).subscribe((data: StatusResponse) => {
+    this.http.get(this.BASEURL + '/game/status/' + this.playerid).pipe(takeUntil(componentDestroyed(this)) ).subscribe((data: StatusResponse) => {
       data.ships.forEach(shp => {
         if (shp.ownerid === this.playerid) {
           this._myship.next(shp);
@@ -154,28 +156,28 @@ export class GameService {
 
   fire(at: Ship) {
     var url: string = this.BASEURL + '/ships/' + this.shipid + '/fire';
-    this.http.post(url, { targetid: at.id }).subscribe();
+    this.http.post(url, { targetid: at.id }).pipe(take(1)).subscribe();
   }
 
   board(at: Ship) { // try to board anothe rship
     console.log('trying to board: ' + JSON.stringify(at));
     var url: string = this.BASEURL + '/ships/' + this.shipid + '/board';
-    this.http.post(url, { targetid: at.id }).subscribe();
+    this.http.post(url, { targetid: at.id }).pipe(take(1)).subscribe();
   }
 
   move(x: number, y: number) {
     var loc: Location = { x: x, y: y };
     var url: string = this.BASEURL + '/ships/' + this.shipid + '/course';
-    this.http.post(url, loc).subscribe();
+    this.http.post(url, loc).pipe(take(1)).subscribe();
   }
 
   undock() {
     var url: string = this.BASEURL + '/ships/' + this.shipid + '/undock';
-    this.http.post(url, null).subscribe();
+    this.http.post(url, null).pipe(take(1)).subscribe();
   }
 
   buy(city: City) {
     var url: string = this.BASEURL + '/ships/' + this.shipid + '/buy';
-    this.http.post(url, city).subscribe();
+    this.http.post(url, city).pipe(take(1)).subscribe();
   }
 }
