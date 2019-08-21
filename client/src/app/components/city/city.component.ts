@@ -1,23 +1,28 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy } from '@angular/core';
 import { GameService } from '../../services/game.service';
 import { City } from '../../../../../common/model/city';
 import { Ship } from '../../../../../common/model/ship';
+import { takeUntil } from 'rxjs/operators';
+import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 
 @Component({
   selector: 'app-city',
   templateUrl: './city.component.html',
   styleUrls: ['./city.component.css']
 })
-export class CityComponent implements OnInit {
+export class CityComponent implements OnInit, OnDestroy {
   @Input() city: City;
   private ship: Ship;
   constructor(private gamesvc: GameService) { }
 
   ngOnInit() {
     console.log(this.city);
-    this.gamesvc.myship().subscribe(data => { 
+    this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(data => { 
       this.ship = data;
     });
+  }
+
+  ngOnDestroy(): void {
   }
 
   undock(e) {
@@ -29,6 +34,4 @@ export class CityComponent implements OnInit {
     city[e] = 1;
     this.gamesvc.buy(city);
   }
-
-
 }

@@ -62,10 +62,10 @@ export class GameService {
 
     var obs: Subject<boolean> = new Subject<boolean>();
     this.http.put(url, { pirate: pirate, ship: shipname, color: color }).pipe(take(1)).subscribe((data:any) => {
-      console.log(data);
+      console.log('started game: ', data);
       var player: Player = data.player;
       this.playerid = player.id;
-      var ship: Ship = data.ship;
+      var ship: Ship = data.ship[0];
       this.shipid = ship.id;
 
       sessionStorage.setItem('player', JSON.stringify(player));
@@ -88,38 +88,39 @@ export class GameService {
 
   refreshData() {
     //console.log('into refreshdata');
-    this.http.get(this.BASEURL + '/game/status/' + this.playerid).pipe(takeUntil(componentDestroyed(this)) ).subscribe((data: StatusResponse) => {
-      data.ships.forEach(shp => {
-        if (shp.ownerid === this.playerid) {
-          this._myship.next(shp);
-          this.shipid = shp.id;
+    this.http.get(this.BASEURL + '/game/status/' + this.playerid)
+      .pipe(take(1))
+      .subscribe((data: StatusResponse) => {
+        var mees: Ship[] = data.ships.filter(shp => shp.ownerid === this.playerid);
+        if (mees.length > 0) {
+          this._myship.next(mees[0]);
+          this.shipid = mees[0].id;
+        }
+
+        // FIXME: maybe figure out who's sunk since the last update?
+        this.allships = data.ships;
+        this._ships.next(this.allships);
+
+        if (data.messages.length > 0) {
+          this._messages.next(data.messages);
+        }
+
+        if (data.combat && data.combat.length > 0) {
+          this._combat.next(data.combat);
+        }
+
+        if (data.board && data.board.length > 0) {
+          this._board.next(data.board);
+        }
+
+        if (data.monsterloc) {
+          this._monster.next(data.monsterloc);
+        }
+
+        if (data.poolloc) {
+          this._pool.next(data.poolloc);
         }
       });
-
-      // FIXME: maybe figure out who's sunk since the last update?
-      this.allships = data.ships;
-      this._ships.next(this.allships);
-
-      if (data.messages.length > 0) {
-        this._messages.next(data.messages);
-      }
-
-      if (data.combat && data.combat.length > 0) {
-        this._combat.next(data.combat);
-      }
-
-      if (data.board && data.board.length > 0) {
-        this._board.next(data.board);
-      }
-
-      if (data.monsterloc) {
-        this._monster.next(data.monsterloc);
-      }
-
-      if (data.poolloc) {
-        this._pool.next(data.poolloc);
-      }
-    });
   }
 
   ships(): Observable<Ship[]> {

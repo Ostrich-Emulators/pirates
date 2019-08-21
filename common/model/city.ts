@@ -8,5 +8,6 @@ export interface City {
     sailing?: number,
     ammo?: number,
     hull?: number,
-    sail?: number
+    sail?: number,
+    cannon?: number
 }

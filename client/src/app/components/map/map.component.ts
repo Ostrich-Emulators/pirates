@@ -18,8 +18,8 @@ import { componentDestroyed } from "@w11k/ngx-componentdestroyed";
 export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('map', { read: ElementRef, static: true }) map: ElementRef;
   @ViewChild('mapguide', { read: ElementRef, static: true }) mapguide: ElementRef;
-  private offscreenctx: CanvasRenderingContext2D;
-  private canvasctx: CanvasRenderingContext2D;
+  private offscreenctx: CanvasRenderingContext2D; // for navigation and such
+  private canvasctx: CanvasRenderingContext2D; // for actually drawing the map
   private whirlpoolimg;
   private poolloc: Location = null;
   private monsterloc: Location = null;
@@ -39,15 +39,14 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   
 
   constructor(private targetting: TargettingService, private gamesvc: GameService,
-    private imgsvc:AvatarService ) { }
+    private imgsvc: AvatarService) { }
 
-  
-  ngOnDestroy(): void {
-  }
+  ngOnDestroy(): void { }
   
   ngOnInit() {
     this.offscreenctx = this.mapguide.nativeElement.getContext('2d');
     this.canvasctx = this.map.nativeElement.getContext('2d');
+
     this.gamesvc.myplayer().pipe(takeUntil(componentDestroyed(this))).subscribe(d => { 
       this.player = d;
     });
@@ -62,7 +61,10 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
       this.ship = data;
-      this.myshipimg = this.imgsvc.getImage(this.ship.avatar, this.player.color);
+      if (!this.myshipimg) {
+        console.log('setting ship image:', this.ship.avatar);
+        this.myshipimg = this.imgsvc.getImage(this.ship.avatar, this.player.color);
+      }
     });
 
     this.gamesvc.combat().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
@@ -436,7 +438,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       console.log('setting sail!');
     }
     if (!ship.anchored) {
-      console.log('setting new course!');
+      console.log('setting new course!', x, y, ship);
     }
 
     var diffx = (x - ship.location.x);
