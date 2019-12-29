@@ -1,21 +1,18 @@
-<table>
-  <thead>
-    <tr>
-      <th colspan="2">{{ship?.name}}</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td># Cannons</td>
-      <td>{{ship?.cannons?.count}}</td>
-    </tr>
-    <tr>
-      <td>Hull Strength</td>
-      <td>{{ship?.hullStrength| number : '1.2-2'}}</td>
-    </tr>
-    <tr>
-      <td>Sail Quality</td>
-      <td>{{ship?.sailQuality| number : '1.2-2'}}</td>
-    </tr>
-  </tbody>
-</table>
+<div class="container-fluid">
+
+  <div class="row">
+    <div class="col header">{{ship?.name}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9"># Cannons</div>
+    <div class="col-3">{{ship?.cannons?.count}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Hull Strength</div>
+    <div class="col-3">{{ship?.hullStrength| number : '1.2-2'}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Sail Quality</div>
+    <div class="col-3">{{ship?.sailQuality| number : '1.2-2'}}</div>
+  </div>
+</div>

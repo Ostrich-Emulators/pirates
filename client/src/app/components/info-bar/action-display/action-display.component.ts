@@ -8,7 +8,7 @@ import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 @Component({
   selector: 'app-action-display',
   templateUrl: './action-display.component.html',
-  styleUrls: ['./action-display.component.css']
+  styleUrls: ['./action-display.component.scss']
 })
 export class ActionDisplayComponent implements OnInit, OnDestroy {
   private targets: Ship[];

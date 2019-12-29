@@ -8,7 +8,7 @@ import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 @Component({
   selector: 'app-city',
   templateUrl: './city.component.html',
-  styleUrls: ['./city.component.css']
+  styleUrls: ['./city.component.scss']
 })
 export class CityComponent implements OnInit, OnDestroy {
   @Input() city: City;
@@ -33,5 +33,9 @@ export class CityComponent implements OnInit, OnDestroy {
     var city: City = {};
     city[e] = 1;
     this.gamesvc.buy(city);
+  }
+
+  buyc(e) {
+    console.log(this.city.cannon[e]);
   }
 }

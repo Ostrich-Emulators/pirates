@@ -8,7 +8,7 @@ import { takeUntil } from 'rxjs/operators';
 @Component({
   selector: 'app-supply-display',
   templateUrl: './supply-display.component.html',
-  styleUrls: ['./supply-display.component.css']
+  styleUrls: ['../info-display.scss']
 })
 export class SupplyDisplayComponent implements OnInit, OnDestroy {
   private ship: Ship;

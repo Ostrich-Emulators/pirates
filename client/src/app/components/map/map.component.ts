@@ -13,7 +13,7 @@ import { componentDestroyed } from "@w11k/ngx-componentdestroyed";
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
-  styleUrls: ['./map.component.css']
+  styleUrls: ['./map.component.scss']
 })
 export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('map', { read: ElementRef, static: true }) map: ElementRef;

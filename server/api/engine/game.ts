@@ -15,7 +15,7 @@ import { City } from '../../../common/model/city'
 import { Calculators } from '../../../common/tools/calculators';
 import { ShipAi } from './ship-ai';
 import { CombatEngine } from './combat-engine'
-import { TrainingEngine } from './training'
+import { TrainingEngine } from './training-engine'
 import { Cannon } from '../../../common/model/cannon';
 import { Crew } from '../../../common/model/crew';
 import { MapEngine } from './map-engine';
@@ -68,6 +68,7 @@ export class Game {
     }
 
     constructor() {
+        console.log( 'into game ctor')
         var CITYLOCATIONS: Location[] = [
             { x: 532, y: 82 },
             { x: 289, y: 202 },
@@ -76,18 +77,27 @@ export class Game {
         
         var names: string[] = Names.city(CITYLOCATIONS.length);
 
-        for (var i = 0; i < CITYLOCATIONS.length; i++){
-            this.cities.push({
-                name: names[i],
-                location: CITYLOCATIONS[i],
-                
+        this.cities.push(...CITYLOCATIONS.map((loc, idx) => {
+            var cmap: {}[] = [
+                { firepower: 1, reloadspeed: 15, range: 60, count: 1, cost: Math.random() * 5 + 5 },
+                { firepower: 2, reloadspeed: 15, range: 45, count: 1, cost: Math.random() * 15 + 5 },
+                { firepower: 1, reloadspeed: 15, range: 75, count: 1, cost: Math.random() * 15 + 5 },
+                { firepower: 3, reloadspeed: 25, range: 50, count: 1, cost: Math.random() * 15 + 25 }
+            ];
+
+            return {
+                name: names[idx],
+                location: loc,
                 melee: Math.random() * 20 + 10,
                 hull: Math.random() * 20 + 20,
                 sail: Math.random() * 15 + 20,
                 sailing: Math.random() * 50 + 50,
-                ammo: Math.random() * 1 + 1
-            });
-        }
+                ammo: Math.random() * 1 + 1,
+                cannon: cmap
+            };
+        }));
+
+        console.log(this.cities);
     }
 
     setImage(img) {
@@ -463,6 +473,7 @@ export class Game {
                         console.log('in city! ' + city.name);
                         ship.anchored = true;
                         ship.docked = city;
+                        console.log(ship.docked);
                     }
                     else {
                         ship.docked = null;

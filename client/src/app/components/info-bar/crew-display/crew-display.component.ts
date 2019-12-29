@@ -7,7 +7,7 @@ import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 @Component({
   selector: 'app-crew-display',
   templateUrl: './crew-display.component.html',
-  styleUrls: ['./crew-display.component.css']
+  styleUrls: ['../info-display.scss']
 })
 export class CrewDisplayComponent implements OnInit, OnDestroy {
   private crew: Crew;

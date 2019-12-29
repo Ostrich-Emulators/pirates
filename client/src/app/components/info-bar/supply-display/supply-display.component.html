@@ -1,21 +1,19 @@
-<table>
-  <thead>
-    <tr>
-      <th colspan="2">Supplies</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Gold</td>
-      <td>{{ship?.gold | number : '1.2-2'}}</td>
-    </tr>
-    <tr>
-      <td>Cannonballs</td>
-      <td>{{ship?.ammo}}</td>
-    </tr>
-    <tr>
-      <td>Food</td>
-      <td>{{ship?.food}}</td>
-    </tr>
-  </tbody>
-</table>
+<div class="container-fluid">
+
+  <div class="row">
+    <div class="col header">Supplies</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Gold</div>
+    <div class="col-3">{{ship?.gold | number : '1.2-2'}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Cannonballs</div>
+    <div class="col-3">{{ship?.ammo}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Food</div>
+    <div class="col-3">{{ship?.food}}</div>
+  </div>
+
+</div>

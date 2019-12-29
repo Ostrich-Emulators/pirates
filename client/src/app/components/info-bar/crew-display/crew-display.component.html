@@ -1,21 +1,20 @@
-<table>
-  <thead>
-    <tr>
-      <th colspan="2">Crew</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td># Crew</td>
-      <td>{{crew?.count}}</td>
-    </tr>
-    <tr>
-      <td>Fighting Skill</td>
-      <td>{{crew?.meleeSkill}}</td>
-    </tr>
-    <tr>
-      <td>Sailing Skill</td>
-      <td>{{crew?.sailingSkill}}</td>
-    </tr>
-  </tbody>
-</table>
+<div class="container-fluid">
+
+  <div class="row">
+    <div class="col header">Crew</div>
+  </div>
+
+  <div class="row">
+    <div class="col-9"># Crew</div>
+    <div class="col-3">{{crew?.count}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Fighting Skill</div>
+    <div class="col-3">{{crew?.meleeSkill}}</div>
+  </div>
+  <div class="row">
+    <div class="col-9">Sailing Skill</div>
+    <div class="col-3">{{crew?.sailingSkill}}</div>
+  </div>
+
+</div>

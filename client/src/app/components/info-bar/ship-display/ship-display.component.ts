@@ -8,7 +8,7 @@ import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 @Component({
   selector: 'app-ship-display',
   templateUrl: './ship-display.component.html',
-  styleUrls: ['./ship-display.component.css']
+  styleUrls: ['../info-display.scss']
 })
 export class ShipDisplayComponent implements OnInit, OnDestroy {
   private ship: Ship;

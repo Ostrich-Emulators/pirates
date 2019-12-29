@@ -1,17 +1,26 @@
-<div id="targetting">
-    <table *ngFor="let tgt of targets" class="ship">
-        <tr>
-            <td rowspan="4">
+<div id="targetting" *ngIf="targets?.length>0">
+    <div class="row" *ngFor="let tgt of targets">
+        <div class="col-3">
                 <img *ngIf="tgt.crew.count>=1" src="{{tgt.avatar}}" class='shipimg'>
                 <img *ngIf="tgt.crew.count<1" src="/assets/abandoned.svg" class='shipimg'>
-            </td>
-            <td>{{tgt.name}}
-                <br/>{{tgt.hullStrength}}</td>
-            <td>Captain: {{ tgt.captain }}</td>
-            <td rowspan="4">
+        </div>
+        <div class="col-6">
+            <div class="row">
+                <div class="col-9">{{tgt.name}}</div>
+                <div class="col-3">{{tgt.hullStrength}}</div>
+            </div>
+            <div class="row">
+                <div class="col">Captain: {{tgt.captain}}</div>
+            </div>
+        </div>
+
+        <div class="col-3">
+            <div class="row">
                 <button [disabled]="!shipsvc.canFire(tgt)" (click)="fire(tgt)">Fire!</button>
+            </div>
+            <div class="row">
                 <button [disabled]="!shipsvc.canBoard(tgt)" (click)="board(tgt)">Board!</button>
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+    </div>
 </div>

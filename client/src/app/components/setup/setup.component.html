@@ -1,24 +1,28 @@
-<div>
-  Pirate Name:
-  <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
-  <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
-  <input [(ngModel)]="captain">
-  <button (click)="newcaptain()">New Captain</button>
-</div>
-<div>
-  Ship Name:
-  <input [(ngModel)]="shipname">
-  <button (click)="newname()">New Name</button>
-</div>
-<div>
-  Avatar:
-  <ng-container *ngFor="let a of imgsvc.avatars">
-    <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
-  </ng-container>
-</div>
-<div>
-  Color:
-  <input [value]="color" [style.background]="color" [(colorPicker)]="color" />
-</div>
+<div class="container-fluid">
+  <div class="row">
+    Pirate Name:
+    <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
+    <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
+    <input [(ngModel)]="captain">
+    <button (click)="newcaptain()">New Captain</button>
+  </div>
+  <div class="row">
+    Ship Name:
+    <input [(ngModel)]="shipname">
+    <button (click)="newname()">New Name</button>
+  </div>
+  <div class="row">
+    Avatar:
+    <div class="col" *ngFor="let a of imgsvc.avatars">      
+      <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
+    </div>
+  </div>
+  <div class="row">
+    Color:
+    <input [value]="color" [style.background]="color" [(colorPicker)]="color" />
+  </div>
 
-<button class="btn btn-default" [disabled]="0===captain.length" (click)="sail()">Set Sail!</button>
+  <div class="row">
+    <button class="btn btn-default" [disabled]="0===captain.length" (click)="sail()">Set Sail!</button>
+  </div>
+</div>
