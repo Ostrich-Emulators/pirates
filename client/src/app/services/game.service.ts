@@ -12,6 +12,7 @@ import { CombatResult } from '../../../../common/model/combat-result';
 import { BoardResult } from '../../../../common/model/board-result';
 import { City } from '../../../../common/model/city';
 import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
+import { Purchase } from '../../../../common/model/purchase';
 
 @Injectable()
 export class GameService {
@@ -177,7 +178,7 @@ export class GameService {
     this.http.post(url, null).pipe(take(1)).subscribe();
   }
 
-  buy(city: City) {
+  buy(city: Purchase) {
     var url: string = this.BASEURL + '/ships/' + this.shipid + '/buy';
     this.http.post(url, city).pipe(take(1)).subscribe();
   }

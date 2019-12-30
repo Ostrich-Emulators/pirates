@@ -4,6 +4,7 @@ import { Game } from '../engine/game'
 import { Ship } from '../../../common/model/ship'
 import { Location } from '../../../common/model/location';
 import { City } from '../../../common/model/city';
+import { Purchase } from '../../../common/model/purchase';
 
 export class ShipController {
     private shiplkp: Map<string, Ship> = new Map<string, Ship>();
@@ -101,7 +102,7 @@ export class ShipController {
         delete this.one(shipid).docked;
     }
 
-    buy(shipid: string, citybuy: City) {
+    buy(shipid: string, citybuy: Purchase) {
         if (!this.shiplkp.has(shipid)) {
             console.error('unknown ship: ' + shipid);
             return;

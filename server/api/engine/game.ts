@@ -6,7 +6,6 @@ import { ShipDefinition } from '../../../common/model/ship-definition'
 import { Ship } from '../../../common/model/ship'
 import { CollisionBody } from '../../../common/model/body'
 import { Collider } from '../../../common/tools/collider'
-import { SeaMonster } from '../models/seamonster'
 import { ShipPair } from '../../../common/model/ship-pair'
 import { Names } from '../../../common/tools/names'
 import { CombatResult } from '../../../common/model/combat-result';
@@ -15,11 +14,10 @@ import { City } from '../../../common/model/city'
 import { Calculators } from '../../../common/tools/calculators';
 import { ShipAi } from './ship-ai';
 import { CombatEngine } from './combat-engine'
-import { TrainingEngine } from './training-engine'
+import { PurchaseEngine } from './purchase-engine'
 import { Cannon } from '../../../common/model/cannon';
 import { Crew } from '../../../common/model/crew';
 import { MapEngine } from './map-engine';
-import { timingSafeEqual } from 'crypto';
 
 export class Game {
     private TURN_NUM: number = 0;
@@ -41,7 +39,7 @@ export class Game {
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine(this);
     private ai: ShipAi = new ShipAi(this, this.combatengine);
-    training: TrainingEngine = new TrainingEngine(this);
+    training: PurchaseEngine = new PurchaseEngine(this);
     private specialscollider: Collider = new Collider();
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
@@ -80,8 +78,8 @@ export class Game {
         this.cities.push(...CITYLOCATIONS.map((loc, idx) => {
             var cmap: {}[] = [
                 { firepower: 1, reloadspeed: 15, range: 60, cost: Math.random() * 5 + 5 },
-                { firepower: 2, reloadspeed: 15, range: 45, cost: Math.random() * 15 + 5 },
-                { firepower: 1, reloadspeed: 15, range: 75, cost: Math.random() * 15 + 5 },
+                { firepower: 2, reloadspeed: 15, range: 45, cost: Math.random() * 15 + 10 },
+                { firepower: 1, reloadspeed: 15, range: 75, cost: Math.random() * 15 + 10 },
                 { firepower: 3, reloadspeed: 25, range: 50, cost: Math.random() * 15 + 25 }
             ];
 
