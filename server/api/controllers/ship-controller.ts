@@ -98,7 +98,7 @@ export class ShipController {
     }
 
     undock(shipid: string) {
-        this.one(shipid).docked = null;
+        delete this.one(shipid).docked;
     }
 
     buy(shipid: string, citybuy: City) {
@@ -108,13 +108,7 @@ export class ShipController {
         }
 
         var ship: Ship = this.one(shipid);
-        var city: City;
-        for (var i: number = 0; i < this.game.cities.length; i++){
-            if (ship.docked.name === this.game.cities[i].name) {
-                city = this.game.cities[i];
-            }
-        }
-
+        var city: City = (this.game.cities.filter(c => ship.docked.name == c.name) || [])[0];
         if (city) {
             this.game.training.train(ship, city, citybuy );
         }

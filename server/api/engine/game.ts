@@ -41,7 +41,7 @@ export class Game {
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine(this);
     private ai: ShipAi = new ShipAi(this, this.combatengine);
-    training: TrainingEngine = new TrainingEngine();
+    training: TrainingEngine = new TrainingEngine(this);
     private specialscollider: Collider = new Collider();
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
@@ -79,10 +79,10 @@ export class Game {
 
         this.cities.push(...CITYLOCATIONS.map((loc, idx) => {
             var cmap: {}[] = [
-                { firepower: 1, reloadspeed: 15, range: 60, count: 1, cost: Math.random() * 5 + 5 },
-                { firepower: 2, reloadspeed: 15, range: 45, count: 1, cost: Math.random() * 15 + 5 },
-                { firepower: 1, reloadspeed: 15, range: 75, count: 1, cost: Math.random() * 15 + 5 },
-                { firepower: 3, reloadspeed: 25, range: 50, count: 1, cost: Math.random() * 15 + 25 }
+                { firepower: 1, reloadspeed: 15, range: 60, cost: Math.random() * 5 + 5 },
+                { firepower: 2, reloadspeed: 15, range: 45, cost: Math.random() * 15 + 5 },
+                { firepower: 1, reloadspeed: 15, range: 75, cost: Math.random() * 15 + 5 },
+                { firepower: 3, reloadspeed: 25, range: 50, cost: Math.random() * 15 + 25 }
             ];
 
             return {
@@ -473,10 +473,9 @@ export class Game {
                         console.log('in city! ' + city.name);
                         ship.anchored = true;
                         ship.docked = city;
-                        console.log(ship.docked);
                     }
                     else {
-                        ship.docked = null;
+                        delete ship.docked;
                     }
                 }
                 else {

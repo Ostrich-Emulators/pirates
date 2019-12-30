@@ -11,7 +11,7 @@ export class ShipAi {
   public control(ship: Ship, playerships: Ship[], collider: Collider, game: Game) {
     var fired: boolean = false;
     if (this.combateng.readyToFire(ship)) {
-      playerships.forEach(enemy => {
+      playerships.filter(s => !this.game.isdocked(s)).forEach(enemy => {
         var dist = Calculators.distance(ship.location, enemy.location);
         if (dist < ship.cannons.range * 3 / 4) {
           // if a pirate is too close, blast 'em!

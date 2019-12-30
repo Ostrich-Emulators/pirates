@@ -17,7 +17,8 @@
     <fieldset>
       <legend>Cannons</legend>
       <div *ngFor="let can of city.cannon;index as idx">
-        Cannon {{idx}}: ({{can.firepower}}/{{can.reloadspeed}}/{{can.range}}): <button (click)="buyc(idx)" [disabled]="ship.gold<can.cost">({{can.cost|number:'1.0-0'}})</button>
+        Cannon {{idx}}: ({{can.firepower}}/{{can.reloadspeed}}/{{can.range}}):
+        <button (click)="buyc(idx)" [disabled]="ship.gold<can.cost">({{can.cost|number:'1.0-0'}})</button>
       </div>
       <button (click)="train('ammo')" [disabled]="ship.gold<city.ammo">10 Ammo ({{city.ammo|number:'1.0-0'}})</button>
     </fieldset>

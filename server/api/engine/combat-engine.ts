@@ -96,6 +96,7 @@ export class CombatEngine {
                     // each ball can do up to 0.5 damage (rounded to 3 decimal places)
                     result.hitcodes.push(HitCode.HIT_SAIL);
                     var damage = Math.round((Math.random() / 2) * 1000) / 1000;
+                    damage *= attacker.cannons.firepower;
                     attackee.sailQuality -= damage;
                     if (attackee.sailQuality < 0) {
                         attackee.sailQuality = 0;
@@ -106,6 +107,7 @@ export class CombatEngine {
                     result.hitcodes.push(HitCode.HIT_HULL);
                     // each ball can do up to 1 damage (rounded to 3 decimal places)
                     var damage = Math.round((Math.random()) * 1000) / 1000;
+                    damage *= attacker.cannons.firepower;
                     attackee.hullStrength -= damage;
                     msg += ' doing ' + damage + ' damage to the hull';
                 }

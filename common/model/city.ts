@@ -1,5 +1,5 @@
 import { Location } from './location';
-import { Cannon } from './cannon';
+import { CityCannon } from './city-cannon';
 
 export interface City {
     name?: string,
@@ -10,5 +10,5 @@ export interface City {
     ammo?: number,
     hull?: number,
     sail?: number,
-    cannon?: {}
+    cannon?: CityCannon[]
 }
