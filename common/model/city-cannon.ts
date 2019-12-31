@@ -1,6 +1,5 @@
-export interface CityCannon {
-    firepower?: number,
-    reloadspeed?: number,
-    range?: number,
-    cost?: number
+import { CannonBase } from "./cannon-base";
+
+export interface CityCannon extends CannonBase {
+    cost: number
 }

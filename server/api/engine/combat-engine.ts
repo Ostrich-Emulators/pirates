@@ -53,6 +53,7 @@ export class CombatEngine {
 
         var cannonsInAttack = Math.min(attacker.cannons.count, attacker.ammo);
         attacker.ammo -= cannonsInAttack;
+        attacker.cannons.reloading = attacker.cannons.reloadspeed;
 
         // each cannon has a small chance of exploding during firing, depending on
         // the fighting skill of the crew. The baseline fighting skill is 50 (1% chance)

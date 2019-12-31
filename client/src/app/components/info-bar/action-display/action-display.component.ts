@@ -12,15 +12,14 @@ import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 })
 export class ActionDisplayComponent implements OnInit, OnDestroy {
   private targets: Ship[];
+  ship: Ship;
 
   constructor(private gamesvc: GameService, private shipsvc: TargettingService) { }
 
   ngOnDestroy(): void {}
   ngOnInit() {
-    var my: ActionDisplayComponent = this;
-    this.shipsvc.getTargets().pipe(takeUntil(componentDestroyed(this))).subscribe(data => {
-      my.targets = data;
-    });
+    this.shipsvc.getTargets().pipe(takeUntil(componentDestroyed(this))).subscribe(data => this.targets = data);
+    this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(s => this.ship = s);
   }
 
   fire(ship) {

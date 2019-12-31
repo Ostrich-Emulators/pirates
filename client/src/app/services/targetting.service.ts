@@ -90,28 +90,20 @@ export class TargettingService {
     return (this.targetting.has(s) ? this.targetting.get(s).board : false);
   }
 
+  private cannonsready(): boolean {
+    return (this.ship.ammo > 0 && !this.ship.cannons.reloading);
+  }
+
   canFire(s: Ship): boolean {
-    return (this.targetting.has(s) ? this.targetting.get(s).fire : false);
+    return ( this.targetting.has(s) ? this.targetting.get(s).fire && this.cannonsready(): false);
   }
 
   firingRange(): boolean {
-    var ok: boolean = false;
-    this.targetting.forEach(t => { 
-      if (t.fire) {
-        ok = true;
-      }
-    });
-    return ok;
+    return Array.from(this.targetting.values()).filter(tt => tt.fire).length > 0;
   }
 
   boardingRange(): boolean {
-    var ok: boolean = false;
-    this.targetting.forEach(t => {
-      if (t.board) {
-        ok = true;
-      }
-    });
-    return ok;
+    return Array.from(this.targetting.values()).filter(tt => tt.board).length > 0;
   }
 }
 

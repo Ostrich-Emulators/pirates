@@ -15,9 +15,11 @@ import { Calculators } from '../../../common/tools/calculators';
 import { ShipAi } from './ship-ai';
 import { CombatEngine } from './combat-engine'
 import { PurchaseEngine } from './purchase-engine'
-import { Cannon } from '../../../common/model/cannon';
+import { ShipCannon } from '../../../common/model/ship-cannon';
 import { Crew } from '../../../common/model/crew';
 import { MapEngine } from './map-engine';
+import { ShipUtils } from '../../../common/tools/ship-utils';
+import { CityCannon } from '../../../common/model/city-cannon'
 
 export class Game {
     private TURN_NUM: number = 0;
@@ -39,7 +41,7 @@ export class Game {
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine(this);
     private ai: ShipAi = new ShipAi(this, this.combatengine);
-    training: PurchaseEngine = new PurchaseEngine(this);
+    training: PurchaseEngine = new PurchaseEngine();
     private specialscollider: Collider = new Collider();
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
@@ -76,7 +78,7 @@ export class Game {
         var names: string[] = Names.city(CITYLOCATIONS.length);
 
         this.cities.push(...CITYLOCATIONS.map((loc, idx) => {
-            var cmap: {}[] = [
+            var cmap: CityCannon[] = [
                 { firepower: 1, reloadspeed: 15, range: 60, cost: Math.random() * 5 + 5 },
                 { firepower: 2, reloadspeed: 15, range: 45, cost: Math.random() * 15 + 10 },
                 { firepower: 1, reloadspeed: 15, range: 75, cost: Math.random() * 15 + 10 },
@@ -95,7 +97,7 @@ export class Game {
             };
         }));
 
-        console.log(this.cities);
+        console.log(JSON.stringify(this.cities));
     }
 
     setImage(img) {
@@ -151,40 +153,8 @@ export class Game {
 
     }
 
-    shipdef(type: ShipType): ShipDefinition {
-        switch (type) {
-            case (ShipType.BIG):
-                return {
-                    maxcannons: 20,
-                    crewsize: 50,
-                    storage: 1000,
-                    speed: 0.2,
-                    manueverability: 5,
-                    hull: 40
-                };
-            case (ShipType.MEDIUM):
-                return {
-                    maxcannons: 12,
-                    crewsize: 20,
-                    storage: 500,
-                    speed: 0.4,
-                    manueverability: 15,
-                    hull: 20
-                };
-            case (ShipType.SMALL):
-                return {
-                    maxcannons: 8,
-                    crewsize: 10,
-                    storage: 250,
-                    speed: 1,
-                    manueverability: 25,
-                    hull: 10
-                };
-        }
-    }
-
     createShip(id: string, avatar: string, type: ShipType, owner?: string): Ship {
-        var def: ShipDefinition = this.shipdef(type);
+        var def: ShipDefinition = ShipUtils.shipdef(type);
 
         var crew: Crew = {
             count: def.crewsize,
@@ -192,7 +162,7 @@ export class Game {
             sailingSkill: 25
         };
 
-        var cannons: Cannon = {
+        var cannons: ShipCannon = {
             firepower: 1,
             reloadspeed: 15,
             range: 60,
@@ -335,11 +305,30 @@ export class Game {
         this.boardQueue.push(new ShipPair(from, to));
     }
 
+    private static debugStringCombatResults(result: CombatResult): CombatResult {
+        function stripper(s: Ship): Ship {
+            // delete s.captain;
+            // delete s.course;
+            // delete s.name;
+            // delete s.manueverability;
+            // //delete s.location;
+            // //delete s.speed;
+            // delete s.storage;
+            return s;
+        }
+
+        var rsltdispl = Object.assign({}, result);
+        stripper(rsltdispl.attackee);
+        stripper(rsltdispl.attacker);
+        return rsltdispl;
+    }
+
     resolveCombat() {
         while (this.fireQueue.length > 0) {
             var pair: ShipPair = this.fireQueue.pop();
             var result: CombatResult = this.combatengine.resolve(pair);
-            console.log('combat results: ' + JSON.stringify(result));
+
+            console.log('combat results: ' + JSON.stringify(Game.debugStringCombatResults(result)));
 
             // update the ships involved in the combat
             var attackersunk: boolean = (result.attacker.hullStrength < 0);
@@ -419,20 +408,18 @@ export class Game {
     }
 
     resolveBoarding() {
-        var my: Game = this;
-
-        while (my.boardQueue.length > 0) {
-            var pair: ShipPair = my.boardQueue.pop();
-            var result: BoardResult = my.combatengine.resolveBoarding(pair, my.shipdef(pair.one.type));
+        while (this.boardQueue.length > 0) {
+            var pair: ShipPair = this.boardQueue.pop();
+            var result: BoardResult = this.combatengine.resolveBoarding(pair, ShipUtils.shipdef(pair.one.type));
 
             console.log('boarding results: ' + JSON.stringify(result));
 
             // set the results for the users
-            my.players.forEach((p, k) => {
-                if (!my.boarding.has(k)) {
-                    my.boarding.set(k, []);
+            this.players.forEach((p, k) => {
+                if (!this.boarding.has(k)) {
+                    this.boarding.set(k, []);
                 }
-                my.boarding.get(k).push(result);
+                this.boarding.get(k).push(result);
             });
         }
     }
@@ -440,6 +427,17 @@ export class Game {
     isdocked(s: Ship): boolean {
         return ( s.docked && null != s.docked );
     }
+
+    private reloadCannons(ship: Ship) {
+        if (ship.cannons.reloading) {
+            ship.cannons.reloading -= 1;
+            if (0 === ship.cannons.reloading) {
+                delete ship.cannons.reloading;
+            }
+        }
+
+    }
+
 
     start() {
         var my: Game = this;
@@ -569,10 +567,12 @@ export class Game {
 
         setInterval(function () {
             my.TURN_NUM += 1;
-
+            
             my.nonplayerships.forEach((ship: Ship) => {
                 my.ai.control(ship, my.playerships, my.specialscollider, my);
+                my.reloadCannons(ship);
             });
+            my.playerships.forEach(ship => my.reloadCannons(ship));
 
             my.resolveCombat();
             my.resolveBoarding();
@@ -670,7 +670,7 @@ export class Game {
         ship.location.x = 245;
         ship.location.y = 225;
         ship.captain = p.pirate.name;
-        ship.gold = 120;
+        ship.gold = 520;
         ship.name = (name ? name : Names.ship());
         this.playerships.push(ship);
         this.addShipToCollisionSystem(ship);

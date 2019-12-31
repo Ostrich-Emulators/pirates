@@ -7,6 +7,7 @@ import { CityCannon } from '../../../../../common/model/city-cannon';
 import { takeUntil } from 'rxjs/operators';
 import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
 import { ShipType } from '../../../../../common/model/ship-type.enum';
+import { ShipUtils } from '../../../../../common/tools/ship-utils';
 
 @Component({
   selector: 'app-city',
@@ -16,17 +17,23 @@ import { ShipType } from '../../../../../common/model/ship-type.enum';
 export class CityComponent implements OnInit, OnDestroy {
   @Input() city: City;
   private ship: Ship;
-  private warned: boolean = false;
+  private replacementCannonCosts: number[] = [];
   constructor(private gamesvc: GameService) { }
 
   ngOnInit() {
     console.log(this.city);
     this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(data => { 
       this.ship = data;
+
+      this.calculateReplaceCannonCosts();
     });
   }
 
   ngOnDestroy(): void {
+  }
+
+  private calculateReplaceCannonCosts() {
+    this.replacementCannonCosts = this.city.cannon.map((cc, cidx, ccs) => ShipUtils.replacementCannonCost(this.ship, ccs, cidx));
   }
 
   undock(e) {
@@ -48,35 +55,7 @@ export class CityComponent implements OnInit, OnDestroy {
     });
   }
 
-  costforcannon(i: number) : number {
-    // if we're just resupplying cannons, figure out how many we need
-    // if we're buying a different type of cannon, sell the ones we
-    // have and purchase the new ones
-
-    // step 1: figure out which type of cannon we have
-    var oldcannons = this.ship.cannons;
-    var oldidx: number = -1;
-    var costOfOld: number = 0;
-
-    for (var j = 0; j < this.city.cannon.length; j++) {
-      var cc: CityCannon = this.city.cannon[j];
-      if (cc.firepower == oldcannons.firepower &&
-        cc.range == oldcannons.range &&
-        cc.reloadspeed == oldcannons.reloadspeed) {
-        oldidx = j;
-        costOfOld = cc.cost;
-      }
-    }
-
-    if (!this.warned) {
-      console.error('NEED to figure out max cannons from ShipDef');
-      this.warned = true;
-    }
-    var MAXCANNONS = 8;
-
-    return (oldidx === j
-      ? costOfOld * (MAXCANNONS - this.ship.cannons.count)
-      : (this.city.cannon[i].cost * MAXCANNONS) - (this.city.cannon[oldidx].cost * this.ship.cannons.count)
-    );
+  costforcannon(i: number): number {
+    return this.replacementCannonCosts[i];
   }
 }

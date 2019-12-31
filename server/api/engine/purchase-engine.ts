@@ -2,18 +2,18 @@ import { Ship } from "../../../common/model/ship";
 import { City } from "../../../common/model/city";
 import { CityCannon } from "../../../common/model/city-cannon";
 import { Purchase } from "../../../common/model/purchase";
-import { Game } from "./game";
-import { Cannon } from "../../../common/model/cannon";
+import { ShipCannon } from "../../../common/model/ship-cannon";
+import { ShipUtils } from "../../../common/tools/ship-utils";
 
 export class PurchaseEngine {
-    constructor(private game: Game) {
+    constructor() {
     }
 
     train(s: Ship, city: City, purchase: Purchase ) {
         console.log('city purchase: ', city, purchase);
 
         var area: string = purchase.item;
-        var cost: number = this.costof( purchase, city );
+        var cost: number = this.costof( s, city, purchase );
 
         if (s.gold >= cost) {
             s.gold -= cost;
@@ -42,7 +42,7 @@ export class PurchaseEngine {
         }
     }
 
-    private costof(purchase: Purchase, city: City ): number {
+    private costof(ship: Ship, city: City, purchase: Purchase ): number {
         switch (purchase.item) {
             case 'MELEE':
                 return city.melee;
@@ -55,19 +55,19 @@ export class PurchaseEngine {
             case 'AMMO':
                 return city.ammo;
             case 'CANNON':
-                return city.cannon[purchase.extra_n].cost;
+                return ShipUtils.replacementCannonCost(ship, city.cannon, purchase.extra_n);
             default:
                 throw 'UNHANDLED training area: '+purchase.item;
         }
     }
 
-    private makeCannons(s: Ship, c: City, p: Purchase): Cannon {
+    private makeCannons(s: Ship, c: City, p: Purchase): ShipCannon {
         var ccan: CityCannon = c.cannon[p.extra_n];
         return {
-            count: this.game.shipdef(s.type).maxcannons,
+            count: ShipUtils.shipdef(s.type).maxcannons,
             firepower: ccan.firepower,
             reloadspeed: ccan.reloadspeed,
-            range: ccan.range
+            range: ccan.range,
         };
     }
 }

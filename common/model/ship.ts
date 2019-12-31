@@ -3,7 +3,7 @@ import { Location } from './location'
 import { Course } from './course'
 import { Crew } from './crew'
 import { City } from './city'
-import { Cannon } from './cannon'
+import { ShipCannon } from './ship-cannon'
 
 export interface Ship {
     id: string,
@@ -17,7 +17,7 @@ export interface Ship {
     ammo: number,
     storage: number,
     crew: Crew,
-    cannons: Cannon,
+    cannons: ShipCannon,
 
     name: string, // name of the ship
     captain: string, // name of the ship's captain (mostly for NPC ships)
