@@ -46,16 +46,6 @@ export class Game {
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
 
-    private WLOCATIONS: Location[] = [
-        { x: 313, y: 316 },
-        { x: 102, y: 284 },
-        { x: 333, y: 581 },
-        { x: 464, y: 129 }];
-
-    private MLOCATIONS: Location[] = [
-        { x: 385, y: 587 },
-        { x: 108, y: 386 },
-        { x: 200, y: 183 }];
     private MPCT: number = 1;
     private WPCT: number = 1;
 
@@ -96,12 +86,18 @@ export class Game {
                 cannon: cmap
             };
         }));
-
-        console.log(JSON.stringify(this.cities));
     }
 
     setImage(img) {
         this.map.setImage(img);
+    }
+
+    setMonsterGuideImage(img) {
+        this.map.setMonsterGuideImage(img);
+    }
+
+    setWhirlpoolGuideImage(img) {
+        this.map.setWhirlpoolGuideImage(img);
     }
 
     getPlayers(): Player[] {
@@ -215,14 +211,7 @@ export class Game {
             ship.ammo = 20;
             ship.cannons.count = 3;
             ship.cannons.reloadspeed = 50;
-            if (Math.random() < 0.5) {
-                ship.location.x = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].x;
-                ship.location.y = this.MLOCATIONS[Math.floor(Math.random() * this.MLOCATIONS.length)].y;
-            }
-            else {
-                ship.location.x = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].x;
-                ship.location.y = this.WLOCATIONS[Math.floor(Math.random() * this.WLOCATIONS.length)].y;
-            }
+            ship.location = this.map.getRandomWhirpoolLocation();
             this.nonplayerships.push(ship);
             this.addShipToCollisionSystem(ship);
         }
@@ -307,17 +296,19 @@ export class Game {
 
     private static debugStringCombatResults(result: CombatResult): CombatResult {
         function stripper(s: Ship): Ship {
-            // delete s.captain;
-            // delete s.course;
-            // delete s.name;
-            // delete s.manueverability;
-            // //delete s.location;
-            // //delete s.speed;
-            // delete s.storage;
+            delete s.captain;
+            delete s.course;
+            delete s.name;
+            delete s.manueverability;
+            delete s.location;
+            delete s.speed;
+            delete s.storage;
+            delete s.food;
+            delete s.avatar;
             return s;
         }
 
-        var rsltdispl = Object.assign({}, result);
+        var rsltdispl = JSON.parse(JSON.stringify(result));
         stripper(rsltdispl.attackee);
         stripper(rsltdispl.attacker);
         return rsltdispl;
@@ -558,7 +549,7 @@ export class Game {
                     if (body.id.substr(0, 1) !== '-') {
                         my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
                     }
-                    var loc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+                    var loc = my.map.getRandomWhirpoolLocation();
                     body.src.location.x = loc.x;
                     body.src.location.y = loc.y;
                 }
@@ -592,7 +583,8 @@ export class Game {
             checkShipCollisions(lastLocationLookup);
         }, 100);
 
-        my.poolloc = my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)];
+        my.poolloc = my.map.getRandomWhirpoolLocation();
+        console.log('poolloc is now: ' + JSON.stringify(my.poolloc));
         my.poolbody = {
             id: 'whirlpool',
             getX: function (): number { return my.poolloc.x; },
@@ -600,7 +592,8 @@ export class Game {
             getR: function (): number { return my.POOL_RADIUS; }
         };
         
-        my.monsterloc = my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)];
+        my.monsterloc = my.map.getRandomMonsterLocation();
+        console.log('monsterloc is now: ' + JSON.stringify(my.monsterloc));
         my.monsterbody = {
             id: 'monster',
             getX: function (): number { return my.monsterloc.x; },
@@ -613,17 +606,16 @@ export class Game {
 
         setInterval(function () {
             my.poolloc = (Math.random() < my.WPCT
-                ? my.WLOCATIONS[Math.floor(Math.random() * my.WLOCATIONS.length)]
+                ? my.map.getRandomWhirpoolLocation()
                 : { x: -10000, y: -10000 }
             );
             console.log('poolloc is now: ' + JSON.stringify(my.poolloc));
 
             my.monsterloc = (Math.random() < my.MPCT
-                ? my.MLOCATIONS[Math.floor(Math.random() * my.MLOCATIONS.length)]
+                ? my.map.getRandomMonsterLocation()
                 : { x: -20000, y: -20000 }
             );
             console.log('monsterloc is now: ' + JSON.stringify(my.monsterloc));
-
         }, 60000);
     }
 

@@ -1,14 +1,25 @@
 import { Game } from "./game";
 import { Collider } from "../../../common/tools/collider";
 import { CollisionBody } from "../../../common/model/body";
+import { Location } from "../../../common/model/location";
 
 var jimp = require('jimp')
 
 export class MapEngine {
     private mapguide: any;
+    private whirlpoolguide: any;
+    private monsterguide: any;
 
     setImage(img) {
         this.mapguide = img;
+    }
+
+    setWhirlpoolGuideImage(img) {
+        this.whirlpoolguide = img;
+    }
+
+    setMonsterGuideImage(img) {
+        this.monsterguide = img;
     }
 
     debugImageTo(file: string, my: Game, collider: Collider, monsterbody: CollisionBody,
@@ -64,8 +75,8 @@ export class MapEngine {
         return (this.iswater(pixel) || this.iscity(pixel));
     }
 
-    getPixel(x: number, y: number): any {
-        return this.mapguide.getPixelColor(x, y);
+    getPixel(x: number, y: number, img: any = this.mapguide): any {
+        return img.getPixelColor(x, y);
     }
 
     iswater(pixel): boolean {
@@ -85,5 +96,56 @@ export class MapEngine {
 
     isoutofbounds(pixel): boolean {
         return (0xFFFFFFFF == pixel);
+    }
+
+    private randomGuideLocation(img: any): Location {
+        // Just pick any random spot; if it's not a valid location,
+        // move left (or right) until we hit a yellow pixed
+        // if we don't get a yellow pixel before the image boundary, 
+        // try the other direction. If we still are lost, pick a new spot and try again
+
+        var x: number = Math.floor(Math.random() * img.bitmap.width);
+        var y: number = Math.floor(Math.random() * img.bitmap.height);
+
+        if ((this.getPixel(x, y, img))) {
+            return { x: x, y: y };
+        }
+        else {
+            var leftfirst = (Math.random() < 0.5);
+            if (leftfirst) {
+                for (var i = x; i > 0; i--){
+                    if (this.getPixel(i, y, img)) {
+                        return { x: i, y: y };
+                    }
+                }
+                for (var i = x; i < img.bitmap.width; i++) {
+                    if ( this.getPixel(i, y, img)) {
+                        return { x: i, y: y };
+                    }
+                }
+            }
+            else {
+                for (var i = x; i < img.bitmap.width; i++) {
+                    if (this.getPixel(i, y, img)) {
+                        return { x: i, y: y };
+                    }
+                }
+                for (var i = x; i > 0; i--) {
+                    if (this.getPixel(i, y, img)) {
+                        return { x: i, y: y };
+                    }
+                }
+            }
+        }
+
+        return this.randomGuideLocation(img);
+    }
+
+    getRandomWhirpoolLocation(): Location {
+        return this.randomGuideLocation(this.whirlpoolguide);
+    }
+
+    getRandomMonsterLocation(): Location {
+        return this.randomGuideLocation(this.monsterguide);
     }
 }
