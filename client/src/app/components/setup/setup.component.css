@@ -5,5 +5,13 @@
 }
 
 .selected {
-  border: 3px solid red;
+  scale: 1.35;
+}
+
+img{
+  margin-right: 1em;
+}
+
+.row{
+  margin-bottom: 1em;
 }

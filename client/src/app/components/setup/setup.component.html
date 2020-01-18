@@ -1,28 +1,42 @@
 <div class="container-fluid">
   <div class="row">
-    Pirate Name:
-    <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
-    <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
-    <input [(ngModel)]="captain">
-    <button (click)="newcaptain()">New Captain</button>
+    <div class="col-2 sectionlabel">Pirate Name:</div>
+    <div class="col-4"><input [(ngModel)]="captain">
+      <button class="btn btn-default" (click)="newcaptain()">
+        <ng-container *ngIf="!female">New Captain</ng-container>
+        <ng-container *ngIf="female">New Madam</ng-container>
+      </button>
+    </div>
+
+    <div class="col-1">
+      <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
+    </div>
+    <div class="col-1">
+      <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
+    </div>
+
   </div>
   <div class="row">
-    Ship Name:
-    <input [(ngModel)]="shipname">
-    <button (click)="newname()">New Name</button>
-  </div>
-  <div class="row">
-    Avatar:
-    <div class="col" *ngFor="let a of imgsvc.avatars">      
-      <img [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
+    <div class="col-2 sectionlabel">Ship Name:</div>
+    <div class="col-6">
+      <input [(ngModel)]="shipname">
+      <button class="btn btn-default" (click)="newname()">New Name</button>
     </div>
   </div>
   <div class="row">
-    Color:
-    <input [value]="color" [style.background]="color" [(colorPicker)]="color" />
+    <div class="col-2 sectionlabel">Avatar:</div>
+    <div class="col-6">
+      <img *ngFor="let a of imgsvc.avatars" [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-2 sectionlabel">Color:</div>
+    <div class="col-8">
+      <button class="btn btn-default" [value]="color" [style.background]="color" [(colorPicker)]="color">{{color}}</button>
+    </div>
   </div>
 
   <div class="row">
-    <button class="btn btn-default" [disabled]="0===captain.length" (click)="sail()">Set Sail!</button>
+    <button class="btn btn-default col" [disabled]="0===captain.length" (click)="sail()">Set Sail!</button>
   </div>
 </div>

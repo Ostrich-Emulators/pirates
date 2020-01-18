@@ -33,6 +33,7 @@ export class SetupComponent implements OnInit {
 
   setAppelation(f){
     this.female = f;
+    this.newcaptain();
   }
 
   newcaptain() {
