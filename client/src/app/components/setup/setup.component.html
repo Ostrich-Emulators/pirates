@@ -9,10 +9,10 @@
     </div>
 
     <div class="col-1">
-      <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
+      <input type="radio" [(ngModel)]="female" [value]='false' name="gender">Captain
     </div>
     <div class="col-1">
-      <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
+      <input type="radio" [(ngModel)]="female" [value]='true' name="gender">Madam
     </div>
 
   </div>
@@ -25,9 +25,7 @@
   </div>
   <div class="row">
     <div class="col-2 sectionlabel">Avatar:</div>
-    <div class="col-6">
-      <img *ngFor="let a of imgsvc.avatars" [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
-    </div>
+    <div class="col-6" id='icons'></div>
   </div>
   <div class="row">
     <div class="col-2 sectionlabel">Color:</div>

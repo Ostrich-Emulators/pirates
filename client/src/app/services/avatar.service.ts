@@ -2,85 +2,33 @@ import { Injectable } from '@angular/core';
 import { GameService } from './game.service';
 import { HttpClient } from '@angular/common/http';
 import { take } from 'rxjs/operators';
+import { BehaviorSubject, forkJoin } from 'rxjs';
 
 @Injectable()
 export class AvatarService {
-  get avatars(): string[] {
-    return [
-      "/assets/avatar1.svg",
-      "/assets/avatar2.svg",
-      "/assets/avatar3.svg",
-      "/assets/avatar4.svg",
-      "/assets/avatar5.svg",
-      "/assets/avatar6.svg",
-    ];
-  }
+  public avatars: string[] = [
+    "/assets/avatar1.svg",
+    "/assets/avatar2.svg",
+    "/assets/avatar3.svg",
+    "/assets/avatar4.svg",
+    "/assets/avatar5.svg",
+    "/assets/avatar6.svg",
+  ];
 
   private svgxmls: Map<string, string> = new Map<string, string>();
-  private images: Map<string, any> = new Map<string, any>();
+  loaded: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  constructor(private http: HttpClient, gamesvc: GameService) { 
-    console.log('avatar service ctor');
-    this.avatars.forEach(av => {
-      http.get(av, { responseType: 'text' }).pipe(take(1)).subscribe(
-        (data) => {
-          this.svgxmls.set(av, data);//"data:image/svg+xml;charset=utf-8," + data);
-          var im = new Image();
-          im.src = av;//data;
-          this.images.set(av, im);
-        },
-        (err) => {
-          console.log('error getting ', av);
-        });
-    });
-
-    var others: string[] = ['/assets/galleon.svg', '/assets/abandoned.svg'];
-    others.forEach(av => {
-      http.get(av, { responseType: 'text' }).pipe(take(1)).subscribe(
-        (data) => {
-          this.svgxmls.set(av, data);//"data:image/svg+xml;charset=utf-8," + data);
-          var im = new Image();
-          im.src = av;//data;
-          this.images.set(av, im);
-        },
-        (err) => {
-          console.log('error getting ', av);
-        });
-    });
+  constructor(private http: HttpClient, gamesvc: GameService) {
+    var links: string[] = [...this.avatars, '/assets/galleon.svg', '/assets/abandoned.svg'];
+    forkJoin(links.map(av => http.get(av, { responseType: 'text' }).pipe(take(1))))
+      .pipe(take(1)).subscribe(dataarr => {
+        links.forEach((av, idx) => this.svgxmls.set(av, dataarr[idx]));
+        this.loaded.next(true);
+      });
   }
 
-  getImage(avatar: string, fghex?: string, bghex?: string): any {
-    //console.log('getImage ' + avatar);
-    //console.log(this.svgxmls);
-    if (fghex || bghex) {
-      var svg = this.svgxmls.get(avatar);
-      //console.log('changing colors', svg);
-      if (fghex) {
-        svg = svg.replace(/fill="#ffffff"/, `fill="#${fghex}"`);
-      }
-      if (bghex) {
-        svg = svg.replace(/fill="#000000"/, `fill="#${bghex}"`);
-      }
-      //console.log(svg);
-      var im = new Image();
-      im.src = `data:image/svg+xml;charset=utf-8,${svg}`;
-      //console.log('returing image: ', im);
-      //return im;
-
-      // the above code doesn't seem to work
-      return this.images.get(avatar);
-
-    }
-    else {
-      //console.log('getting standard', avatar);
-      //console.log(this.svgxmls.get(avatar));
-      return this.images.get(avatar);
-      //return this.svgxmls.get(avatar);//.substr("data:image/svg+xml;charset=utf-8,".length);
-    }
-  }
-
-  getAllImages(): any[] {
-    console.log('getall images');
-    return Array.from(this.images.values());
+  svg(avatar: string, fghex: string = '#ffffff', bghex: string = '#000000'): string {
+    return this.svgxmls.get(avatar).replace(/fill="#ffffff"/, `fill="${fghex}"`)
+      .replace(/fill="#000000"/, `fill="${bghex}"`);
   }
 }

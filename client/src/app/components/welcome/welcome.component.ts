@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AvatarService } from '../../services/avatar.service';
 
 @Component({
   selector: 'app-welcome',
@@ -7,7 +8,8 @@ import { Component, OnInit } from '@angular/core';
 })
 export class WelcomeComponent implements OnInit {
 
-  constructor() { }
+  constructor() {
+  }
 
   ngOnInit() {
   }

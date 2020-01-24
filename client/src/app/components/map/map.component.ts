@@ -63,7 +63,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       this.ship = data;
       if (!this.myshipimg) {
         console.log('setting ship image:', this.ship.avatar);
-        this.myshipimg = this.imgsvc.getImage(this.ship.avatar, this.player.color);
+        this.myshipimg = this.imgsvc.getSvg(this.ship.avatar, this.player.color);
       }
     });
 
@@ -213,7 +213,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       this.canvasctx.translate(sink.x, sink.y);
       this.canvasctx.rotate(rotation * Math.PI);
       this.canvasctx.translate(-12, -12);
-      var img = this.imgsvc.getImage(sink.avatar);
+      var img = this.imgsvc.getSvg(sink.avatar);
       if (pct < 0.5) {
         // rotate the (teetering) ship
         this.canvasctx.drawImage(img, 0, 0, 24, 24);
@@ -323,11 +323,13 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.ships.forEach((ship: Ship) => {
       // console.log(ship.id + '=>' + ship.crew.count);
-      var shipimg = this.imgsvc.getImage(ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg');
+      var shipimg = this.imgsvc.getSvg(ship.crew.count > 0 ? ship.avatar : '/assets/abandoned.svg');
       var ismyship: boolean = (ship.id === this.ship.id);
       if (ismyship) {
         shipimg = this.myshipimg;
       }
+
+      //console.error(shipimg);
 
       if (shipimg) {
         //console.log('drawing ship image ' + ship.location.x + ' ' + ship.location.y);

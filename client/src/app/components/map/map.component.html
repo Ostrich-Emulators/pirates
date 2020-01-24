@@ -1,2 +1,28 @@
 <canvas #map id="map" (mousemove)="onhover($event)" (click)="onclick($event)"></canvas>
 <canvas #mapguide id="map-canvas"></canvas>
+
+<svg viewBox="0 0 710 740" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <symbol id="avatar1" viewBox="0 0 500 500" height="500" width="500">
+            <image href="/assets/avatar1.svg"></image>
+        </symbol>
+        
+        <image id="avatar2" href="/assets/avatar2.svg" height="24" width="24"></image>
+        <image id="avatar3" href="/assets/avatar3.svg" height="24" width="24"></image>
+        <image id="avatar4" href="/assets/avatar4.svg" height="24" width="24"></image>
+        <image id="avatar5" href="/assets/avatar5.svg" height="24" width="24"></image>
+        <image id="avatar6" href="/assets/avatar6.svg" height="24" width="24"></image>
+
+        <image id="seamonster" href="/assets/seamonster.png" height="54" width="143"></image>
+        <image id="whirlpool" href="/assets/whirlpool.png" height="47" width="87"></image>
+    </defs>
+    <use x="0" y="0" width="16" xlink:href="#avatar1" fill="red"></use>
+    <use x="20" y="0" width="16" xlink:href="#avatar2"></use>
+    <use x="30" y="0" width="16" xlink:href="#avatar3"></use>
+    <use x="40" y="0" width="16" xlink:href="#avatar4"></use>
+    <use x="50" y="0" width="16" xlink:href="#avatar5"></use>
+    <use x="60" y="0" width="16" xlink:href="#avatar6"></use>
+    <use x="20" y="100" xlink:href="#seamonster"></use>
+    <use x="20" y="300" xlink:href="#whirlpool"></use>
+
+</svg>
