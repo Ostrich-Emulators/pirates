@@ -58,13 +58,13 @@ export class MapEngine {
                 image.bitmap.data[idx + 2] = 0x58;
             });
 
-            return new Promise((resolve, reject) => {
+            return new Promise<boolean>((resolve, reject) => {
                 return image.write(file, (err) => {
                     if (err) {
                         reject(err);
                     }
                     else {
-                        resolve();
+                        resolve(true);
                     }
                 });
             });
