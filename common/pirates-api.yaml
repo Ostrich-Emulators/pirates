@@ -1,0 +1,432 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: OS-EM Pirate Game
+basePath: /pirates
+tags:
+- internalGame
+- player
+- ship
+paths:
+  /ships:
+    get:
+      summary: Get all ships
+      operationId: getAllShips
+      tags:
+      - ship
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ship"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+  /ships/{shipId}:
+    get:
+      summary: Get one ship
+      operationId: getShip
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The ship id
+        schema:
+          type: string
+      tags:
+      - ship
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ship"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+  /ships/{shipId}/course:
+    post:
+      summary: Sets a ship's course
+      operationId: sailTo
+      tags:
+      - ship
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The ship
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Location"
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ship"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+  /players:
+    get:
+      summary: Get all players
+      operationId: 
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The ship id
+        schema:
+          type: string
+      tags:
+      - player
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+    put:
+      summary: Create a new player
+      operationId: join
+      tags:
+      - internalGame
+      parameters:
+      - name: 
+        in: body
+        required: true
+        description: The join data
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinData"
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerAndShip"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+    post:
+      summary: Rejoin a game
+      operationId: rejoin
+      tags:
+      - internalGame
+      parameters:
+      - name: 
+        in: body
+        required: true
+        description: The join data
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinData"
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerAndShip"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+security:
+  - bearerAuth: []
+components:
+  securitySchemas:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+#############################################################
+# SCHEMAS
+#############################################################
+  schemas:
+    Player:
+      type: object
+      required:
+        - id
+        - pirate
+        - color
+      properties:
+        id:
+          type: string
+        pirate:
+          $ref: "#/components/schemas/Pirate"
+        color:
+          type: string
+    Location:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+    Crew:
+      type: object
+      required:
+        - count
+        - meleeSkill
+        - sailingSkill
+      properties:
+        count:
+          type: number
+        meleeSkill:
+          type: number
+        sailingSkill:
+          type: number
+    CannonBase:
+      type: object
+      required:
+        - firepower
+        - reloadspeed
+        - range
+      properties:
+        firepower:
+          type: number
+        reloadspeed:
+          type: number
+        range:
+          type: number
+    ShipCannon:
+      allOf:
+        - $ref: '#/components/schemas/CannonBase'
+        - type: object
+          required:
+            - count
+            - reloading
+          properties:
+            count:
+              type: number
+            reloading:
+              type: number
+    CityCannon:
+      allOf:
+        - $ref: '#/components/schemas/CannonBase'
+        - type: object
+          required:
+            - cost
+          properties:
+            cost:
+              type: number
+    City:
+      type: object
+      properties:
+        name:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        melee:
+          type: number
+        sailing:
+          type: number
+        ammo:
+          type: number
+        hull:
+          type: number
+        sail:
+          type: number
+        cannon:
+          type: array
+          items:
+            $ref: '#/components/schemas/CityCannon'
+    Course:
+      type: object
+      properties:
+        dstx:
+          type: number
+        dsty:
+          type: number
+        speedx:
+          type: number
+        speedy:
+          type: number
+    Ship:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerid:
+          type: string
+        type:
+          $ref: '#/components/schemas/ShipType'
+        speed:
+          type: number
+        manueverability:
+          type: number
+        hullStrength:
+          type: number
+        sailQuality:
+          type: number
+        food:
+          type: number
+        ammo:
+          type: number
+        storage:
+          type: number
+        crew:
+          $ref: '#/components/schemas/Crew'
+        cannons:
+          $ref: '#/components/schemas/ShipCannon'
+        name:
+          type: string
+        captain:
+          type: string
+        avatar:
+          type: string
+        gold:
+          type: number
+        location:
+          $ref: '#/components/schemas/Location'
+        course:
+          $ref: '#/components/schemas/Course'
+        anchored:
+          type: boolean
+        docked:
+          $ref: '#/components/schemas/City'
+    ShipType:
+      type: string
+      enum: [BIG, MEDIUM, SMALL]
+    BoardCode:
+      type: string
+      enum: [REPELLED, OVERRUN, DRAW, ATTACKER_SUCCESS, DEFENDER_SUCCESS]
+    HitCode:
+      type: string
+      enum: [CANNON_EXPLODED, HIT_HULL, HIT_SAIL, HIT_SAILOR, MISSED, OUT_OF_RANGE]
+    BoardResult:
+      type: object
+      properties:
+        attacker:
+          $ref:  '#/components/schemas/Ship'
+        attackee:
+          $ref:  '#/components/schemas/Ship'
+        code:
+          $ref: '#/components/schemas/BoardCode'
+        gold:
+          type: number
+        ammo:
+          type: number
+        food:
+          type: number
+    CombatResult:
+      type: object
+      properties:
+        attacker:
+          $ref:  '#/components/schemas/Ship'
+        attackee:
+          $ref:  '#/components/schemas/Ship'
+        code:
+          $ref: '#/components/schemas/HitCode'
+        hits:
+          type: number
+        misses:
+          type: number
+    StatusResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: string
+        ships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ship'
+        poolloc:
+          $ref: '#/components/schemas/Location'
+        monsterloc:
+          $ref: '#/components/schemas/Location'
+        combat:
+          type: array
+          items:
+            $ref: '#/components/schemas/CombatResult'
+        board:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardResult'
+    Pirate:
+      type: object
+      required:
+        - name
+        - female
+        - avatar
+      properties:
+        name:
+          type: string
+        female:
+          type: boolean
+        avatar:
+          type: string
+    PlayerAndShip:
+      type: object
+      required:
+        - player
+        - ship
+      properties:
+        player:
+          $ref: '#/components/schemas/Player'
+        ship:
+          $ref: '#/components/schemas/Ship'
+    JoinData:
+      type: object
+      required:
+        - pirate
+        - shipname
+        - color
+      properties:
+        pirate:
+          $ref: '#/components/schemas/Pirate'
+        shipname:
+          type: string
+        color:
+          type: string
+
+
