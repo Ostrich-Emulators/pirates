@@ -1,10 +1,8 @@
-'use strict';
-
 import { Game } from '../engine/game'
-import { Ship } from '../../../common/model/ship'
-import { Location } from '../../../common/model/location';
-import { City } from '../../../common/model/city';
-import { Purchase } from '../../../common/model/purchase';
+import { Ship } from '../../../common/generated/model/ship';
+import { Location } from '../../../common/generated/model/location';
+import { City } from '../../../common/generated/model/city';
+import { Purchase } from '../../../common/generated/model/purchase';
 
 export class ShipController {
     private shiplkp: Map<string, Ship> = new Map<string, Ship>();
@@ -13,13 +11,9 @@ export class ShipController {
     }
 
     refreshShips() {
-        var my: ShipController = this;
-        my.shiplkp.clear();
-        this.game.pships.forEach(ship => { 
-            my.shiplkp.set(ship.id, ship);
-        });
-        this.game.getNonPlayerShips().forEach(ship => {
-            my.shiplkp.set(ship.id, ship);
+        this.shiplkp.clear();
+        this.game.ships.forEach(ship => { 
+            this.shiplkp.set(ship.id, ship);
         });
     }
     
@@ -28,18 +22,12 @@ export class ShipController {
         return this.shiplkp.get(shipid);
     }
 
-    shipsfor(playerid: string): Ship[] {
-        return this.game.getShipsForPlayer(playerid);
+    shipFor(playerid: string): Ship {
+        return this.game.ships.filter(s => s.ownerid === playerid).reduce((pv, cv) => cv, undefined);
     }
 
     all(): Ship[]{
-        this.refreshShips();
-
-        var ret: Ship[] = [];
-        this.shiplkp.forEach(function(ship){
-            ret.push(ship);
-        });
-        return ret;
+        return this.game.ships;
     }
 
     sail(shipid: string, dst: Location) {

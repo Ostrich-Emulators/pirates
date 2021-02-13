@@ -68,7 +68,7 @@ app.route('/players')
     .put(function (req, res) {
         console.log('into create player');
         console.log(req.body);
-        var playerAndShip  = gamecontroller.create(req.body);
+        var playerAndShip = gamecontroller.create(req.body);
         if (1 === game.getPlayers().length) {
             game.start();
         }
@@ -87,14 +87,13 @@ app.route('/players/:playerId')
 
 app.route('/players/:playerId/ships')
     .get(function (req, res) {
-        res.json(shipcontroller.shipsfor(req.params.playerId));
+        res.json(shipcontroller.shipFor(req.params.playerId));
     });
 
 app.route('/game/status/:playerId')
     .get(function (req, res) {
-        res.json(gamecontroller.status( req.params.playerId));
+        res.json(gamecontroller.status(req.params.playerId));
     });
-
 
 Promise.all([
     jimp.read('whirlpool-guide.png'),
@@ -104,8 +103,8 @@ Promise.all([
     game.setWhirlpoolGuideImage(images[0]);
     game.setMonsterGuideImage(images[1]);
     game.setImage(images[2]);
-    game.generateNonPlayerShips(6);
+    game.generateAiPlayers(6);
     app.listen(port, function () {
-        console.log('pirates are restles on port: ' + port);
+        console.log('pirates are restless on port: ' + port);
     });
 });

@@ -87,10 +87,37 @@ paths:
             application/json:
               schema:
                 type: string
+  /game/status/{playerId}:
+    get:
+      summary: Get current game status
+      operationId: getStatus
+      parameters:
+      - name: playerId
+        in: path
+        required: true
+        description: The player id
+        schema:
+          type: string
+      tags:
+      - internalGame
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+    
   /players:
     get:
       summary: Get all players
-      operationId: 
+      operationId: getAll
       parameters:
       - name: shipId
         in: path
@@ -118,13 +145,6 @@ paths:
       operationId: join
       tags:
       - internalGame
-      parameters:
-      - name: 
-        in: body
-        required: true
-        description: The join data
-        schema:
-          type: string
       requestBody:
         required: true
         content:
@@ -149,13 +169,6 @@ paths:
       operationId: rejoin
       tags:
       - internalGame
-      parameters:
-      - name: 
-        in: body
-        required: true
-        description: The join data
-        schema:
-          type: string
       requestBody:
         required: true
         content:
@@ -191,15 +204,24 @@ components:
       type: object
       required:
         - id
-        - pirate
+        - name
+        - female
         - color
+        - avatar
+        - ai
       properties:
         id:
           type: string
-        pirate:
-          $ref: "#/components/schemas/Pirate"
+        name:
+          type: string
+        female:
+          type: boolean
+        avatar:
+          type: number
         color:
           type: string
+        ai:
+          type: boolean
     Location:
       type: object
       required:
@@ -242,7 +264,6 @@ components:
         - type: object
           required:
             - count
-            - reloading
           properties:
             count:
               type: number
@@ -291,6 +312,9 @@ components:
           type: number
     Ship:
       type: object
+      required:
+        - id
+        - name
       properties:
         id:
           type: string
@@ -320,8 +344,6 @@ components:
           type: string
         captain:
           type: string
-        avatar:
-          type: string
         gold:
           type: number
         location:
@@ -340,7 +362,7 @@ components:
       enum: [REPELLED, OVERRUN, DRAW, ATTACKER_SUCCESS, DEFENDER_SUCCESS]
     HitCode:
       type: string
-      enum: [CANNON_EXPLODED, HIT_HULL, HIT_SAIL, HIT_SAILOR, MISSED, OUT_OF_RANGE]
+      enum: [CANNON_EXPLODED, HIT_HULL, HIT_SAIL, HIT_SAILOR, HIT_CANNON, MISSED, OUT_OF_RANGE]
     BoardResult:
       type: object
       properties:
@@ -356,6 +378,8 @@ components:
           type: number
         food:
           type: number
+        crew:
+          $ref: '#/components/schemas/Crew'
     CombatResult:
       type: object
       properties:
@@ -363,14 +387,23 @@ components:
           $ref:  '#/components/schemas/Ship'
         attackee:
           $ref:  '#/components/schemas/Ship'
-        code:
-          $ref: '#/components/schemas/HitCode'
+        hitcodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/HitCode'
         hits:
           type: number
         misses:
           type: number
     StatusResponse:
       type: object
+      required:
+        - messages
+        - ships
+        - poolloc
+        - monsterloc
+        - combat
+        - board       
       properties:
         messages:
           type: array
@@ -392,19 +425,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BoardResult'
-    Pirate:
-      type: object
-      required:
-        - name
-        - female
-        - avatar
-      properties:
-        name:
-          type: string
-        female:
-          type: boolean
-        avatar:
-          type: string
     PlayerAndShip:
       type: object
       required:
@@ -418,15 +438,69 @@ components:
     JoinData:
       type: object
       required:
-        - pirate
+        - captain
+        - female
         - shipname
         - color
+        - avatar
       properties:
-        pirate:
-          $ref: '#/components/schemas/Pirate'
+        captain:
+          type: string
+        female:
+          type: boolean
+        avatar:
+          type: number
         shipname:
           type: string
         color:
           type: string
-
+    ShipDefinition:
+      type: object
+      required:
+        - maxcannons
+        - crewsize
+        - storage
+        - speed
+        - manueverability
+        - hull
+      properties:
+        maxcannons:
+          type: number
+        crewsize:
+          type: number
+        storage:
+          type: number
+        speed:
+          type: number
+        manueverability:
+          type: number
+        hull:
+          type: number
+    ActionPair:
+      type: object
+      required:
+        - one
+        - two
+      properties:
+        one:
+          $ref: '#/components/schemas/Ship'
+        two:
+          $ref: '#/components/schemas/Ship'
+    PurchaseCode:
+      type: string
+      enum: [MELEE, SAILING, HULL, SAIL, AMMO, CANNON]    
+    Purchase:
+      type: object
+      required:
+        - cityname
+        - item
+      properties:
+        cityname:
+          type: string
+        item:
+          $ref: '#/components/schemas/PurchaseCode'
+        extra_n:
+          type: number
+        extra_s:
+          type: string
 

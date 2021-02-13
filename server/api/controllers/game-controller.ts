@@ -1,16 +1,11 @@
-'use strict';
-
-import { Pirate } from '../../../common/model/pirate';
-import { Player } from '../../../common/model/player';
-import { ShipDefinition } from '../../../common/model/ship-definition';
-import { ShipType } from '../../../common/model/ship-type.enum';
-import { Crew } from '../../../common/model/crew';
-import { Ship } from '../../../common/model/ship';
-import { ShipPair } from '../../../common/model/ship-pair';
-import { StatusResponse } from '../../../common/model/status-response';
+import { Player } from '../../../common/generated/model/player';
+import { Ship } from '../../../common/generated/model/ship';
+import { StatusResponse } from '../../../common/generated/model/statusResponse';
 import { Game } from '../engine/game';
-import { CombatResult } from '../../../common/model/combat-result';
-import { BoardResult } from '../../../common/model/board-result';
+import { CombatResult } from '../../../common/generated/model/combatResult';
+import { BoardResult } from '../../../common/generated/model/boardResult';
+import { JoinData } from '../../../common/generated/model/joinData';
+import { PlayerAndShip } from '../../../common/generated/model/playerAndShip';
 
 export class GameController {
     constructor(private game: Game) {
@@ -24,11 +19,16 @@ export class GameController {
         return this.game.getPlayers();
     }
 
-    create(body): any {
-        var player: Player = this.game.addPlayer(body.pirate, body.ship, body.color);
-        var ship: Ship[] = this.game.getShipsForPlayer(player.id);
-
-        return { player: player, ship: ship };
+    create(data: JoinData): PlayerAndShip {
+        var player: Player = {
+            id: undefined,
+            name: data.captain,
+            avatar: data.avatar,
+            female: data.female,
+            color: data.color,
+            ai: false
+        };
+        return this.game.addHumanPlayer(player, data.shipname);
     }
 
     status(playerid: string): StatusResponse {
@@ -36,24 +36,11 @@ export class GameController {
         var combat: CombatResult[] = this.game.popCombat(playerid);
         var board: BoardResult[] = this.game.popBoard(playerid);
 
-        var ships: Ship[] = [];
-        // hide the actual hull strengths of other people's ships
-        this.game.getNonPlayerShips().forEach(s => {
+        // players don't get to see the true values for ship metrics
+        var ships: Ship[] = this.game.ships.map(s => {
             var newship: Ship = Object.assign({}, s);
             newship.hullStrength = Math.ceil(s.hullStrength);
-            ships.push(newship);
-        });
-        var pshipid: string;
-        
-        this.game.pships.forEach(ship => { 
-            var newship: Ship = Object.assign({}, ship);
-            if (ship.ownerid === playerid) {
-                pshipid = ship.id;
-            }
-            else{
-                newship.hullStrength = Math.ceil(ship.hullStrength);
-            }
-            ships.push(newship);
+            return newship;
         });
 
         return {
@@ -62,8 +49,7 @@ export class GameController {
             poolloc: this.game.poolloc,
             monsterloc: this.game.monsterloc,
             combat: combat,
-            board: board,
-            playershipid: pshipid
+            board: board
         };
     }
 }

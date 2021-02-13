@@ -1,20 +1,22 @@
-import { Ship } from '../../../common/model/ship'
+import { Ship } from '../../../common/generated/model/ship'
 import { Collider } from '../../../common/tools/collider'
 import { Game } from '../engine/game'
 import { Calculators } from '../../../common/tools/calculators'
 import { CombatEngine } from './combat-engine';
+import { Player } from '../../../common/generated/model/player';
 
 export class ShipAi {
-  constructor(private game: Game, private combateng:CombatEngine) {
+  constructor(private game: Game, private combateng: CombatEngine) {
   }
 
-  public control(ship: Ship, playerships: Ship[], collider: Collider, game: Game) {
-    var fired: boolean = false;
+  public control(ship: Ship, humans: Player[], collider: Collider, game: Game) {
     if (this.combateng.readyToFire(ship)) {
-      playerships.filter(s => !this.game.isdocked(s)).forEach(enemy => {
-        var dist = Calculators.distance(ship.location, enemy.location);
-        if (dist < ship.cannons.range * 3 / 4) {
-          // if a pirate is too close, blast 'em!
+      var fired: boolean = false;
+
+      humans.filter(human => !this.game.isdocked(human)).forEach(enemy => {
+        var factor: number = this.combateng.getDistanceFactor({ one: ship, two: enemy });
+        if (factor > 0.6 && !fired ) {
+          // if we have a good chance to hit a human, blast 'em!
           game.fire(ship, enemy);
           fired = true;
         }

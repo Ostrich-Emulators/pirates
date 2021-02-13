@@ -1,7 +1,7 @@
 import { Game } from "./game";
 import { Collider } from "../../../common/tools/collider";
 import { CollisionBody } from "../../../common/model/body";
-import { Location } from "../../../common/model/location";
+import { Location } from "../../../common/generated/model/location";
 
 var jimp = require('jimp')
 

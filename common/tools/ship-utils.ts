@@ -1,7 +1,7 @@
-import { Ship } from '../model/ship';
-import { ShipType } from '../model/ship-type.enum';
-import { ShipDefinition } from '../model/ship-definition';
-import { CityCannon } from '../model/city-cannon';
+import { Ship } from '../generated/model/ship';
+import { ShipType } from '../generated/model/shipType';
+import { ShipDefinition } from '../generated/model/shipDefinition';
+import { CityCannon } from '../generated/model/cityCannon';
 
 export class ShipUtils {
     public static shipdef(type: ShipType): ShipDefinition {
@@ -64,8 +64,6 @@ export class ShipUtils {
         return (oldidx === j
             ? costOfOld * (MAXCANNONS - s.cannons.count)
             : (ccs[cidx].cost * MAXCANNONS) - (ccs[oldidx].cost * s.cannons.count)
-        );
-
-        
+        );        
     }
 }
