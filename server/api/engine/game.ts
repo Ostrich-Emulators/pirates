@@ -48,6 +48,8 @@ export class Game {
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
 
+    private TURN_DURATION = 250;
+    private SPECIALS_DURATION = 60000;
     private MPCT: number = 1;
     private WPCT: number = 1;
 
@@ -56,7 +58,6 @@ export class Game {
     }
 
     constructor() {
-        console.log('into game ctor')
         var CITYLOCATIONS: Location[] = [
             { x: 532, y: 82 },
             { x: 289, y: 202 },
@@ -127,7 +128,7 @@ export class Game {
      */
     generateAiPlayers(ships: number) {
         console.log('generating ' + ships + ' new NPCs')
-        for (var i = -1; i < -ships; i--) {
+        for (var i = -1; i > -ships; i--) {
             var female: boolean = Math.random() < 0.5;
             var aiplayer: Player = {
                 id: `p${i}`,
@@ -137,6 +138,7 @@ export class Game {
                 color: 'white',
                 ai: true
             };
+            console.log(`AI: ${-i}`, aiplayer);
 
             var ship: Ship = this.allocateNewShip(aiplayer, ShipType.SMALL, Names.ship());
             // scatter the ships around the board, but make sure they're in water
@@ -381,19 +383,28 @@ export class Game {
             var firstok = this.damageShip(en.first.src, damage);
             var secondok = this.damageShip(en.second.src, damage);
 
+            this.pushMessage(en.first.src, 'We\'ve collided with ' + en.second.src.name + '!');
+            this.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
+
             if (firstok) {
                 en.first.src.location.x = lastLocationLookup.get(en.first.src.id).x;
                 en.first.src.location.y = lastLocationLookup.get(en.first.src.id).y;
             }
+            else {
+                var owner: Player = this.playermap.get(en.first.src.ownerid);
+                this.sunkOrAbandoned(en.first.src, true, owner);
+            }
+
+
             if (secondok) {
                 en.second.src.location.x = lastLocationLookup.get(en.second.src.id).x;
                 en.second.src.location.y = lastLocationLookup.get(en.second.src.id).y;
             }
+            else {
+                var owner: Player = this.playermap.get(en.second.src.ownerid);
+                this.sunkOrAbandoned(en.second.src, true, owner);
 
-            this.pushMessage(en.first.src, 'We\'ve collided with ' + en.second.src.name + '!');
-            this.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
-
-            // FIXME: allocate new ships if needed
+            }
         });
     }
 
@@ -411,8 +422,8 @@ export class Game {
         });
 
         if (fought) {
-            this.monsterloc.x = -1000;
-            this.monsterloc.y = -1000;
+            this.monsterloc.x = -10000;
+            this.monsterloc.y = -10000;
         }
     }
 
@@ -455,30 +466,29 @@ export class Game {
             this.checkWhirlpool();
             this.checkMonster();
             this.checkShipCollisions(lastLocationLookup);
-        }, 100);
+        }, this.TURN_DURATION);
 
         this.poolloc = this.map.getRandomWhirpoolLocation();
-        console.log('poolloc is now: ' + JSON.stringify(this.poolloc));
+        console.log('initial poolloc is: ' + JSON.stringify(this.poolloc));
         this.poolbody = {
             id: 'whirlpool',
-            getX: function (): number { return this.poolloc.x; },
-            getY: function (): number { return this.poolloc.y; },
-            getR: function (): number { return this.POOL_RADIUS; }
+            getX: (): number => this.poolloc.x,
+            getY: (): number => this.poolloc.y,
+            getR: (): number => this.POOL_RADIUS
         };
         
         this.monsterloc = this.map.getRandomMonsterLocation();
-        console.log('monsterloc is now: ' + JSON.stringify(this.monsterloc));
+        console.log('initial monsterloc is: ' + JSON.stringify(this.monsterloc));
         this.monsterbody = {
             id: 'monster',
-            getX: function (): number { return this.monsterloc.x; },
-            getY: function (): number { return this.monsterloc.y; },
-            getR: function (): number { return this.MONSTER_RADIUS; }
-        
+            getX: (): number => this.monsterloc.x,
+            getY: (): number => this.monsterloc.y,
+            getR: (): number => this.MONSTER_RADIUS
         };
         this.specialscollider.add(this.poolbody);
         this.specialscollider.add(this.monsterbody);
 
-        setInterval(function () {
+        setInterval( ()=> {
             this.poolloc = (Math.random() < this.WPCT
                 ? this.map.getRandomWhirpoolLocation()
                 : { x: -10000, y: -10000 }
@@ -490,7 +500,7 @@ export class Game {
                 : { x: -20000, y: -20000 }
             );
             console.log('monsterloc is now: ' + JSON.stringify(this.monsterloc));
-        }, 60000);
+        }, this.SPECIALS_DURATION);
     }
 
     /**
@@ -578,6 +588,8 @@ export class Game {
             ship.location.y = 225;
             ship.gold = 520;
         }
+
+        console.log(`allocated ${ship.name} led by ${p.name}`, ship);
         this.ships.push(ship);
         this.addShipToCollisionSystem(ship);
         return ship;

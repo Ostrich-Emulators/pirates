@@ -1,42 +1,29 @@
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-2 sectionlabel">Pirate Name:</div>
-    <div class="col-4"><input [(ngModel)]="captain">
-      <button class="btn btn-default" (click)="newcaptain()">
-        <ng-container *ngIf="!female">New Captain</ng-container>
-        <ng-container *ngIf="female">New Madam</ng-container>
-      </button>
-    </div>
+Captain<mat-slide-toggle name='gender' [(ngModel)]='female'></mat-slide-toggle>Madam
+<mat-form-field>
+    <mat-label>{{female ? 'Madam' : 'Captain'}}'s Name</mat-label>
+    <input matInput [(ngModel)]='captain'/>
+    <button mat-mini-fab (click)='newcaptain()'>New</button>
+</mat-form-field>
 
-    <div class="col-1">
-      <input type="checkbox" [ngModel]="!female" (click)="setAppelation(false)">Captain
-    </div>
-    <div class="col-1">
-      <input type="checkbox" [ngModel]="female" (click)="setAppelation(true)">Madam
-    </div>
+<mat-form-field>
+    <mat-label>Ships's Name</mat-label>
+    <input matInput [(ngModel)]='shipname' />
+    <button mat-mini-fab (click)='newship()'>New</button>
+</mat-form-field>
 
-  </div>
-  <div class="row">
-    <div class="col-2 sectionlabel">Ship Name:</div>
-    <div class="col-6">
-      <input [(ngModel)]="shipname">
-      <button class="btn btn-default" (click)="newname()">New Name</button>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-2 sectionlabel">Avatar:</div>
-    <div class="col-6">
-      <img *ngFor="let a of imgsvc.avatars" [src]="a" height="64" width="64" (click)="setAvatar(a)" [class]="avatar===a ? 'selected':''">
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-2 sectionlabel">Color:</div>
-    <div class="col-8">
-      <button class="btn btn-default" [value]="color" [style.background]="color" [(colorPicker)]="color">{{color}}</button>
-    </div>
-  </div>
-
-  <div class="row">
-    <button class="btn btn-default col" [disabled]="0===captain.length" (click)="sail()">Set Sail!</button>
-  </div>
+<div class="flag-area">
+    <mat-card *ngFor="let a of imgsvc.avatars; let i=index">
+        <img [src]="a" height="64" width="64" (click)='avataridx=i' [class]="avataridx===i ? 'selected':''">
+    </mat-card>
 </div>
+
+<!--mat-form-field>
+    <mat-label>Highlight Color</mat-label>
+    <input matInput [(ngModel)]='color' [ngxMatColorPicker]="picker" [style.background-color]="color?.rgba">
+    <ngx-mat-color-toggle matSuffix [for]="picker"></ngx-mat-color-toggle>
+    <ngx-mat-color-picker #picker [color]="color"></ngx-mat-color-picker>
+</mat-form-field-->
+
+    <button class="btn btn-default col"  mat-raised-button color='primary'
+        [disabled]="0===captain.length"
+        (click)="sail()">Set Sail!</button>

@@ -1,4 +1,5 @@
 import { CollisionBody } from '../model/body'
+import { Calculators } from './calculators';
 
 export class Collider {
     bodies: Map<string, CollisionBody> = new Map<string, CollisionBody>();
@@ -30,10 +31,7 @@ export class Collider {
 
     getCollisions(): any[] {
         var collisions: any[] = [];
-        var bodies2: CollisionBody[] = [];
-        this.bodies.forEach(body => {
-            bodies2.push(body);
-        });
+        var bodies2: CollisionBody[] = Array.from(this.bodies.values());
 
         for (var i = 0; i < bodies2.length; i++) {
             var src = bodies2[i];

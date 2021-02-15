@@ -3,7 +3,6 @@ import * as express from "express"
 var cors = require('cors')
 var jimp = require('jimp')
 var bodyParser = require('body-parser')
-var fs = require('fs')
 
 import { Game } from "./api/engine/game"
 import { GameController } from "./api/controllers/game-controller";
@@ -17,6 +16,7 @@ var port = process.env.PIRATEPORT || 30000;
 
 var app: express.Application = express();
 app.use(cors());
+app.options('*', cors())
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 

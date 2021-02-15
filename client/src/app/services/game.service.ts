@@ -1,185 +1,133 @@
-import { Injectable, OnDestroy } from '@angular/core'
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'
-import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { take, takeUntil } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { take } from 'rxjs/operators';
 
-import { Ship } from '../../../../common/model/ship'
-import { Pirate } from '../../../../common/model/pirate'
-import { Player } from '../../../../common/model/player'
-import { Location } from '../../../../common/model/location'
-import { StatusResponse } from '../../../../common/model/status-response'
-import { CombatResult } from '../../../../common/model/combat-result';
-import { BoardResult } from '../../../../common/model/board-result';
-import { City } from '../../../../common/model/city';
-import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
-import { Purchase } from '../../../../common/model/purchase';
 
-@Injectable()
+import { Ship } from '../generated/model/ship';
+import { Player } from '../generated/model/player';
+import { Location } from '../generated/model/location';
+import { CombatResult } from '../generated/model/combatResult';
+import { BoardResult } from '../generated/model/boardResult';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+
+import { InternalGameService } from '../generated/api/internalGame.service';
+import { PlayerAndShip } from '../generated/model/playerAndShip';
+import { JoinData } from '../generated/model/joinData';
+import { StatusResponse } from '../generated/model/statusResponse';
+import { Names } from '../../../../common/tools/names';
+
+@Injectable({
+  providedIn: 'root'
+})
 export class GameService {
-  public REFRESH_RATE: number = 250;
-  private _player: BehaviorSubject<Player>;
-  private _myship: BehaviorSubject<Ship>;
+  public REFRESH_RATE: number = 5000;
+  private _player: BehaviorSubject<Player> = new BehaviorSubject<Player>({
+    id: 'none yet',
+    name: 'none yet',
+    ai: false,
+    female: (Math.random() < 0.5),
+    avatar: 0,
+    color: 'black'
+  });
+  private _myship: BehaviorSubject<Ship> = new BehaviorSubject<Ship>({
+    id: 'none yet',
+    name: Names.ship()
+  });
+
   private _ships: Subject<Ship[]> = new Subject<Ship[]>();
   private _messages: Subject<string[]> = new Subject<string[]>();
   private _combat: Subject<CombatResult[]> = new Subject<CombatResult[]>();
   private _board: Subject<BoardResult[]> = new Subject<BoardResult[]>();
   private _monster: Subject<Location> = new Subject<Location>();
   private _pool: Subject<Location> = new Subject<Location>();
-  private playerid: String;
-  private shipid: String;
-  private allships: Ship[] = [];
 
-  private BASEURL: string = 'http://localhost:30000';
-
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private igame:InternalGameService ) {
     console.log('game service ctor');
     // this stuff is really just for development restarts
     if (null != sessionStorage.getItem('player')) {
       console.log('starting from localStorage data');
 
-      var player: Player = JSON.parse(sessionStorage.getItem('player'));
-      var ship: Ship = JSON.parse(sessionStorage.getItem('ship'));
-      this.playerid = player.id;
+      var player: Player = JSON.parse(sessionStorage.getItem('player') || '');
+      var ship: Ship = JSON.parse(sessionStorage.getItem('ship') || '');
 
-      this._player = new BehaviorSubject<Player>(player);
-      this._myship = new BehaviorSubject<Ship>(ship);
+      this._player.next(player);
+      this._myship.next(ship);
 
       console.log(player);
       console.log(ship);
 
       this.refreshData();
-      setInterval(() => { this.refreshData(); }, this.REFRESH_RATE);
+      setInterval(() => this.refreshData(), this.REFRESH_RATE);
     }
   }
 
-  ngOnDestroy() {
-  }
-
-  start(name: string, female: boolean, avatar: string,
+  start(name: string, female: boolean, avatar: number,
     shipname: string, color: string): Observable<boolean> {
-    var my: GameService = this;
-    var pirate: Pirate = { name: name, female: female, avatar: avatar };
-    var url = this.BASEURL + '/players';
+    
+    var joindata: JoinData = {
+      female: female,
+      captain: name,
+      avatar: avatar,
+      color: color,
+      shipname: shipname
+    };
 
-    var obs: Subject<boolean> = new Subject<boolean>();
-    this.http.put(url, { pirate: pirate, ship: shipname, color: color }).pipe(take(1)).subscribe((data:any) => {
-      console.log('started game: ', data);
-      var player: Player = data.player;
-      this.playerid = player.id;
-      var ship: Ship = data.ship[0];
-      this.shipid = ship.id;
+    return new Observable<boolean>(subscriber => {
+      this.igame.join(joindata).pipe(take(1)).subscribe({
+        next: (pas: PlayerAndShip) => {
+          console.log('joined game: ', pas);
+          var player: Player = pas.player;
+          var ship: Ship = pas.ship;
 
-      sessionStorage.setItem('player', JSON.stringify(player));
-      sessionStorage.setItem('ship', JSON.stringify(ship));
+          sessionStorage.setItem('player', JSON.stringify(player));
+          sessionStorage.setItem('ship', JSON.stringify(ship));
 
-      setInterval(() => { my.refreshData(); }, this.REFRESH_RATE);
-      this.refreshData();
+          this.refreshData();
+          setInterval(() => this.refreshData(), this.REFRESH_RATE);
 
-      this._myship = new BehaviorSubject<Ship>(ship);
-      this._player = new BehaviorSubject<Player>(player);
-      obs.next(true);
-    },
-      (err) => {
-        console.error('something happened!');
-        console.error(err);
+          this._player.next(player);
+          this._myship.next(ship);
+          subscriber.next(true);
+          subscriber.complete();
+        },
+        error: (err: any) => {
+          console.error('something happened!');
+          console.error(err);
+          subscriber.next(false);
+          subscriber.complete();
+        }
       });
-
-    return obs;
+    });
   }
 
   refreshData() {
-    //console.log('into refreshdata');
-    this.http.get(this.BASEURL + '/game/status/' + this.playerid)
-      .pipe(take(1))
-      .subscribe((data: StatusResponse) => {
-        var mees: Ship[] = data.ships.filter(shp => shp.ownerid === this.playerid);
-        if (mees.length > 0) {
-          this._myship.next(mees[0]);
-          this.shipid = mees[0].id;
-        }
+    this.igame.getStatus(this._player.value.id).pipe(take(1)).subscribe((data:StatusResponse) => {
+      var myship: Ship = data.ships.filter(shp => shp.ownerid === this._player.value.id)
+        .reduce((pv, cv) => cv, this._myship.value);
+      this._myship.next(myship);
 
-        // FIXME: maybe figure out who's sunk since the last update?
-        this.allships = data.ships;
-        this._ships.next(this.allships);
+      // FIXME: maybe figure out who's sunk since the last update?
+      this._ships.next(data.ships);
 
-        if (data.messages.length > 0) {
-          this._messages.next(data.messages);
-        }
+      if (data.messages.length > 0) {
+        this._messages.next(data.messages);
+      }
 
-        if (data.combat && data.combat.length > 0) {
-          this._combat.next(data.combat);
-        }
+      if (data.combat && data.combat.length > 0) {
+        this._combat.next(data.combat);
+      }
 
-        if (data.board && data.board.length > 0) {
-          this._board.next(data.board);
-        }
+      if (data.board && data.board.length > 0) {
+        this._board.next(data.board);
+      }
 
-        if (data.monsterloc) {
-          this._monster.next(data.monsterloc);
-        }
+      if (data.monsterloc) {
+        this._monster.next(data.monsterloc);
+      }
 
-        if (data.poolloc) {
-          this._pool.next(data.poolloc);
-        }
-      });
-  }
-
-  ships(): Observable<Ship[]> {
-    return this._ships;
-  }
-
-  messages(): Observable<string[]> {
-    return this._messages;
-  }
-
-  combat(): Observable<CombatResult[]> {
-    return this._combat;
-  }
-
-  boarding(): Observable<BoardResult[]> {
-    return this._board;
-  }
-
-  myship(): Observable<Ship> {
-    return this._myship;
-  }
-
-  myplayer(): Observable<Player>{
-    return this._player;
-  }
-
-  monsterloc(): Observable<Location> {
-    return this._monster;
-  }
-
-  poolloc(): Observable<Location> {
-    return this._pool;
-  }
-
-  fire(at: Ship) {
-    var url: string = this.BASEURL + '/ships/' + this.shipid + '/fire';
-    this.http.post(url, { targetid: at.id }).pipe(take(1)).subscribe();
-  }
-
-  board(at: Ship) { // try to board anothe rship
-    console.log('trying to board: ' + JSON.stringify(at));
-    var url: string = this.BASEURL + '/ships/' + this.shipid + '/board';
-    this.http.post(url, { targetid: at.id }).pipe(take(1)).subscribe();
-  }
-
-  move(x: number, y: number) {
-    var loc: Location = { x: x, y: y };
-    var url: string = this.BASEURL + '/ships/' + this.shipid + '/course';
-    this.http.post(url, loc).pipe(take(1)).subscribe();
-  }
-
-  undock() {
-    var url: string = this.BASEURL + '/ships/' + this.shipid + '/undock';
-    this.http.post(url, null).pipe(take(1)).subscribe();
-  }
-
-  buy(city: Purchase) {
-    var url: string = this.BASEURL + '/ships/' + this.shipid + '/buy';
-    this.http.post(url, city).pipe(take(1)).subscribe();
+      if (data.poolloc) {
+        this._pool.next(data.poolloc);
+      }
+    });
   }
 }
