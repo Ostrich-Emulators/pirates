@@ -93,7 +93,7 @@ export class GameService {
         error: (err: any) => {
           console.error('something happened!');
           console.error(err);
-          subscriber.next(false);
+          subscriber.error(false);
           subscriber.complete();
         }
       });
@@ -130,4 +130,9 @@ export class GameService {
       }
     });
   }
+
+  myship(): Observable<Ship> {
+    return this._myship.asObservable();
+  }
+
 }

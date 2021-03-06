@@ -1,0 +1,11 @@
+<mat-card>
+    <mat-card-header *ngIf='title'>
+        <mat-card-title>{{title}}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <div class="element" *ngFor='let f of fields'>
+            <div class="key">{{f}}</div>
+            <div class="value">{{field(f)}}</div>
+        </div>
+    </mat-card-content>
+</mat-card>

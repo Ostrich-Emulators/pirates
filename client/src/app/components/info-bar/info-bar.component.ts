@@ -1,24 +1,24 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { GameService } from '../../services/game.service';
-import { Pirate } from '../../../../../common/model/pirate';
-import { takeUntil } from 'rxjs/operators';
-import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
+import { Component, Input, OnInit } from '@angular/core';
+import { Ship } from '../../generated/model/ship';
 
 @Component({
   selector: 'app-info-bar',
   templateUrl: './info-bar.component.html',
   styleUrls: ['./info-bar.component.scss']
 })
-export class InfoBarComponent implements OnInit, OnDestroy {
-  private pirate: Pirate;
+export class InfoBarComponent implements OnInit {
+  @Input() ship: Ship = {
+    id: '',
+    name: '',
+    crew: {
+      count: 0,
+      meleeSkill: 0,
+      sailingSkill: 0
+    }
+  };
+  constructor() { }
 
-  constructor(private gamesvc: GameService) { }
-
-  ngOnInit() {
-    this.gamesvc.myplayer().pipe(takeUntil(componentDestroyed(this))).subscribe(p => {
-      this.pirate = p.pirate;
-    });
+  ngOnInit(): void {
   }
 
-  ngOnDestroy(): void {}
 }

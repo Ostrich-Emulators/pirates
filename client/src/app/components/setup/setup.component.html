@@ -1,29 +1,49 @@
-Captain<mat-slide-toggle name='gender' [(ngModel)]='female'></mat-slide-toggle>Madam
-<mat-form-field>
-    <mat-label>{{female ? 'Madam' : 'Captain'}}'s Name</mat-label>
-    <input matInput [(ngModel)]='captain'/>
-    <button mat-mini-fab (click)='newcaptain()'>New</button>
-</mat-form-field>
+<mat-card class="panel">
+    <mat-card-header>
+        <mat-card-title>Get Your Ship!</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
 
-<mat-form-field>
-    <mat-label>Ships's Name</mat-label>
-    <input matInput [(ngModel)]='shipname' />
-    <button mat-mini-fab (click)='newship()'>New</button>
-</mat-form-field>
+        <div class="field">
+            Captain<mat-slide-toggle name='gender' [(ngModel)]='female'></mat-slide-toggle>Madam
+        </div>
 
-<div class="flag-area">
-    <mat-card *ngFor="let a of imgsvc.avatars; let i=index">
-        <img [src]="a" height="64" width="64" (click)='avataridx=i' [class]="avataridx===i ? 'selected':''">
-    </mat-card>
-</div>
+        <div class="field">
+            <mat-form-field style="width:40vw">
+                <mat-label>{{female ? 'Madam' : 'Captain'}}'s Name</mat-label>
+                <input matInput [(ngModel)]='captain'/>
+            </mat-form-field>
+            <button mat-mini-fab (click)='newcaptain()'>New</button>
+        </div>
 
-<!--mat-form-field>
-    <mat-label>Highlight Color</mat-label>
-    <input matInput [(ngModel)]='color' [ngxMatColorPicker]="picker" [style.background-color]="color?.rgba">
-    <ngx-mat-color-toggle matSuffix [for]="picker"></ngx-mat-color-toggle>
-    <ngx-mat-color-picker #picker [color]="color"></ngx-mat-color-picker>
-</mat-form-field-->
+        <div class="field">
+            <mat-form-field style="width:40vw">
+                <mat-label>Ships's Name</mat-label>
+                <input matInput [(ngModel)]='shipname' />
+            </mat-form-field>
+            <button mat-mini-fab (click)='newship()'>New</button>
+        </div>
 
-    <button class="btn btn-default col"  mat-raised-button color='primary'
-        [disabled]="0===captain.length"
-        (click)="sail()">Set Sail!</button>
+        <div class="flag-area">
+            <mat-button-toggle-group name="fontStyle" aria-label="flag" [(ngModel)]='avataridx'>
+                <mat-button-toggle *ngFor="let a of imgsvc.avatars; index as i" [value]='i' color='primary' >
+                    <img [src]="a" class="flag-img">
+                </mat-button-toggle>
+            </mat-button-toggle-group>
+        </div>
+
+        <div class="field">
+            <mat-form-field>
+                <mat-label>Highlight Color</mat-label>
+                <input required matInput [(ngModel)]='color' [ngxMatColorPicker]="picker">
+                <ngx-mat-color-toggle matSuffix [for]="picker"></ngx-mat-color-toggle>
+                <ngx-mat-color-picker #picker [color]="color"></ngx-mat-color-picker>
+            </mat-form-field>
+        </div>
+
+    </mat-card-content>
+    <mat-card-actions>
+        <button class="btn btn-default col" mat-raised-button color='primary' [disabled]="0===captain.length"
+            (click)="sail()">Set Sail!</button>
+    </mat-card-actions>
+</mat-card>

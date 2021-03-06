@@ -1,13 +1,5 @@
-#infobar{
-    background: #e3ccbb;
-}
-
-.hello {
-    margin-bottom: 1em;
-    text-align:center;
-    vertical-align: center;
-}
-
-#action-area {
-    background: white;
+.infobar {
+  display:flex;
+  flex-direction: column;
+  min-height: 0;
 }

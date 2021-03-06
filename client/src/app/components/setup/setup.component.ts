@@ -24,7 +24,7 @@ export class SetupComponent implements OnInit {
 
   constructor(public imgsvc: AvatarService, private gamesvc: GameService,
     private router: Router) {
-    this.avataridx = Math.random() * imgsvc.avatars.length;
+    this.avataridx = Math.floor(Math.random() * imgsvc.avatars.length);
     this.captain = Names.captain(this.female);
   }
 
