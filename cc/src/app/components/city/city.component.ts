@@ -16,8 +16,8 @@ import { ShipUtils } from '../../../../../common/tools/ship-utils';
 })
 export class CityComponent implements OnInit, OnDestroy {
   @Input() city: City;
-  private ship: Ship;
-  private replacementCannonCosts: number[] = [];
+  ship: Ship;
+  replacementCannonCosts: number[] = [];
   constructor(private gamesvc: GameService) { }
 
   ngOnInit() {

@@ -1,0 +1,17 @@
+.ship-image .caption {
+  width: 200px;
+  text-align: center;
+  display: inline-block;
+}
+
+.selected {
+  scale: 1.35;
+}
+
+img{
+  margin-right: 1em;
+}
+
+.row{
+  margin-bottom: 1em;
+}
