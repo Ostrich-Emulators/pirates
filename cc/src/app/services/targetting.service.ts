@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core'
 
-import { Ship } from '../../../../common/model/ship'
+import { Ship } from '../../../../common/generated/model/ship'
 import { GameService } from './game.service';
 import { Collider } from '../../../../common/tools/collider';
 import { Subject, Observable } from 'rxjs';

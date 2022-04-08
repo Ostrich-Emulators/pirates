@@ -1,18 +1,15 @@
-import { Injectable, OnDestroy } from '@angular/core'
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'
+import { Injectable } from '@angular/core'
+import { HttpClient } from '@angular/common/http'
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { take, takeUntil } from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 
-import { Ship } from '../../../../common/model/ship'
-import { Pirate } from '../../../../common/model/pirate'
-import { Player } from '../../../../common/model/player'
-import { Location } from '../../../../common/model/location'
-import { StatusResponse } from '../../../../common/model/status-response'
-import { CombatResult } from '../../../../common/model/combat-result';
-import { BoardResult } from '../../../../common/model/board-result';
-import { City } from '../../../../common/model/city';
-import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
-import { Purchase } from '../../../../common/model/purchase';
+import { Ship } from '../../../../common/generated/model/ship';
+import { Player } from '../../../../common/generated/model/player';
+import { Location } from '../../../../common/generated/model/location'
+import { StatusResponse } from '../../../../common/generated/model/statusResponse'
+import { CombatResult } from '../../../../common/generated/model/combatResult';
+import { BoardResult } from '../../../../common/generated/model/boardResult';
+import { Purchase } from '../../../../common/generated/model/purchase';
 
 @Injectable()
 export class GameService {
