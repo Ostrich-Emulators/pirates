@@ -1,0 +1,29 @@
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>Actions</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <ng-container *ngFor='let tgt of targets'>
+            <div class="element">
+                <div class="key">{{tgt.name}}</div>
+                <div class="value">{{tgt.hullStrength}}</div>
+            </div>
+            <div class="element">
+                <div class="row">{{tgt.captain}}</div>
+            </div>
+            <div class="element">
+                <div class="action">
+                    <button [disabled]="!tgtsvc.canFire(tgt)" (click)="fire(tgt)" class="action">
+                        <ng-container *ngIf="ship.cannons?.reloading">{{ship.cannons?.reloading}}</ng-container>
+                        <ng-container *ngIf="!ship.cannons?.reloading">
+                            <ng-container *ngIf="tgtsvc.canFire(tgt)">Fire!</ng-container>
+                        </ng-container>
+                    </button>
+                </div>
+                <div class="action">
+                    <button [disabled]="!tgtsvc.canBoard(tgt)" (click)="board(tgt)" class="action">Board!</button>
+                </div>
+            </div>
+        </ng-container>
+    </mat-card-content>
+</mat-card>

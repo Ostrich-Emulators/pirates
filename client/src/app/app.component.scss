@@ -1,30 +1,9 @@
-.appheader{
-    display: flex;
-    flex: 0 0 auto;
-    min-height: 0;
-    line-height: 1.5rem;
-    height: 30px;
-}
-.content {
-    display: flex;
-    flex: 1 0 auto;
-    flex-direction: column;
-    min-height: 0;
-    overflow: auto;
-}
-
-.appfooter {
-    font-size: x-small;
-    line-height: 1rem;
-    display: flex;
-    flex-direction: row-reverse;
-    flex-shrink: 1 0 auto;
-    height: 15px;
-}
-
 :host {
-    display: flex;
-    flex: 1 0 auto;
-    flex-direction: column;
-    min-height: 0;
+    display:flex;
+    flex: 1;
+}
+
+.page-wrapper {
+    display:flex;
+    flex: 1;
 }

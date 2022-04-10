@@ -1,0 +1,26 @@
+.element {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+}
+
+.key {
+    display: flex;
+    flex: 2 1 70%;
+}
+
+.value {
+    display: flex;
+    flex: 1 1 30%;
+}
+
+.row {
+    display: flex;
+    flex: 1 1 auto;
+}
+
+.action {
+    display: flex;
+    flex: 1 0 50%;
+    justify-content: center;
+}

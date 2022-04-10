@@ -47,6 +47,7 @@ export class Game {
     private specialscollider: Collider = new Collider();
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
+    private started: boolean = false;
 
     private TURN_DURATION = 250;
     private SPECIALS_DURATION = 60000;
@@ -103,6 +104,14 @@ export class Game {
         return this.players.filter(p => (humansOnly ? !p.ai : true));
     }
 
+    getShips(humansOnly: boolean = false): Ship[]{
+        if (humansOnly) {
+            const humans: Set<string> = new Set<string>(this.getPlayers(true).map(p => p.id));
+            return this.ships.filter(s => humans.has(s.ownerid));
+        }
+        return this.ships;
+    }
+
     debugImageTo(file: string): Promise<any> {
         return this.map.debugImageTo(file, this, this.specialscollider,
             this.monsterbody, this.poolbody);
@@ -119,7 +128,7 @@ export class Game {
         this.playermap.set(p.id, p);
         this.messages.set(p.id, []);
 
-        var ship:Ship = this.allocateNewShip(p, ShipType.SMALL, shipname);
+        var ship: Ship = this.allocateNewShip(p, ShipType.SMALL, shipname);
         return { player: p, ship: ship };
     }
 
@@ -128,7 +137,7 @@ export class Game {
      */
     generateAiPlayers(ships: number) {
         console.log('generating ' + ships + ' new NPCs')
-        for (var i = -1; i > -ships; i--) {
+        for (var i = -1; i >= -ships; i--) {
             var female: boolean = Math.random() < 0.5;
             var aiplayer: Player = {
                 id: `p${i}`,
@@ -167,7 +176,7 @@ export class Game {
         return msgs;
     }
 
-    pushMessage(recipient: Player | string, msg: string) {
+    pushMessage(recipient: Player | Ship |string, msg: string) {
         // figure out if our recipient is a player, a ship, or a player id
         // regardless of what it is, we don't push messages to ai players
 
@@ -175,14 +184,17 @@ export class Game {
         if (typeof recipient === 'undefined' || null == recipient) {
             return; // no message to send
         }
-        if (typeof recipient === 'string') { // player arg is a player's id
+        if (typeof recipient === 'string') { // recipient arg is a player's id
             player = this.playermap.get(recipient);
         }
-        else if (recipient.hasOwnProperty('ship')) {  // player arg is actually a player
+        else if (recipient.hasOwnProperty('female')) { // recipient arg is actually a player
             player = <Player>recipient;
         }
+        else if (recipient.hasOwnProperty('ownerid')) { // recipient is a ship, so get the owner
+            player = this.playermap.get((recipient as Ship).ownerid);
+        }
 
-        if (player.ai) {
+        if (player && player.ai || !player) {
             return;
         }
 
@@ -191,6 +203,7 @@ export class Game {
             this.messages.set(player.id, []);
         }
         this.messages.get(player.id).push(msg);
+        //console.log('messages:', this.messages.get(player.id));
     }
 
     fire(from: Ship, to: Ship) {
@@ -318,9 +331,11 @@ export class Game {
     }
 
     private updateShipLocation(ship: Ship) {
+        // console.log('update ship location', { id: ship.id, location: ship.location });
         if (!(ship.anchored || this.isdocked(ship))) {
             var newx = ship.location.x + ship.course.speedx;
             var newy = ship.location.y + ship.course.speedy;
+            // console.log('new location:', newx, newy);
 
             var pixel: number = this.map.getPixel(newx, newy);
             //console.log('pixel at (' + Math.floor(newx) +
@@ -331,7 +346,7 @@ export class Game {
 
                 if (this.map.iscity(pixel)) {
                     var city: City;
-                    var mindist: number = 1000000000;
+                    var mindist: number = Number.MAX_SAFE_INTEGER;
                     for (var i = 0; i < this.cities.length; i++) {
                         var dist: number = Calculators.distance(ship.location,
                             this.cities[i].location);
@@ -350,7 +365,7 @@ export class Game {
                 }
             }
             else {
-                //console.log('not navigable?');
+                console.log('not navigable?');
                 ship.anchored = true;
 
                 if (this.map.isinland(pixel)) {
@@ -372,16 +387,18 @@ export class Game {
                 ship.location.x = ship.course.dstx;
                 ship.location.y = ship.course.dsty;
             }
-        }        
+        }
     }
 
-    private checkShipCollisions(lastLocationLookup: Map<Ship, Location>) {
+    private checkShipCollisions(lastLocationLookup: Map<string, Location>) {
         this.shipcollider.getCollisions().forEach(en => {
             // do anything here?
+            // console.log('ship collision:', en);
 
             var damage: number = 0;//Math.random();
             var firstok = this.damageShip(en.first.src, damage);
             var secondok = this.damageShip(en.second.src, damage);
+
 
             this.pushMessage(en.first.src, 'We\'ve collided with ' + en.second.src.name + '!');
             this.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
@@ -412,7 +429,7 @@ export class Game {
         var fought: boolean = false;
         this.specialscollider.checkCollisions(this.monsterbody).forEach(body => {
             if (this.poolbody !== body) {
-                if (body.id.substr(0, 1) !== '-') {
+                if (body.id.substring(0, 1) !== '-') {
                     this.pushMessage(body.src, 'Sea Monster Strike!');
                 }
                 body.src.anchored = true;
@@ -430,7 +447,7 @@ export class Game {
     private checkWhirlpool() {
         this.specialscollider.checkCollisions(this.poolbody).forEach(body => {
             if (this.monsterbody !== body) {
-                if (body.id.substr(0, 1) !== '-') {
+                if (body.id.substring(0, 1) !== '-') {
                     this.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
                 }
                 var loc = this.map.getRandomWhirpoolLocation();
@@ -440,16 +457,20 @@ export class Game {
         });
     }
 
+    public isStarted(): boolean {
+        return this.started;
+    }
+
     start() {
         console.log('starting game loop');
-
+        this.started = true;
         setInterval(() => {
             this.TURN_NUM += 1;
             
             shuffler(this.ships.filter(ship=>(ship.ownerid))).forEach(ship => {
                 var player: Player = this.playermap.get(ship.ownerid);
                 if (player.ai) {
-                    this.ai.control(ship, this.getPlayers(true), this.specialscollider, this);
+                    this.ai.control(ship, this.getShips(true), this.specialscollider, this);
                 }
                 this.reloadCannons(ship);
             });
@@ -457,11 +478,13 @@ export class Game {
             this.resolveCombat();
             this.resolveBoarding();
 
-            var lastLocationLookup: Map<Ship, Location> = new Map();
-            this.ships.forEach(ship => { 
-                lastLocationLookup.set(ship, { x: ship.location.x, y: ship.location.y });
+            var lastLocationLookup: Map<string, Location> = new Map();
+            //console.log('ships:', this.ships.map(s => ({id:s, location:s.location})));
+            this.ships.forEach(ship => {
+                lastLocationLookup.set(ship.id, { x: ship.location.x, y: ship.location.y });
                 this.updateShipLocation(ship);
             });
+            //console.log('last locations:', lastLocationLookup);
 
             this.checkWhirlpool();
             this.checkMonster();
@@ -472,18 +495,18 @@ export class Game {
         console.log('initial poolloc is: ' + JSON.stringify(this.poolloc));
         this.poolbody = {
             id: 'whirlpool',
-            getX: (): number => this.poolloc.x,
-            getY: (): number => this.poolloc.y,
-            getR: (): number => this.POOL_RADIUS
+            x: this.poolloc.x,
+            y: this.poolloc.y,
+            r: this.POOL_RADIUS
         };
         
         this.monsterloc = this.map.getRandomMonsterLocation();
         console.log('initial monsterloc is: ' + JSON.stringify(this.monsterloc));
         this.monsterbody = {
             id: 'monster',
-            getX: (): number => this.monsterloc.x,
-            getY: (): number => this.monsterloc.y,
-            getR: (): number => this.MONSTER_RADIUS
+            x: this.monsterloc.x,
+            y: this.monsterloc.y,
+            r: this.MONSTER_RADIUS
         };
         this.specialscollider.add(this.poolbody);
         this.specialscollider.add(this.monsterbody);
@@ -510,6 +533,7 @@ export class Game {
      * @returns true, if the ship remains afloat
      */
     damageShip(ship: Ship, amt: number): boolean {
+        // console.log('damage ship', { id: ship.id, hull: ship.hullStrength });
         var remains = true;
         ship.hullStrength -= amt;
         if (ship.hullStrength <= 0) {
@@ -540,7 +564,7 @@ export class Game {
             delete ship.ownerid;
             ship.anchored = true;
         }
-        if (!owner.ai) {
+        if (owner && !owner.ai) {
             this.pushMessage(owner, oldname +
                 ' has been ' + (sunk ? 'sunk' : 'abandoned') +
                 ' but we\'ve comandeered another: ' + ship.name);
@@ -587,6 +611,8 @@ export class Game {
             ship.location.x = 245;
             ship.location.y = 225;
             ship.gold = 520;
+            //ship.cannons.range = 100;
+            //ship.hullStrength = 200;
         }
 
         console.log(`allocated ${ship.name} led by ${p.name}`, ship);
@@ -595,22 +621,22 @@ export class Game {
         return ship;
     }
    
-   private addShipToCollisionSystem(ship: Ship) {
+    private addShipToCollisionSystem(ship: Ship) {
         var radius = this.SHIP_RADIUS;
         this.specialscollider.add({
             id: ship.id,
             src: ship,
-            getX: function (): number { return ship.location.x },
-            getY: function (): number { return ship.location.y },
-            getR: function (): number { return radius }
+            x: () => ship.location.x,
+            y: () => ship.location.y,
+            r: radius
         });
 
         this.shipcollider.add({
             id: ship.id,
             src: ship,
-            getX: function (): number { return ship.location.x },
-            getY: function (): number { return ship.location.y },
-            getR: function (): number { return radius / 2 }
+            x: () => ship.location.x,
+            y: () => ship.location.y,
+            r: radius / 2
         });
     }
 }

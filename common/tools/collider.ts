@@ -1,7 +1,7 @@
 import { CollisionBody } from '../model/body'
-import { Calculators } from './calculators';
 
 export class Collider {
+    public static readonly EMPTYBODY: CollisionBody = { id: '', x: 0, y: 0, r: 0 };
     bodies: Map<string, CollisionBody> = new Map<string, CollisionBody>();
 
     clear() {
@@ -17,7 +17,7 @@ export class Collider {
     }
 
     get(id: string): CollisionBody {
-        return this.bodies.get(id);
+        return this.bodies.get(id) || Collider.EMPTYBODY;
     }
 
     remove(body: CollisionBody | string) {
@@ -51,14 +51,14 @@ export class Collider {
     checkCollisions(tgt: CollisionBody|string): CollisionBody[] {
         var collisions: CollisionBody[] = [];
 
-        var me: CollisionBody = (typeof tgt === 'string' ? this.bodies.get(tgt) : tgt);
+        var me: CollisionBody = (typeof tgt === 'string' ? this.bodies.get(tgt) || Collider.EMPTYBODY : tgt);
         if (null == me) {
-            console.error('why do I have a null me here? tgt:'+JSON.stringify(tgt));
+            console.error('why do I have a null me here? tgt:' + JSON.stringify(tgt));
             return collisions;
         }
 
-        this.bodies.forEach(body => { 
-            if (me.id != body.id && this.collides( body, me ) ){
+        this.bodies.forEach(body => {
+            if (me.id != body.id && this.collides(body, me)) {
                 collisions.push(body);
             }
         });
@@ -66,11 +66,23 @@ export class Collider {
         return collisions;
     }
 
+    private xof(o: CollisionBody): number {
+        return ('function' === typeof o.x ? o.x() : o.x);
+    }
+
+    private yof(o: CollisionBody): number {
+        return ('function' === typeof o.y ? o.y() : o.y);
+    }
+    private rof(o: CollisionBody): number {
+        return ('function' === typeof o.r ? o.r() : o.r);
+    }
+
     collides(src: CollisionBody, tgt: CollisionBody): boolean {
         //console.log('checking collides: ' + JSON.stringify(src) + ' against ' + JSON.stringify(tgt));
-        var dx = src.getX() - tgt.getX();
-        var dy = src.getY() - tgt.getY();
+        var dx = this.xof(src) - this.xof(tgt);
+        var dy = this.yof(src) - this.yof(tgt);
         var distance = Math.sqrt(dx * dx + dy * dy);
-        return (distance < (src.getR() + tgt.getR()));
+        //console.log('distance is:', distance)
+        return distance < (this.rof(src) + this.rof(tgt));
     }
 }

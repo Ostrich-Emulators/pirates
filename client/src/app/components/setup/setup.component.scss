@@ -1,11 +1,10 @@
-.panel {
-    width: 50%;
-    margin: auto;
+
+.mat-card {
+  margin: 2rem;
 }
 
-.flag-area{
-    display: inline-flex;
-    flex-wrap: wrap;
+.mat-form-field {
+    padding: 1rem;
 }
 
 .mat-card-actions {
@@ -13,8 +12,14 @@
     flex-direction: row-reverse;
 }
 
-.flag-img {
-    height: 64px;
-    width: 64px;
-    margin: 0.25rem;
+.flag-area {
+    display: inline-flex;
+    flex-wrap: wrap;
+
+    .flag-img {
+        height: 64px;
+        width: 64px;
+        margin: 0.25rem;
+    }
 }
+

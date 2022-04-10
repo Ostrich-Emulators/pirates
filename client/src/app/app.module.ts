@@ -1,10 +1,7 @@
-import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-
-import { environment } from "../environments/environment";
-import { BASE_PATH } from './generated/variables';
 
 import { MatInputModule } from '@angular/material/input'
 import { MatCardModule } from '@angular/material/card';
@@ -15,34 +12,39 @@ import { MatSnackBarModule, MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/mater
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSidenavModule } from '@angular/material/sidenav';
 
-import { MAT_COLOR_FORMATS, NgxMatColorPickerModule, NGX_MAT_COLOR_FORMATS } from '@angular-material-components/color-picker';
+import { environment } from '../environments/environment';
+import { BASE_PATH } from './generated/variables';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { SetupComponent } from './components/setup/setup.component';
-import { MapComponent } from './components/map/map.component';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MAT_COLOR_FORMATS, NgxMatColorPickerModule, NGX_MAT_COLOR_FORMATS } from '@angular-material-components/color-picker';
 import { GameComponent } from './components/game/game.component';
 import { HeaderComponent } from './components/header/header.component';
 import { InfoBarComponent } from './components/info-bar/info-bar.component';
 import { ShipStatusComponent } from './components/info-bar/ship-status/ship-status.component';
+import { MapComponent } from './components/map/map.component';
+import { ActionDisplayComponent } from './components/info-bar/action-display/action-display.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     WelcomeComponent,
     SetupComponent,
-    MapComponent,
     GameComponent,
     HeaderComponent,
     InfoBarComponent,
     ShipStatusComponent,
+    MapComponent,
+    ActionDisplayComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    BrowserAnimationsModule,
+    NoopAnimationsModule,
+    NgxMatColorPickerModule,
     FormsModule,
     HttpClientModule,
     FormsModule,
@@ -58,8 +60,8 @@ import { ShipStatusComponent } from './components/info-bar/ship-status/ship-stat
   ],
   providers: [
     { provide: MAT_COLOR_FORMATS, useValue: NGX_MAT_COLOR_FORMATS },
+    { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: { duration: 3500 } },
     { provide: BASE_PATH, useValue: environment.apiUrl },
-    { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: { duration: 3500 } }
   ],
   bootstrap: [AppComponent]
 })

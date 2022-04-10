@@ -87,6 +87,64 @@ paths:
             application/json:
               schema:
                 type: string
+  /ships/{shipId}/fire:
+    post:
+      summary: fire at the target ship
+      operationId: fire
+      tags:
+      - ship
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The firing ship
+        schema:
+          type: string
+      requestBody:
+        required: true
+        description: The ship being fired at
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Targetting"
+      responses:
+        '200':
+          description: success
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+  /ships/{shipId}/board:
+    post:
+      summary: attempt to board another ship
+      operationId: board
+      tags:
+      - ship
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The ship doing the boarding
+        schema:
+          type: string
+      requestBody:
+        required: true
+        description: The ship being boarded
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Targetting"
+      responses:
+        '200':
+          description: success
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
   /game/status/{playerId}:
     get:
       summary: Get current game status
@@ -118,13 +176,6 @@ paths:
     get:
       summary: Get all players
       operationId: getAll
-      parameters:
-      - name: shipId
-        in: path
-        required: true
-        description: The ship id
-        schema:
-          type: string
       tags:
       - player
       responses:
@@ -133,7 +184,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Player"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
         default:
           description: unexpected error
           content:
@@ -232,6 +285,13 @@ components:
           type: number
         y:
           type: number
+    Targetting:
+      type: object
+      required:
+        - targetid
+      properties:
+        targetid:
+          type: string
     Crew:
       type: object
       required:
@@ -301,6 +361,11 @@ components:
             $ref: '#/components/schemas/CityCannon'
     Course:
       type: object
+      required:
+        - dstx
+        - dsty
+        - speedx
+        - speedy
       properties:
         dstx:
           type: number
@@ -315,6 +380,9 @@ components:
       required:
         - id
         - name
+        - location
+        - course
+        - crew
       properties:
         id:
           type: string
@@ -365,11 +433,15 @@ components:
       enum: [CANNON_EXPLODED, HIT_HULL, HIT_SAIL, HIT_SAILOR, HIT_CANNON, MISSED, OUT_OF_RANGE]
     BoardResult:
       type: object
+      requried:
+        - attacker
+        - attackee
+        - code
       properties:
         attacker:
-          $ref:  '#/components/schemas/Ship'
+          $ref: '#/components/schemas/Ship'
         attackee:
-          $ref:  '#/components/schemas/Ship'
+          $ref: '#/components/schemas/Ship'
         code:
           $ref: '#/components/schemas/BoardCode'
         gold:
@@ -382,11 +454,15 @@ components:
           $ref: '#/components/schemas/Crew'
     CombatResult:
       type: object
+      required:
+        - attacker
+        - attackee
+        - hitcodes
       properties:
         attacker:
-          $ref:  '#/components/schemas/Ship'
+          $ref: '#/components/schemas/Ship'
         attackee:
-          $ref:  '#/components/schemas/Ship'
+          $ref: '#/components/schemas/Ship'
         hitcodes:
           type: array
           items:
@@ -403,7 +479,7 @@ components:
         - poolloc
         - monsterloc
         - combat
-        - board       
+        - board
       properties:
         messages:
           type: array

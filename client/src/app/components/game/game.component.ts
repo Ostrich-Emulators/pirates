@@ -12,7 +12,7 @@ import { GameService } from '../../services/game.service';
   styleUrls: ['./game.component.scss']
 })
 export class GameComponent implements OnInit {
-  ship: Ship = {id: 'none', name: 'unnamed'};
+  ship: Ship = GameService.EMPTYSHIP;
   
   constructor( private game: GameService) { }
 

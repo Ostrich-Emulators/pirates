@@ -27,8 +27,6 @@ export class ShipStatusComponent implements OnInit {
     if (a && null != a) {
       this._fields = a;
     }
-
-    console.log(this._fields);
   }
 
   get fields(): string[]{

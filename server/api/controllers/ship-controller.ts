@@ -52,7 +52,7 @@ export class ShipController {
             speedx: speedx,
             speedy: speedy
         };
-        this.one(shipid).anchored = false;
+        ship.anchored = false;
     }
 
     fire(from: string, at: string) {

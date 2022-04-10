@@ -1,9 +1,9 @@
 import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
+
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { SetupComponent } from './components/setup/setup.component';
 import { GameComponent } from './components/game/game.component';
-
 
 const routes: Routes = [
   { path: '', redirectTo: '/welcome', pathMatch: 'full' },

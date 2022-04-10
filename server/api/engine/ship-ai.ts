@@ -9,7 +9,7 @@ export class ShipAi {
   constructor(private game: Game, private combateng: CombatEngine) {
   }
 
-  public control(ship: Ship, humans: Player[], collider: Collider, game: Game) {
+  public control(ship: Ship, humans: Ship[], collider: Collider, game: Game) {
     if (this.combateng.readyToFire(ship)) {
       var fired: boolean = false;
 

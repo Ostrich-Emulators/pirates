@@ -269,10 +269,11 @@ export class CombatEngine {
     }
 
     getDistanceFactor(pair: ActionPair): number {
+        // console.log('distance factor:', pair);
         var distance = Calculators.distance(pair.one.location, pair.two.location);
 
         var ratio: number = (1 - distance / pair.one.cannons.range);
-        console.log('distance:' + distance + '; range: ' + pair.one.cannons.range + '; ratio: ' + ratio);
+        // console.log('distance:' + distance + '; range: ' + pair.one.cannons.range + '; ratio: ' + ratio);
 
         // idea: if we're within 25% of our cannon range, we have
         // 100% hit chance. If we're at 100% of our cannon range,

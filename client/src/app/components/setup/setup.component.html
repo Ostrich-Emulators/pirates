@@ -11,7 +11,7 @@
         <div class="field">
             <mat-form-field style="width:40vw">
                 <mat-label>{{female ? 'Madam' : 'Captain'}}'s Name</mat-label>
-                <input matInput [(ngModel)]='captain'/>
+                <input matInput [(ngModel)]='captain' />
             </mat-form-field>
             <button mat-mini-fab (click)='newcaptain()'>New</button>
         </div>
@@ -26,7 +26,7 @@
 
         <div class="flag-area">
             <mat-button-toggle-group name="fontStyle" aria-label="flag" [(ngModel)]='avataridx'>
-                <mat-button-toggle *ngFor="let a of imgsvc.avatars; index as i" [value]='i' color='primary' >
+                <mat-button-toggle *ngFor="let a of imgsvc.avatars; index as i" [value]='i' color='primary'>
                     <img [src]="a" class="flag-img">
                 </mat-button-toggle>
             </mat-button-toggle-group>

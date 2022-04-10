@@ -1,4 +1,5 @@
 <div class="infobar">
     <app-ship-status [area]='ship' [title]='"Ship"' [fields]="['hullStrength','sailQuality']"></app-ship-status>
     <app-ship-status [area]='ship.crew' [title]='"Crew"' [fields]="['count','meleeSkill', 'sailingSkill']"></app-ship-status>
+    <app-action-display [ship]='ship'></app-action-display>
 </div>

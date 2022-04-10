@@ -69,7 +69,7 @@ app.route('/players')
         console.log('into create player');
         console.log(req.body);
         var playerAndShip = gamecontroller.create(req.body);
-        if (1 === game.getPlayers().length) {
+        if (!game.isStarted()) {
             game.start();
         }
 
@@ -103,7 +103,7 @@ Promise.all([
     game.setWhirlpoolGuideImage(images[0]);
     game.setMonsterGuideImage(images[1]);
     game.setImage(images[2]);
-    game.generateAiPlayers(6);
+    game.generateAiPlayers(2);
     app.listen(port, function () {
         console.log('pirates are restless on port: ' + port);
     });
