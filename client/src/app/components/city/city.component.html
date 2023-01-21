@@ -1,0 +1,32 @@
+<div *ngIf="ship">
+    <button (click)="gamesvc.undock()">Leave {{city?.name}}</button>
+    <form>
+        <fieldset>
+            <legend>Train</legend>
+            <button (click)="train('MELEE')" [disabled]="disabled('MELEE')">Fighting
+                ({{city.melee|number:'1.0-0'}})</button>
+            <p></p>
+            <button (click)="train('SAILING')" [disabled]="disabled('SAILING')">Sailing
+                ({{city.sailing|number:'1.0-0'}})</button>
+        </fieldset>
+        <fieldset>
+            <legend>Repair</legend>
+            <button (click)="train('HULL')" [disabled]="disabled('HULL')">Hull
+                ({{city.hull|number:'1.0-0'}})</button>
+            <p></p>
+            <button (click)="train('SAIL')" [disabled]="disabled('SAIL')">Sail
+                ({{city.sail|number:'1.0-0'}})</button>
+        </fieldset>
+
+        <fieldset>
+            <legend>Cannons</legend>
+            <div *ngFor="let can of city.cannon;index as idx">
+                Cannon {{idx}}: ({{can.firepower}}/{{can.reloadspeed}}/{{can.range}}):
+                <button (click)="buyc(idx)"
+                    [disabled]="ship?.gold||0<costforcannon(idx)">({{costforcannon(idx)|number:'1.0-0'}})</button>
+            </div>
+            <button (click)="train('AMMO')" [disabled]="disabled('AMMO')">10 Ammo
+                ({{city.ammo|number:'1.0-0'}})</button>
+        </fieldset>
+    </form>
+</div>

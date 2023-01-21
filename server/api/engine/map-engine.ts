@@ -91,7 +91,7 @@ export class MapEngine {
         // city color (green) doesn't always work!
         //return (0xFF00FF == pixel);
         return (0xFF00FF == pixel || !(this.isinland(pixel) || this.isoutofbounds(pixel)
-            || this.iswater(pixel)));
+             || this.iswater(pixel)));
     }
 
     isoutofbounds(pixel): boolean {

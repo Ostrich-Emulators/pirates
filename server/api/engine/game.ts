@@ -62,7 +62,9 @@ export class Game {
         var CITYLOCATIONS: Location[] = [
             { x: 532, y: 82 },
             { x: 289, y: 202 },
-            { x: 307, y: 497 }
+            { x: 307, y: 497 },
+            { x: 64, y: 156 },
+            { x: 90, y: 590 },
         ];
         
         var names: string[] = Names.city(CITYLOCATIONS.length);
@@ -203,7 +205,7 @@ export class Game {
             this.messages.set(player.id, []);
         }
         this.messages.get(player.id).push(msg);
-        //console.log('messages:', this.messages.get(player.id));
+        console.log('messages:', this.messages.get(player.id));
     }
 
     fire(from: Ship, to: Ship) {
@@ -331,15 +333,14 @@ export class Game {
     }
 
     private updateShipLocation(ship: Ship) {
-        // console.log('update ship location', { id: ship.id, location: ship.location });
         if (!(ship.anchored || this.isdocked(ship))) {
             var newx = ship.location.x + ship.course.speedx;
             var newy = ship.location.y + ship.course.speedy;
             // console.log('new location:', newx, newy);
 
             var pixel: number = this.map.getPixel(newx, newy);
-            //console.log('pixel at (' + Math.floor(newx) +
-            //  ',' + Math.floor(newy) + '): ' + pixel.toString(16)+ '('+pixel+')');
+            // console.log('pixel at (' + Math.floor(newx) +
+            //   ',' + Math.floor(newy) + '): ' + pixel.toString(16)+ '('+pixel+')');
             if (this.map.isnavigable(pixel)) {
                 ship.location.x = newx;
                 ship.location.y = newy;
@@ -604,7 +605,8 @@ export class Game {
             crew: crew,
             name: name,
             ownerid: p.id,
-            captain: p.name
+            captain: p.name,
+            course: { dstx: 0, dsty: 0, speedx: 0, speedy: 0 }
         };
 
         if (!p.ai) {

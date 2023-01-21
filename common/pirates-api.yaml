@@ -145,6 +145,57 @@ paths:
             application/json:
               schema:
                 type: string
+  /ships/{shipId}/undock:
+    post:
+      summary: leave a city
+      operationId: undock
+      tags:
+      - ship
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The ship undocking
+        schema:
+          type: string
+      responses:
+        '200':
+          description: success
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
+  /ships/{shipId}/buy:
+    post:
+      summary: leave a city
+      operationId: buy
+      tags:
+      - ship
+      parameters:
+      - name: shipId
+        in: path
+        required: true
+        description: The ship doing the buying
+        schema:
+          type: string
+      requestBody:
+        required: true
+        description: what is getting purchased
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Purchase"
+      responses:
+        '200':
+          description: success
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: string
   /game/status/{playerId}:
     get:
       summary: Get current game status
@@ -383,6 +434,7 @@ components:
         - location
         - course
         - crew
+        - type
       properties:
         id:
           type: string

@@ -7,6 +7,7 @@
         <app-info-bar [ship]='ship'></app-info-bar>
     </mat-sidenav>
     <mat-sidenav-content>
-        <app-map></app-map>
+        <app-city *ngIf="ship.docked" [city]="ship.docked"></app-city>
+        <app-map *ngIf="!ship.docked"></app-map>
     </mat-sidenav-content>
 </mat-sidenav-container>

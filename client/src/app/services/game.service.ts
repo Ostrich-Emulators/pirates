@@ -15,7 +15,7 @@ import { PlayerAndShip } from '../generated/model/playerAndShip';
 import { JoinData } from '../generated/model/joinData';
 import { StatusResponse } from '../generated/model/statusResponse';
 import { Names } from '../../../../common/tools/names';
-import { PlayerService, ShipService } from '../generated';
+import { PlayerService, Purchase, ShipService, ShipType } from '../generated';
 
 @Injectable({
   providedIn: 'root'
@@ -40,6 +40,7 @@ export class GameService {
   public static readonly EMPTYSHIP: Ship = {
     id: 'none yet',
     name: Names.ship(),
+    type: ShipType.SMALL,
     crew: { count: 0, meleeSkill: 0, sailingSkill: 0 },
     location: GameService.EMPTYLOC,
     course: { dstx: 0, dsty: 0, speedx: 0, speedy: 0 }
@@ -223,5 +224,13 @@ export class GameService {
 
   board(s: Ship) {
     this.ssvc.board({ targetid: s.id }, this._myship.value.id).pipe(take(1)).subscribe();
+  }
+
+  undock() {
+    this.ssvc.undock(this._myship.value.id).pipe(take(1)).subscribe();
+  }
+
+  buy(p: Purchase) {
+    this.ssvc.buy(p, this._myship.value.id).pipe(take(1)).subscribe();
   }
 }
