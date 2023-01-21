@@ -1,5 +1,5 @@
 <div *ngIf="ship">
-    <button (click)="gamesvc.undock()">Leave {{city?.name}}</button>
+    <button (click)="gamesvc.undock()">Leave {{city.name}}</button>
     <form>
         <fieldset>
             <legend>Train</legend>
@@ -23,7 +23,7 @@
             <div *ngFor="let can of city.cannon;index as idx">
                 Cannon {{idx}}: ({{can.firepower}}/{{can.reloadspeed}}/{{can.range}}):
                 <button (click)="buyc(idx)"
-                    [disabled]="ship?.gold||0<costforcannon(idx)">({{costforcannon(idx)|number:'1.0-0'}})</button>
+                    [disabled]="ship.gold||0<costforcannon(idx)">({{costforcannon(idx)|number:'1.0-0'}})</button>
             </div>
             <button (click)="train('AMMO')" [disabled]="disabled('AMMO')">10 Ammo
                 ({{city.ammo|number:'1.0-0'}})</button>
