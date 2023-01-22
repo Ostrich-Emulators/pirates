@@ -1,33 +1,30 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { GameService } from '../../../services/game.service';
-import { TargettingService } from '../../../services/targetting.service';
-import { Ship } from '../../../../../../common/model/ship';
-import { takeUntil } from 'rxjs/operators';
-import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
+import { Component, Input, OnInit } from '@angular/core';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { Ship } from 'src/app/generated';
+import { GameService } from 'src/app/services/game.service';
+import { TargettingService } from 'src/app/services/targetting.service';
 
+@UntilDestroy()
 @Component({
   selector: 'app-action-display',
   templateUrl: './action-display.component.html',
   styleUrls: ['./action-display.component.scss']
 })
-export class ActionDisplayComponent implements OnInit, OnDestroy {
-  private targets: Ship[];
-  ship: Ship;
+export class ActionDisplayComponent implements OnInit {
+  @Input() ship: Ship = GameService.EMPTYSHIP;
+  targets: Ship[] = [];
 
-  constructor(private gamesvc: GameService, private shipsvc: TargettingService) { }
+  constructor(private gamesvc: GameService, public tgtsvc: TargettingService) { }
 
-  ngOnDestroy(): void {}
-  ngOnInit() {
-    this.shipsvc.getTargets().pipe(takeUntil(componentDestroyed(this))).subscribe(data => this.targets = data);
-    this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(s => this.ship = s);
+  ngOnInit(): void {
+    this.tgtsvc.getTargets().pipe(untilDestroyed(this)).subscribe(ships => this.targets = ships);
   }
 
-  fire(ship) {
+  fire(ship: Ship) {
     this.gamesvc.fire(ship);
   }
 
-  board(ship) {
+  board(ship: Ship) {
     this.gamesvc.board(ship);
   }
-
 }

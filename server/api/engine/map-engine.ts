@@ -1,7 +1,7 @@
 import { Game } from "./game";
 import { Collider } from "../../../common/tools/collider";
 import { CollisionBody } from "../../../common/model/body";
-import { Location } from "../../../common/model/location";
+import { Location } from "../../../common/generated/model/location";
 
 var jimp = require('jimp')
 
@@ -30,12 +30,12 @@ export class MapEngine {
         return jimp.read('map.png').then(function (image) {
             collider.bodies.forEach(ship => {
                 if (!(ship == monsterbody || ship == poolbody)) {
-                    var x = ship.getX();
-                    var y = ship.getY();
+                    var x = ship.x;
+                    var y = ship.y;
                     var npc: boolean = (ship.id.startsWith('-'));
 
                     console.log('writing ship: ' + ship.src.id + ' at ' + '(' + x + ',' + y + ')');
-                    image.scan(ship.getX(), ship.getY(), 8, 8, function (x, y, idx) {
+                    image.scan(ship.x, ship.y, 8, 8, function (x, y, idx) {
                         image.bitmap.data[idx] = (npc ? 0x54 : 0xEF);
                         image.bitmap.data[idx + 1] = (npc ? 0xE1 : 0x0A);
                         image.bitmap.data[idx + 2] = (npc ? 0x49 : 0x5B);
@@ -91,7 +91,7 @@ export class MapEngine {
         // city color (green) doesn't always work!
         //return (0xFF00FF == pixel);
         return (0xFF00FF == pixel || !(this.isinland(pixel) || this.isoutofbounds(pixel)
-            || this.iswater(pixel)));
+             || this.iswater(pixel)));
     }
 
     isoutofbounds(pixel): boolean {

@@ -1,19 +1,5 @@
-<div id="infobar" class="container-fluid">
-  <div class="row">
-    <div class="hello" *ngIf="!pirate.female">Captain {{ pirate.name }}</div>
-    <div class="hello" *ngIf="pirate.female">Madam {{ pirate.name }}</div>
-  </div>
-
-  <div class="row">
-    <app-crew-display class="col"></app-crew-display>
-  </div>
-  <div class="row">
-    <app-ship-display class="col"></app-ship-display>
-  </div>
-  <div class="row">
-    <app-supply-display class="col"></app-supply-display>
-  </div>
-  <div class="row" id='action-area'>
-    <app-action-display class="col"></app-action-display>
-  </div>
+<div class="infobar">
+    <app-ship-status [area]='ship' [title]='"Ship"' [fields]="['hullStrength','sailQuality']"></app-ship-status>
+    <app-ship-status [area]='ship.crew' [title]='"Crew"' [fields]="['count','meleeSkill', 'sailingSkill']"></app-ship-status>
+    <app-action-display [ship]='ship'></app-action-display>
 </div>

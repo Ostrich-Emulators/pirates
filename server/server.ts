@@ -3,7 +3,6 @@ import * as express from "express"
 var cors = require('cors')
 var jimp = require('jimp')
 var bodyParser = require('body-parser')
-var fs = require('fs')
 
 import { Game } from "./api/engine/game"
 import { GameController } from "./api/controllers/game-controller";
@@ -17,6 +16,7 @@ var port = process.env.PIRATEPORT || 30000;
 
 var app: express.Application = express();
 app.use(cors());
+app.options('*', cors())
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -68,8 +68,8 @@ app.route('/players')
     .put(function (req, res) {
         console.log('into create player');
         console.log(req.body);
-        var playerAndShip  = gamecontroller.create(req.body);
-        if (1 === game.getPlayers().length) {
+        var playerAndShip = gamecontroller.create(req.body);
+        if (!game.isStarted()) {
             game.start();
         }
 
@@ -87,14 +87,13 @@ app.route('/players/:playerId')
 
 app.route('/players/:playerId/ships')
     .get(function (req, res) {
-        res.json(shipcontroller.shipsfor(req.params.playerId));
+        res.json(shipcontroller.shipFor(req.params.playerId));
     });
 
 app.route('/game/status/:playerId')
     .get(function (req, res) {
-        res.json(gamecontroller.status( req.params.playerId));
+        res.json(gamecontroller.status(req.params.playerId));
     });
-
 
 Promise.all([
     jimp.read('whirlpool-guide.png'),
@@ -104,8 +103,8 @@ Promise.all([
     game.setWhirlpoolGuideImage(images[0]);
     game.setMonsterGuideImage(images[1]);
     game.setImage(images[2]);
-    game.generateNonPlayerShips(6);
+    game.generateAiPlayers(2);
     app.listen(port, function () {
-        console.log('pirates are restles on port: ' + port);
+        console.log('pirates are restless on port: ' + port);
     });
 });

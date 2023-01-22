@@ -1,27 +1,33 @@
+import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
-import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FlexLayoutModule } from '@angular/flex-layout';
-import { ColorPickerModule } from 'ngx-color-picker';
 
-import { AppComponent } from './app.component';
+import { MatLegacyInputModule as MatInputModule } from '@angular/material/legacy-input'
+import { MatLegacyCardModule as MatCardModule } from '@angular/material/legacy-card';
+import { MatLegacyButtonModule as MatButtonModule } from '@angular/material/legacy-button';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatLegacySlideToggleModule as MatSlideToggleModule } from '@angular/material/legacy-slide-toggle';
+import { MatLegacySnackBarModule as MatSnackBarModule, MAT_LEGACY_SNACK_BAR_DEFAULT_OPTIONS as MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/legacy-snack-bar';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatSidenavModule } from '@angular/material/sidenav';
+
+import { environment } from '../environments/environment';
+import { BASE_PATH } from './generated/variables';
+
 import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { SetupComponent } from './components/setup/setup.component';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MAT_COLOR_FORMATS, NgxMatColorPickerModule, NGX_MAT_COLOR_FORMATS } from '@angular-material-components/color-picker';
 import { GameComponent } from './components/game/game.component';
-
-import { GameService } from './services/game.service';
-import { TargettingService } from './services/targetting.service';
+import { HeaderComponent } from './components/header/header.component';
 import { InfoBarComponent } from './components/info-bar/info-bar.component';
+import { ShipStatusComponent } from './components/info-bar/ship-status/ship-status.component';
 import { MapComponent } from './components/map/map.component';
-import { CrewDisplayComponent } from './components/info-bar/crew-display/crew-display.component';
-import { ShipDisplayComponent } from './components/info-bar/ship-display/ship-display.component';
-import { SupplyDisplayComponent } from './components/info-bar/supply-display/supply-display.component';
 import { ActionDisplayComponent } from './components/info-bar/action-display/action-display.component';
 import { CityComponent } from './components/city/city.component';
-import { AvatarService } from './services/avatar.service';
-
 
 @NgModule({
   declarations: [
@@ -29,23 +35,36 @@ import { AvatarService } from './services/avatar.service';
     WelcomeComponent,
     SetupComponent,
     GameComponent,
+    HeaderComponent,
     InfoBarComponent,
+    ShipStatusComponent,
     MapComponent,
-    CrewDisplayComponent,
-    ShipDisplayComponent,
-    SupplyDisplayComponent,
     ActionDisplayComponent,
     CityComponent
   ],
   imports: [
-    HttpClientModule,
     BrowserModule,
     AppRoutingModule,
+    NoopAnimationsModule,
+    NgxMatColorPickerModule,
     FormsModule,
-    FlexLayoutModule,
-    ColorPickerModule
+    HttpClientModule,
+    FormsModule,
+    MatInputModule,
+    MatCardModule,
+    MatButtonModule,
+    MatSlideToggleModule,
+    MatSnackBarModule,
+    MatButtonToggleModule,
+    NgxMatColorPickerModule,
+    MatSidenavModule,
+    MatToolbarModule
   ],
-  providers: [TargettingService, GameService, AvatarService],
+  providers: [
+    { provide: MAT_COLOR_FORMATS, useValue: NGX_MAT_COLOR_FORMATS },
+    { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: { duration: 3500 } },
+    { provide: BASE_PATH, useValue: environment.apiUrl },
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

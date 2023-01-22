@@ -1,9 +1,11 @@
-import { Ship } from '../../../common/model/ship'
-import { ShipPair } from '../../../common/model/ship-pair';
-import { CombatResult, HitCode } from '../../../common/model/combat-result';
-import { BoardResult, BoardCode } from '../../../common/model/board-result';
-import { ShipDefinition } from '../../../common/model/ship-definition';
-import { Crew } from '../../../common/model/crew';
+import { Ship } from '../../../common/generated/model/ship'
+import { ActionPair } from '../../../common/generated/model/actionPair';
+import { CombatResult } from '../../../common/generated/model/combatResult';
+import { BoardResult } from '../../../common/generated/model/boardResult';
+import { HitCode } from '../../../common/generated/model/hitCode';
+import { BoardCode } from '../../../common/generated/model/boardCode';
+import { ShipDefinition } from '../../../common/generated/model/shipDefinition';
+import { Crew } from '../../../common/generated/model/crew';
 import { Calculators } from '../../../common/tools/calculators';
 import { Game } from './game';
 
@@ -28,11 +30,11 @@ export class CombatEngine {
     }
 
 
-    resolve(pair: ShipPair): CombatResult {
-        console.log('resolving ' + pair.one.id + ' attacking '
-            + pair.two.id + ' (hs:' + pair.two.hullStrength + ')');
+    resolve(pair: ActionPair): CombatResult {
         var attacker: Ship = pair.one;
         var attackee: Ship = pair.two;
+        console.log('resolving ' + pair.one.id + ' attacking '
+            + pair.two.id + ' (hs:' + attackee.hullStrength + ')');
 
         var result: CombatResult = {
             attacker: pair.one,
@@ -45,7 +47,7 @@ export class CombatEngine {
         // if the attackee is too far away, don't fire
         var distance = Calculators.distance(attacker.location, attackee.location);
         if (distance > attacker.cannons.range) {
-            result.hitcodes.push(HitCode.OUT_OF_RANGE);
+            result.hitcodes.push(HitCode.OUTOFRANGE);
             return result;
         }
 
@@ -61,7 +63,7 @@ export class CombatEngine {
         console.log('explosionpct is ' + explosionpct);
         for (var cannon = 0; cannon < cannonsInAttack; cannon++) {
             if (Math.random() < explosionpct) {
-                result.hitcodes.push(HitCode.CANNON_EXPLODED);
+                result.hitcodes.push(HitCode.CANNONEXPLODED);
                 attacker.cannons.count -= 1;
                 console.log('cannon exploded!');
             }
@@ -71,7 +73,7 @@ export class CombatEngine {
         // calculate attack results for the ones left
         cannonsInAttack -= result.hitcodes.length;
 
-        var distanceFactor = this.getDistanceFactor(attacker, attackee);
+        var distanceFactor = this.getDistanceFactor(pair);
         console.log('hitpct: ' + distanceFactor);
         for (var cannon = 0; cannon < cannonsInAttack; cannon++) {
             if (Math.random() < distanceFactor) {
@@ -84,18 +86,18 @@ export class CombatEngine {
                 // and 87% chance of doing hull damage
                 var targetpct = Math.random();
                 if (targetpct < 0.01) {
-                    result.hitcodes.push(HitCode.HIT_CANNON);
+                    result.hitcodes.push(HitCode.HITCANNON);
                     attackee.cannons.count -= Math.min(1, attackee.cannons.count);
                     msg += ' disabling a cannon';
                 }
                 else if (targetpct < 0.03) {
-                    result.hitcodes.push(HitCode.HIT_SAILOR);
+                    result.hitcodes.push(HitCode.HITSAILOR);
                     attackee.crew.count -= Math.min(1, attackee.crew.count);
                     msg += ' killing a crewman';
                 }
                 else if (targetpct < 0.13) {
                     // each ball can do up to 0.5 damage (rounded to 3 decimal places)
-                    result.hitcodes.push(HitCode.HIT_SAIL);
+                    result.hitcodes.push(HitCode.HITSAIL);
                     var damage = Math.round((Math.random() / 2) * 1000) / 1000;
                     damage *= attacker.cannons.firepower;
                     attackee.sailQuality -= damage;
@@ -105,7 +107,7 @@ export class CombatEngine {
                     msg += ' doing ' + damage + ' damage to the sails';
                 }
                 else {
-                    result.hitcodes.push(HitCode.HIT_HULL);
+                    result.hitcodes.push(HitCode.HITHULL);
                     // each ball can do up to 1 damage (rounded to 3 decimal places)
                     var damage = Math.round((Math.random()) * 1000) / 1000;
                     damage *= attacker.cannons.firepower;
@@ -133,20 +135,17 @@ export class CombatEngine {
         return result;
     }
 
-    resolveBoarding(pair: ShipPair, attackerdef: ShipDefinition): BoardResult {
+    resolveBoarding(pair: ActionPair, attackerdef: ShipDefinition): BoardResult {
         // boarding algorithm:
         // figure out the ratio of attacker/defender. Then:
         // if this ratio is under 0.5, the attack is repelled, and nothing else happens
         // if the ratio is over 3, the attackers completely subdue the ship; else:
         // +-25 basis points: attack is a draw
         // else: use a stddev to decide on a range of more interesting results
-        var my: CombatEngine = this;
-
-        console.log('resolving ' + pair.one.id + ' boarding '
-            + pair.two.id);
-
         var attacker: Ship = pair.one;
         var attackee: Ship = pair.two;
+
+        console.log('resolving ' + pair.one.id + ' boarding ' + pair.two.id);
 
         var attackval: number = (attacker.crew.count * attacker.crew.meleeSkill);
         var defendval: number = (attackee.crew.count * attackee.crew.meleeSkill);
@@ -207,7 +206,7 @@ export class CombatEngine {
                     return rslt; // DRAW
                 }
                 console.log('defender success!');
-                return my.defenderBoards(ratio, choice, pair.one, pair.two);
+                return this.defenderBoards(ratio, choice, pair);
             }
             else if (choice < ratio) {
                 // defender advantage
@@ -216,65 +215,65 @@ export class CombatEngine {
                 }
 
                 console.log('attacker success!');
-                return my.attackerBoards(ratio, choice, pair.one, pair.two, attackerdef);
+                return this.attackerBoards(ratio, choice, pair, attackerdef);
             }
         }
     }
 
-    private attackerBoards(ratio: number, choice: number, attacker: Ship,
-        attackee: Ship, attackerdef: ShipDefinition): BoardResult {
+    private attackerBoards(ratio: number, choice: number, pair: ActionPair, attackerdef: ShipDefinition): BoardResult {
         // equal chance of getting gold, crew, ammo, or food
         var rslt: BoardResult = {
-            attackee: attackee,
-            attacker: attacker,
-            code: BoardCode.ATTACKER_SUCCESS
+            attackee: pair.one,
+            attacker: pair.two,
+            code: BoardCode.ATTACKERSUCCESS
         };
 
         var pct: number = Math.max(Math.random(), 0.25);
         if (choice < 0.25) {
-            rslt.gold = Math.floor(attackee.gold * pct);
-            attackee.gold -= rslt.gold;
-            attacker.gold += rslt.gold;
+            rslt.gold = Math.floor(rslt.attackee.gold * pct);
+            rslt.attackee.gold -= rslt.gold;
+            rslt.attacker.gold += rslt.gold;
         }
         else if (choice < 0.5) {
-            rslt.ammo = Math.floor(attackee.ammo * pct);
-            attackee.ammo -= rslt.ammo;
-            attacker.ammo += rslt.ammo;
+            rslt.ammo = Math.floor(rslt.attackee.ammo * pct);
+            rslt.attackee.ammo -= rslt.ammo;
+            rslt.attacker.ammo += rslt.ammo;
         }
         else if (choice < 0.75) {
-            rslt.food = Math.floor(attackee.food * pct);
-            attackee.food -= rslt.food;
-            attacker.food += rslt.food;
+            rslt.food = Math.floor(rslt.attackee.food * pct);
+            rslt.attackee.food -= rslt.food;
+            rslt.attacker.food += rslt.food;
         }
         else {
-            var crew = Object.assign({}, attackee.crew);
+            var crew = Object.assign({}, rslt.attackee.crew);
             crew.count = 1;
-            attackee.crew.count -= crew.count;
+            rslt.attackee.crew.count -= crew.count;
 
-            if (attackerdef.crewsize < (attacker.crew.count + crew.count)) {
-                crew.count = attackerdef.crewsize - attacker.crew.count;
+            if (attackerdef.crewsize < (rslt.attacker.crew.count + crew.count)) {
+                crew.count = attackerdef.crewsize - rslt.attacker.crew.count;
             }
             rslt.crew = crew;
-            attacker.crew.count += crew.count;
+            rslt.attacker.crew.count += crew.count;
         }
 
         return rslt;
 
     }
 
-    private defenderBoards(ratio: number, choice: number, attacker: Ship, attackee: Ship): BoardResult {
+    private defenderBoards(ratio: number, choice: number, pair: ActionPair): BoardResult {
         return {
-            attacker: attacker,
-            attackee: attackee,
-            code: BoardCode.DEFENDER_SUCCESS
+            attacker: pair.one,
+            attackee: pair.two,
+            code: BoardCode.DEFENDERSUCCESS
         };
     }
 
-    getDistanceFactor(attacker: Ship, attackee: Ship): number {
-        var distance = Calculators.distance(attacker.location, attackee.location);
+    getDistanceFactor(pair: ActionPair): number {
+        // console.log('distance factor:', pair);
+        var distance = Calculators.distance(pair.one.location, pair.two.location);
 
-        var ratio: number = (1 - distance / attacker.cannons.range);
-        console.log('distance:' + distance + '; range: ' + attacker.cannons.range + '; ratio: ' + ratio);
+        var ratio: number = (1 - distance / pair.one.cannons.range);
+        // console.log('distance:' + distance + '; range: ' + pair.one.cannons.range + '; ratio: ' + ratio);
 
         // idea: if we're within 25% of our cannon range, we have
         // 100% hit chance. If we're at 100% of our cannon range,

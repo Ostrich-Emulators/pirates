@@ -1,0 +1,25 @@
+
+.mat-card {
+  margin: 2rem;
+}
+
+.mat-form-field {
+    padding: 1rem;
+}
+
+.mat-card-actions {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.flag-area {
+    display: inline-flex;
+    flex-wrap: wrap;
+
+    .flag-img {
+        height: 64px;
+        width: 64px;
+        margin: 0.25rem;
+    }
+}
+

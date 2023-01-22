@@ -5,49 +5,50 @@ import { AvatarService } from '../../services/avatar.service'
 import { GameService } from '../../services/game.service'
 
 import { Names } from '../../../../../common/tools/names'
-import { take } from 'rxjs/operators';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-setup',
   templateUrl: './setup.component.html',
-  styleUrls: ['./setup.component.css']
+  styleUrls: ['./setup.component.scss']
 })
 export class SetupComponent implements OnInit {
-  avatar: string;
+  avataridx: number = 0;
   captain: string = Names.captain();
   female: boolean = false;
   shipname: string = Names.ship();
-  color: string = '#5F87FF';
+  public color: any;
 
-  constructor(private imgsvc: AvatarService, private gamesvc: GameService, private router: Router) {
-    var avidx = Math.random() * imgsvc.avatars.length;
-    this.avatar = imgsvc.avatars[Math.floor(avidx)];
+  constructor(public imgsvc: AvatarService,
+    private gamesvc: GameService,
+    private router: Router) {
+    this.avataridx = Math.floor(Math.random() * imgsvc.avatars.length);
   }
 
   ngOnInit() {
   }
 
-  setAvatar(a) {
-    this.avatar = a;
-  }
-
-  setAppelation(f){
+  setAppelation(f: boolean) {
     this.female = f;
     this.newcaptain();
   }
 
   newcaptain() {
-    this.captain = Names.captain( this.female);
+    this.captain = Names.captain(this.female);
   }
 
-  newname() {
+  newship() {
     this.shipname = Names.ship();
   }
 
   sail() {
-    this.gamesvc.start(this.captain, this.female, this.avatar,
-      this.shipname, this.color ).pipe(take(1)).subscribe(data => {
+    console.log('sailing!');
+
+
+    var mycolor: string = this.color?.hex || '#5F87FF';
+    this.gamesvc.start(this.captain, this.female, this.avataridx,
+      this.shipname, mycolor).pipe(take(1)).subscribe(data => {
         this.router.navigate(['/game']);
-    });
+      });
   }
 }

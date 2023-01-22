@@ -1,25 +1,27 @@
-import { Player } from '../../../common/model/player'
-import { Location } from '../../../common/model/location'
-import { Pirate } from '../../../common/model/pirate'
-import { ShipType } from '../../../common/model/ship-type.enum'
-import { ShipDefinition } from '../../../common/model/ship-definition'
-import { Ship } from '../../../common/model/ship'
-import { CollisionBody } from '../../../common/model/body'
-import { Collider } from '../../../common/tools/collider'
-import { ShipPair } from '../../../common/model/ship-pair'
-import { Names } from '../../../common/tools/names'
-import { CombatResult } from '../../../common/model/combat-result';
-import { BoardResult, BoardCode } from '../../../common/model/board-result';
-import { City } from '../../../common/model/city'
+import { Player } from '../../../common/generated/model/player';
+import { Location } from '../../../common/generated/model/location';
+import { ShipType } from '../../../common/generated/model/shipType';
+import { ShipDefinition } from '../../../common/generated/model/shipDefinition';
+import { Ship } from '../../../common/generated/model/ship';
+import { CollisionBody } from '../../../common/model/body';
+import { Collider } from '../../../common/tools/collider';
+import { ActionPair } from '../../../common/generated/model/actionPair';
+import { Names } from '../../../common/tools/names';
+import { CombatResult } from '../../../common/generated/model/combatResult';
+import { BoardResult } from '../../../common/generated/model/boardResult';
+import { City } from '../../../common/generated/model/city';
 import { Calculators } from '../../../common/tools/calculators';
 import { ShipAi } from './ship-ai';
-import { CombatEngine } from './combat-engine'
-import { PurchaseEngine } from './purchase-engine'
-import { ShipCannon } from '../../../common/model/ship-cannon';
-import { Crew } from '../../../common/model/crew';
+import { CombatEngine } from './combat-engine';
+import { PurchaseEngine } from './purchase-engine';
+import { ShipCannon } from '../../../common/generated/model/shipCannon';
+import { Crew } from '../../../common/generated/model/crew';
 import { MapEngine } from './map-engine';
 import { ShipUtils } from '../../../common/tools/ship-utils';
-import { CityCannon } from '../../../common/model/city-cannon'
+import { CityCannon } from '../../../common/generated/model/cityCannon';
+import { PlayerAndShip } from '../../../common/generated/model/playerAndShip';
+
+var shuffler = require('shuffle-array');
 
 export class Game {
     private TURN_NUM: number = 0;
@@ -30,13 +32,13 @@ export class Game {
     monsterloc: Location = { x: -20000, y: -20000 };
     private monsterbody: CollisionBody;
     private poolbody: CollisionBody;
-    private players: Map<string, Player> = new Map<string, Player>();
-    private nonplayerships: Ship[] = [];
-    private playerships: Ship[] = [];
+    private playermap: Map<string, Player> = new Map<string, Player>();
+    private players: Player[] = []; // all players (humans and ai)
+    ships: Ship[] = []; // all ships (human, ai, and abandoned)
     cities: City[] = [];
     private messages: Map<string, string[]> = new Map<string, string[]>(); // playerid, messages
-    private fireQueue: ShipPair[] = [];
-    private boardQueue: ShipPair[] = [];
+    private fireQueue: ActionPair[] = [];
+    private boardQueue: ActionPair[] = [];
     private combat: Map<string, CombatResult[]> = new Map<string, CombatResult[]>(); // playerid, results
     private boarding: Map<string, BoardResult[]> = new Map<string, BoardResult[]>(); // playerid, results
     private combatengine: CombatEngine = new CombatEngine(this);
@@ -45,7 +47,10 @@ export class Game {
     private specialscollider: Collider = new Collider();
     private shipcollider: Collider = new Collider();
     map: MapEngine = new MapEngine();
+    private started: boolean = false;
 
+    private TURN_DURATION = 250;
+    private SPECIALS_DURATION = 60000;
     private MPCT: number = 1;
     private WPCT: number = 1;
 
@@ -53,16 +58,13 @@ export class Game {
         return this.TURN_NUM;
     }
 
-    get pships(): Ship[]{
-        return this.playerships;
-    }
-
     constructor() {
-        console.log( 'into game ctor')
         var CITYLOCATIONS: Location[] = [
             { x: 532, y: 82 },
             { x: 289, y: 202 },
-            { x: 307, y: 497 }
+            { x: 307, y: 497 },
+            { x: 64, y: 156 },
+            { x: 90, y: 590 },
         ];
         
         var names: string[] = Names.city(CITYLOCATIONS.length);
@@ -100,120 +102,61 @@ export class Game {
         this.map.setWhirlpoolGuideImage(img);
     }
 
-    getPlayers(): Player[] {
-        var p: Player[] = [];
-        this.players.forEach((player) => {
-            p.push(player);
-        });
-        return p;
+    getPlayers(humansOnly: boolean = false): Player[] {
+        return this.players.filter(p => (humansOnly ? !p.ai : true));
     }
 
-    debugImageTo(file: string): Promise<any>{
+    getShips(humansOnly: boolean = false): Ship[]{
+        if (humansOnly) {
+            const humans: Set<string> = new Set<string>(this.getPlayers(true).map(p => p.id));
+            return this.ships.filter(s => humans.has(s.ownerid));
+        }
+        return this.ships;
+    }
+
+    debugImageTo(file: string): Promise<any> {
         return this.map.debugImageTo(file, this, this.specialscollider,
             this.monsterbody, this.poolbody);
     }
 
     getPlayer(id: string): Player {
-        return this.players.get(id);
+        return this.playermap.get(id);
     }
 
-    addPlayer(pirate: Pirate, shipname: string, color: string): Player {
-        var playernumber: number = this.players.size + 1;
+    addHumanPlayer(p: Player, shipname: string): PlayerAndShip {
+        p.id = `p${this.players.length + 1}`;
+        p.ai = false;
+        this.players.push(p);
+        this.playermap.set(p.id, p);
+        this.messages.set(p.id, []);
 
-        var player: Player = new Player(playernumber.toString(), pirate, color);
-        this.players.set(player.id, player);
-        this.messages.set(player.id, []);
-
-        this.allocateNewShip(player, ShipType.SMALL, 1, shipname);
-        return player;
-    }
-
-    addShipToCollisionSystem(ship: Ship) {
-        var radius = this.SHIP_RADIUS;
-        this.specialscollider.add({
-            id: ship.id,
-            src: ship,
-            getX: function (): number { return ship.location.x },
-            getY: function (): number { return ship.location.y },
-            getR: function (): number { return radius }
-        });
-
-        this.shipcollider.add({
-            id: ship.id,
-            src: ship,
-            getX: function (): number { return ship.location.x },
-            getY: function (): number { return ship.location.y },
-            getR: function (): number { return radius / 2 }
-        });
-
-
-    }
-
-    createShip(id: string, avatar: string, type: ShipType, owner?: string): Ship {
-        var def: ShipDefinition = ShipUtils.shipdef(type);
-
-        var crew: Crew = {
-            count: def.crewsize,
-            meleeSkill: 25,
-            sailingSkill: 25
-        };
-
-        var cannons: ShipCannon = {
-            firepower: 1,
-            reloadspeed: 15,
-            range: 60,
-            count: def.maxcannons
-        };
-
-        var ship: Ship = {
-            id: id,
-            ownerid: (owner ? owner : null ),
-            type: type,
-            cannons: cannons,
-            speed: def.speed,
-            manueverability: def.manueverability,
-            hullStrength: def.hull,
-            sailQuality: 35,
-            food: 50,
-            ammo: 120,
-            gold: 0,
-            avatar: avatar,
-            storage: def.storage,
-            location: { x: 100, y: 200 },
-            anchored: true,
-            crew: crew,
-            name: Names.ship(),
-            captain: Names.captain(Math.random() < 0.5)
-        };
-
-        return ship;
+        var ship: Ship = this.allocateNewShip(p, ShipType.SMALL, shipname);
+        return { player: p, ship: ship };
     }
 
     /**
-     * Generates the given number of Non-Player-Ships
+     * Generates the given number of AI players
      */
-    generateNonPlayerShips(ships: number) {
-        console.log('generating ' + ships + ' new NPC ships')
-        var ship = this.createShip('-100-1', "/assets/galleon.svg", ShipType.SMALL);
-        ship.gold = Math.floor(Math.random() * 20);
-        ship.cannons.range = 40;
-        ship.ammo = 20;
-        ship.cannons.count = 3;
-        ship.cannons.reloadspeed = 50;
-        ship.location.x = 130;
-        ship.location.y = 210;
-        this.nonplayerships.push(ship);
-        this.addShipToCollisionSystem(ship);
+    generateAiPlayers(ships: number) {
+        console.log('generating ' + ships + ' new NPCs')
+        for (var i = -1; i >= -ships; i--) {
+            var female: boolean = Math.random() < 0.5;
+            var aiplayer: Player = {
+                id: `p${i}`,
+                female: female,
+                name: Names.captain(female),
+                avatar: -1,
+                color: 'white',
+                ai: true
+            };
+            console.log(`AI: ${-i}`, aiplayer);
 
-        for (var i = 1; i < ships; i++) {
-            var ship = this.createShip((-i - 1) + '-1', "/assets/galleon.svg", ShipType.SMALL);
-            ship.gold = Math.floor(Math.random() * 20);
-            ship.ammo = 20;
-            ship.cannons.count = 3;
-            ship.cannons.reloadspeed = 50;
+            var ship: Ship = this.allocateNewShip(aiplayer, ShipType.SMALL, Names.ship());
+            // scatter the ships around the board, but make sure they're in water
             ship.location = this.map.getRandomWhirpoolLocation();
-            this.nonplayerships.push(ship);
-            this.addShipToCollisionSystem(ship);
+
+            this.players.push(aiplayer);
+            this.playermap.set(aiplayer.id, aiplayer);
         }
     }
 
@@ -235,55 +178,39 @@ export class Game {
         return msgs;
     }
 
-    getNonPlayerShips(): Ship[] {
-        return this.nonplayerships;
-    }
+    pushMessage(recipient: Player | Ship |string, msg: string) {
+        // figure out if our recipient is a player, a ship, or a player id
+        // regardless of what it is, we don't push messages to ai players
 
-    pushMessage(player: Player | Ship | string, msg: string) {
-        var id: string = '';
-        if (typeof player === 'undefined' || null == player) {
+        var player: Player = undefined;
+        if (typeof recipient === 'undefined' || null == recipient) {
             return; // no message to send
         }
-        if (typeof player === 'string') {
-            id = player;
+        if (typeof recipient === 'string') { // recipient arg is a player's id
+            player = this.playermap.get(recipient);
         }
-        else if (player.hasOwnProperty('pirate')) {
-            id = player.id;
+        else if (recipient.hasOwnProperty('female')) { // recipient arg is actually a player
+            player = <Player>recipient;
         }
-        else {
-            this.playerships.forEach(ship => { 
-                if (player.id === ship.id) {
-                    id = ship.ownerid;
-                }
-            });
+        else if (recipient.hasOwnProperty('ownerid')) { // recipient is a ship, so get the owner
+            player = this.playermap.get((recipient as Ship).ownerid);
         }
 
-        if ('' != id) {
-            //console.log('message for ' + id);
-            if (!this.messages.has(id)) {
-                this.messages.set(id, []);
-            }
-            this.messages.get(id).push(msg);
+        if (player && player.ai || !player) {
+            return;
         }
-        // else NPC ship
-    }
 
-    getPlayerForShip(s: Ship) {
-        this.players.forEach(player => {
-            if (player.id === s.ownerid) {
-                return player;
-            }
-        });
-        return null;
-    }
-
-    getShipsForPlayer(pid: string) :Ship[]{
-        return this.playerships.filter(s => s.ownerid === pid);
+        //console.log('message for ' + id);
+        if (!this.messages.has(player.id)) {
+            this.messages.set(player.id, []);
+        }
+        this.messages.get(player.id).push(msg);
+        console.log('messages:', this.messages.get(player.id));
     }
 
     fire(from: Ship, to: Ship) {
         if (this.combatengine.readyToFire(from)) {
-            this.fireQueue.push(new ShipPair( from, to ));
+            this.fireQueue.push({ one: from, two: to });
         }
         else {
             console.log(JSON.stringify(from) + ' not ready to fire!');
@@ -291,7 +218,7 @@ export class Game {
     }
 
     board(from: Ship, to: Ship) {
-        this.boardQueue.push(new ShipPair(from, to));
+        this.boardQueue.push({ one: from, two: to });
     }
 
     private static debugStringCombatResults(result: CombatResult): CombatResult {
@@ -304,7 +231,6 @@ export class Game {
             delete s.speed;
             delete s.storage;
             delete s.food;
-            delete s.avatar;
             return s;
         }
 
@@ -316,8 +242,10 @@ export class Game {
 
     resolveCombat() {
         while (this.fireQueue.length > 0) {
-            var pair: ShipPair = this.fireQueue.pop();
+            var pair: ActionPair = this.fireQueue.pop();
             var result: CombatResult = this.combatengine.resolve(pair);
+            var owner: Player = this.playermap.get(result.attacker.ownerid);
+            var ownee: Player = this.playermap.get(result.attackee.ownerid);
 
             console.log('combat results: ' + JSON.stringify(Game.debugStringCombatResults(result)));
 
@@ -328,89 +256,65 @@ export class Game {
             var attackeesunk: boolean = (result.attackee.hullStrength < 0);
             var attackeeabandoned: boolean = (result.attackee.crew.count < 1);
 
-            if (null !== result.attacker.ownerid) {
+            if ( owner && !owner.ai) {
                 // if the attacker sunk himself, let him know that
                 if (attackersunk || attackerabandoned) {
-                    var p: Player = this.players.get(result.attacker.ownerid);
-                    var oldnum: number = Number.parseInt(result.attacker.id.replace(/.*-/, ''));
-                    var s: Ship = this.allocateNewShip(p, ShipType.SMALL, oldnum + 1);
-
-                    this.pushMessage(result.attacker.ownerid, result.attacker.name +
-                        ' has been ' + (attackersunk ? 'sunk' : 'abandoned') +
-                        ' but we\'ve comandeered another: ' + s.name);
+                    this.sunkOrAbandoned(result.attacker, attackersunk, owner);
                 }
                 else { // attacker got some hits maybe, or sunk the attackee?
                     if (result.attackee.hullStrength > 0) {
                         if (result.hits > 0) {
-                            this.pushMessage(result.attacker.ownerid,
-                                result.attackee.name + ' has been hit!');
+                            this.pushMessage(owner, result.attackee.name + ' has been hit!');
                         }
                         if (result.attackee.crew.count < 1) {
-                            this.pushMessage(result.attacker.ownerid,
-                                result.attackee.name + ' has been abandoned!');
+                            this.pushMessage(owner, result.attackee.name + ' has been abandoned!');
                         }
                     }
                     else {
-                        this.pushMessage(result.attacker.ownerid,
-                            result.attackee.name + ' has been sunk!');
+                        this.pushMessage(owner, result.attackee.name + ' has been sunk!');
                     }
                 }
             }
 
-            if (null !== result.attackee.ownerid ) {
+            if( ownee && !ownee.ai){
                 if (attackeesunk || attackeeabandoned) {
-                    var p: Player = this.players.get(result.attackee.ownerid);
-                    var oldnum: number = Number.parseInt(result.attacker.id.replace(/.*-/, ''));
-                    var s: Ship = this.allocateNewShip(p, ShipType.SMALL, oldnum + 1);
-
-                    this.pushMessage(result.attackee.ownerid, result.attackee.name +
-                        ' has been ' + (attackeesunk ? 'sunk' : 'abandoned') +
-                        ' but we\'ve comandeered another: ' + s.name);
+                    this.sunkOrAbandoned(result.attackee, attackeesunk, ownee);
                 }
                 else {
                     if (result.attacker.hullStrength > 0) {
                         if (result.attacker.crew.count < 1) {
-                            this.pushMessage(result.attackee.ownerid,
-                                result.attacker.name + ' has been abandoned!');
+                            this.pushMessage(ownee, result.attacker.name + ' has been abandoned!');
                         }
                     }
                     else {
-                        this.pushMessage(result.attackee.ownerid,
-                            result.attacker.name + ' has been sunk!');
+                        this.pushMessage(ownee, result.attacker.name + ' has been sunk!');
                     }
                 }
             }
 
-            if (attackersunk) {
-                this.removeShip(result.attacker);
-            }
-            if (attackeesunk) {
-                this.removeShip(result.attackee);
-            }
-
             // notify users of combat results
-            this.players.forEach((p, k) => {
-                if (!this.combat.has(k)) {
-                    this.combat.set(k, []);
+            this.getPlayers(true).forEach(p => { 
+                if (!this.combat.has(p.id)) {
+                    this.combat.set(p.id, []);
                 }
-                this.combat.get(k).push(result);
+                this.combat.get(p.id).push(result);
             });
         }
     }
 
     resolveBoarding() {
         while (this.boardQueue.length > 0) {
-            var pair: ShipPair = this.boardQueue.pop();
+            var pair: ActionPair = this.boardQueue.pop();
             var result: BoardResult = this.combatengine.resolveBoarding(pair, ShipUtils.shipdef(pair.one.type));
 
             console.log('boarding results: ' + JSON.stringify(result));
 
             // set the results for the users
-            this.players.forEach((p, k) => {
-                if (!this.boarding.has(k)) {
-                    this.boarding.set(k, []);
+            this.getPlayers(true).forEach(p => {
+                if (!this.boarding.has(p.id)) {
+                    this.boarding.set(p.id, []);
                 }
-                this.boarding.get(k).push(result);
+                this.boarding.get(p.id).push(result);
             });
         }
     }
@@ -426,197 +330,201 @@ export class Game {
                 delete ship.cannons.reloading;
             }
         }
-
     }
 
+    private updateShipLocation(ship: Ship) {
+        if (!(ship.anchored || this.isdocked(ship))) {
+            var newx = ship.location.x + ship.course.speedx;
+            var newy = ship.location.y + ship.course.speedy;
+            // console.log('new location:', newx, newy);
 
-    start() {
-        var my: Game = this;
-        console.log('starting game loop');
-        var updateShipLocation = function (ship: Ship) {
-            if (!(ship.anchored || my.isdocked(ship))) {
-                var newx = ship.location.x + ship.course.speedx;
-                var newy = ship.location.y + ship.course.speedy;
+            var pixel: number = this.map.getPixel(newx, newy);
+            // console.log('pixel at (' + Math.floor(newx) +
+            //   ',' + Math.floor(newy) + '): ' + pixel.toString(16)+ '('+pixel+')');
+            if (this.map.isnavigable(pixel)) {
+                ship.location.x = newx;
+                ship.location.y = newy;
 
-                var pixel: number = my.map.getPixel(newx, newy);
-                //console.log('pixel at (' + Math.floor(newx) +
-                  //  ',' + Math.floor(newy) + '): ' + pixel.toString(16)+ '('+pixel+')');
-                if (my.map.isnavigable(pixel)) {
-                    ship.location.x = newx;
-                    ship.location.y = newy;
-
-                    if (my.map.iscity(pixel)) {
-                        var city: City;
-                        var mindist: number = 1000000000;
-                        for (var i = 0; i < my.cities.length; i++){
-                            var dist: number = Calculators.distance(ship.location,
-                                my.cities[i].location);
-                            if (dist < mindist) {
-                                mindist = dist;
-                                city = my.cities[i];
-                            }
+                if (this.map.iscity(pixel)) {
+                    var city: City;
+                    var mindist: number = Number.MAX_SAFE_INTEGER;
+                    for (var i = 0; i < this.cities.length; i++) {
+                        var dist: number = Calculators.distance(ship.location,
+                            this.cities[i].location);
+                        if (dist < mindist) {
+                            mindist = dist;
+                            city = this.cities[i];
                         }
+                    }
 
-                        console.log('in city! ' + city.name);
-                        ship.anchored = true;
-                        ship.docked = city;
-                    }
-                    else {
-                        delete ship.docked;
-                    }
+                    console.log('in city! ' + city.name);
+                    ship.anchored = true;
+                    ship.docked = city;
                 }
                 else {
-                    //console.log('not navigable?');
-                    ship.anchored = true;
-
-                    if (my.map.isinland(pixel)) {
-                        var ok = my.damageShip(ship, 1);
-                        var player: Player;
-                        if (null != ship.ownerid) {
-                            player = my.getPlayerForShip(ship);
-                        }
-                        if (player) {
-                            my.pushMessage(player, "We've run aground!")
-                            if (!ok) {
-                                var oldnum: number = Number.parseInt(ship.id.replace(/.*-/, ''));
-                                var s: Ship = my.allocateNewShip(player, ShipType.SMALL, oldnum + 1);
-                                my.pushMessage(ship.ownerid, ship.name +
-                                    ' has been sunk, but we\'ve comandeered another: ' + s.name);
-                            }
-                        }
-                    }
-                }
-
-                var nextx = ship.location.x + ship.course.speedx;
-                var nexty = ship.location.y + ship.course.speedy;
-                // FIXME: this doesn't work
-                if ((Math.abs(nextx - ship.course.dstx) < 1) &&
-                    ((Math.abs(nexty - ship.course.dsty) < 1))) {
-                    ship.anchored = true;
-                    ship.location.x = ship.course.dstx;
-                    ship.location.y = ship.course.dsty;
+                    delete ship.docked;
                 }
             }
-        }
+            else {
+                console.log('not navigable?');
+                ship.anchored = true;
 
-        var checkShipCollisions = function (lastLocationLookup: Map<string, Location>) {
-            
-            my.shipcollider.getCollisions().forEach(en => {
-                // do anything here?
-
-                var damage: number = 0;//Math.random();
-                var firstok = my.damageShip(en.first.src, damage);
-                var secondok = my.damageShip(en.second.src, damage);
-
-                if (firstok) {
-                    en.first.src.location.x = lastLocationLookup.get(en.first.src.id).x;
-                    en.first.src.location.y = lastLocationLookup.get(en.first.src.id).y;
-                }
-                if (secondok) {
-                    en.second.src.location.x = lastLocationLookup.get(en.second.src.id).x;
-                    en.second.src.location.y = lastLocationLookup.get(en.second.src.id).y;
-                }
-
-                my.pushMessage(en.first.src, 'We\'ve collided with ' + en.second.src.name + '!');
-                my.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
-
-                // FIXME: allocate new ships if needed
-            });
-        }
-
-        var checkMonster = function () {
-            var fought: boolean = false;
-            my.specialscollider.checkCollisions(my.monsterbody).forEach(body => {
-                if (my.poolbody !== body) {
-                    if (body.id.substr(0, 1) !== '-') {
-                        my.pushMessage(body.src, 'Sea Monster Strike!');
+                if (this.map.isinland(pixel)) {
+                    var owner: Player = this.playermap.get(ship.ownerid);
+                    this.pushMessage(owner, "We've run aground!")
+                    var ok = this.damageShip(ship, 1);
+                    if (!ok) {
+                        this.sunkOrAbandoned(ship, true, owner);
                     }
-                    body.src.anchored = true;
-                    my.damageShip(body.src, Math.random());
-                    fought = true;
                 }
-            });
-
-            if (fought) {
-                my.monsterloc.x = -1000;
-                my.monsterloc.y = -1000;
             }
-        };
 
-        var checkWhirlpool = function () {
-            my.specialscollider.checkCollisions(my.poolbody).forEach(body => {
-                if (my.monsterbody !== body) {
-                    if (body.id.substr(0, 1) !== '-') {
-                        my.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
-                    }
-                    var loc = my.map.getRandomWhirpoolLocation();
-                    body.src.location.x = loc.x;
-                    body.src.location.y = loc.y;
-                }
-            });
+            var nextx = ship.location.x + ship.course.speedx;
+            var nexty = ship.location.y + ship.course.speedy;
+            // FIXME: this doesn't work
+            if ((Math.abs(nextx - ship.course.dstx) < 1) &&
+                ((Math.abs(nexty - ship.course.dsty) < 1))) {
+                ship.anchored = true;
+                ship.location.x = ship.course.dstx;
+                ship.location.y = ship.course.dsty;
+            }
         }
+    }
 
-        setInterval(function () {
-            my.TURN_NUM += 1;
+    private checkShipCollisions(lastLocationLookup: Map<string, Location>) {
+        this.shipcollider.getCollisions().forEach(en => {
+            // do anything here?
+            // console.log('ship collision:', en);
+
+            var damage: number = 0;//Math.random();
+            var firstok = this.damageShip(en.first.src, damage);
+            var secondok = this.damageShip(en.second.src, damage);
+
+
+            this.pushMessage(en.first.src, 'We\'ve collided with ' + en.second.src.name + '!');
+            this.pushMessage(en.second.src, 'We\'ve collided with ' + en.first.src.name + '!');
+
+            if (firstok) {
+                en.first.src.location.x = lastLocationLookup.get(en.first.src.id).x;
+                en.first.src.location.y = lastLocationLookup.get(en.first.src.id).y;
+            }
+            else {
+                var owner: Player = this.playermap.get(en.first.src.ownerid);
+                this.sunkOrAbandoned(en.first.src, true, owner);
+            }
+
+
+            if (secondok) {
+                en.second.src.location.x = lastLocationLookup.get(en.second.src.id).x;
+                en.second.src.location.y = lastLocationLookup.get(en.second.src.id).y;
+            }
+            else {
+                var owner: Player = this.playermap.get(en.second.src.ownerid);
+                this.sunkOrAbandoned(en.second.src, true, owner);
+
+            }
+        });
+    }
+
+    private checkMonster() {
+        var fought: boolean = false;
+        this.specialscollider.checkCollisions(this.monsterbody).forEach(body => {
+            if (this.poolbody !== body) {
+                if (body.id.substring(0, 1) !== '-') {
+                    this.pushMessage(body.src, 'Sea Monster Strike!');
+                }
+                body.src.anchored = true;
+                this.damageShip(body.src, Math.random());
+                fought = true;
+            }
+        });
+
+        if (fought) {
+            this.monsterloc.x = -10000;
+            this.monsterloc.y = -10000;
+        }
+    }
+
+    private checkWhirlpool() {
+        this.specialscollider.checkCollisions(this.poolbody).forEach(body => {
+            if (this.monsterbody !== body) {
+                if (body.id.substring(0, 1) !== '-') {
+                    this.pushMessage(body.src, 'Captured by the whirlpool!' + body.id);
+                }
+                var loc = this.map.getRandomWhirpoolLocation();
+                body.src.location.x = loc.x;
+                body.src.location.y = loc.y;
+            }
+        });
+    }
+
+    public isStarted(): boolean {
+        return this.started;
+    }
+
+    start() {
+        console.log('starting game loop');
+        this.started = true;
+        setInterval(() => {
+            this.TURN_NUM += 1;
             
-            my.nonplayerships.forEach((ship: Ship) => {
-                my.ai.control(ship, my.playerships, my.specialscollider, my);
-                my.reloadCannons(ship);
+            shuffler(this.ships.filter(ship=>(ship.ownerid))).forEach(ship => {
+                var player: Player = this.playermap.get(ship.ownerid);
+                if (player.ai) {
+                    this.ai.control(ship, this.getShips(true), this.specialscollider, this);
+                }
+                this.reloadCannons(ship);
             });
-            my.playerships.forEach(ship => my.reloadCannons(ship));
 
-            my.resolveCombat();
-            my.resolveBoarding();
+            this.resolveCombat();
+            this.resolveBoarding();
 
-            var lastLocationLookup: Map<string,Location> = new Map<string, Location>();
-            my.playerships.forEach(ship=>{
+            var lastLocationLookup: Map<string, Location> = new Map();
+            //console.log('ships:', this.ships.map(s => ({id:s, location:s.location})));
+            this.ships.forEach(ship => {
                 lastLocationLookup.set(ship.id, { x: ship.location.x, y: ship.location.y });
-                updateShipLocation(ship);
+                this.updateShipLocation(ship);
             });
-            my.nonplayerships.forEach((ship: Ship) => {
-                lastLocationLookup.set(ship.id, { x: ship.location.x, y: ship.location.y });
-                updateShipLocation(ship);
-            });
+            //console.log('last locations:', lastLocationLookup);
 
-            checkWhirlpool();
-            checkMonster();
-            checkShipCollisions(lastLocationLookup);
-        }, 100);
+            this.checkWhirlpool();
+            this.checkMonster();
+            this.checkShipCollisions(lastLocationLookup);
+        }, this.TURN_DURATION);
 
-        my.poolloc = my.map.getRandomWhirpoolLocation();
-        console.log('poolloc is now: ' + JSON.stringify(my.poolloc));
-        my.poolbody = {
+        this.poolloc = this.map.getRandomWhirpoolLocation();
+        console.log('initial poolloc is: ' + JSON.stringify(this.poolloc));
+        this.poolbody = {
             id: 'whirlpool',
-            getX: function (): number { return my.poolloc.x; },
-            getY: function (): number { return my.poolloc.y; },
-            getR: function (): number { return my.POOL_RADIUS; }
+            x: this.poolloc.x,
+            y: this.poolloc.y,
+            r: this.POOL_RADIUS
         };
         
-        my.monsterloc = my.map.getRandomMonsterLocation();
-        console.log('monsterloc is now: ' + JSON.stringify(my.monsterloc));
-        my.monsterbody = {
+        this.monsterloc = this.map.getRandomMonsterLocation();
+        console.log('initial monsterloc is: ' + JSON.stringify(this.monsterloc));
+        this.monsterbody = {
             id: 'monster',
-            getX: function (): number { return my.monsterloc.x; },
-            getY: function (): number { return my.monsterloc.y; },
-            getR: function (): number { return my.MONSTER_RADIUS; }
-        
+            x: this.monsterloc.x,
+            y: this.monsterloc.y,
+            r: this.MONSTER_RADIUS
         };
-        my.specialscollider.add(my.poolbody);
-        my.specialscollider.add(my.monsterbody);
+        this.specialscollider.add(this.poolbody);
+        this.specialscollider.add(this.monsterbody);
 
-        setInterval(function () {
-            my.poolloc = (Math.random() < my.WPCT
-                ? my.map.getRandomWhirpoolLocation()
+        setInterval( ()=> {
+            this.poolloc = (Math.random() < this.WPCT
+                ? this.map.getRandomWhirpoolLocation()
                 : { x: -10000, y: -10000 }
             );
-            console.log('poolloc is now: ' + JSON.stringify(my.poolloc));
+            console.log('poolloc is now: ' + JSON.stringify(this.poolloc));
 
-            my.monsterloc = (Math.random() < my.MPCT
-                ? my.map.getRandomMonsterLocation()
+            this.monsterloc = (Math.random() < this.MPCT
+                ? this.map.getRandomMonsterLocation()
                 : { x: -20000, y: -20000 }
             );
-            console.log('monsterloc is now: ' + JSON.stringify(my.monsterloc));
-        }, 60000);
+            console.log('monsterloc is now: ' + JSON.stringify(this.monsterloc));
+        }, this.SPECIALS_DURATION);
     }
 
     /**
@@ -625,49 +533,112 @@ export class Game {
      * @param amt 
      * @returns true, if the ship remains afloat
      */
-    damageShip(ship: Ship, amt: number) {
+    damageShip(ship: Ship, amt: number): boolean {
+        // console.log('damage ship', { id: ship.id, hull: ship.hullStrength });
         var remains = true;
         ship.hullStrength -= amt;
         if (ship.hullStrength <= 0) {
             remains = false;
-            this.removeShip(ship);
         }
         return remains;
     }
 
-    removeShip(ship: Ship) {
-        this.specialscollider.remove(ship.id);
-        this.shipcollider.remove(ship.id);
+    private sunkOrAbandoned(ship: Ship, sunk: boolean, owner:Player) {
+        var oldname = ship.name;
+        if (sunk) {
+            this.specialscollider.remove(ship.id);
+            this.shipcollider.remove(ship.id);
 
-        if (null === ship.ownerid) {
-            this.nonplayerships.forEach((sh, idx) => {
-                if (sh.id === ship.id) {
-                    this.nonplayerships.splice(idx, 1);
+            this.ships.splice(this.ships.indexOf(ship), 1);
+            if (owner) {
+                if (owner.ai) {
+                    this.players.splice(this.players.indexOf(owner), 1);
+                    this.playermap.delete(owner.id);
                 }
-            });
+                else {
+                    this.allocateNewShip(owner, ShipType.SMALL);
+                }
+            }
         }
-        else { // player ship got sunk
-            this.playerships.forEach((sh, idx) => {
-                if (sh.id === ship.id) {
-                    this.playerships.splice(idx, 1);
-                }
-            });
-        } 
+        else {
+            // abandoned ships become ownerless
+            delete ship.ownerid;
+            ship.anchored = true;
+        }
+        if (owner && !owner.ai) {
+            this.pushMessage(owner, oldname +
+                ' has been ' + (sunk ? 'sunk' : 'abandoned') +
+                ' but we\'ve comandeered another: ' + ship.name);
+        }
     }
 
-    allocateNewShip(p: Player, type: ShipType, shipnum?: number, name?: string) : Ship{
-        var ship = this.createShip(p.id + '-' + (shipnum ? shipnum : 1),
-            p.pirate.avatar, type);
-        ship.ownerid = p.id;
-        ship.location.x = 245;
-        ship.location.y = 225;
-        ship.captain = p.pirate.name;
-        ship.gold = 520;
-        ship.name = (name ? name : Names.ship());
-        this.playerships.push(ship);
+    private allocateNewShip(p: Player, type: ShipType, name: string = Names.ship()) : Ship {
+        var def: ShipDefinition = ShipUtils.shipdef(type);
+
+        var crew: Crew = {
+            count: def.crewsize,
+            meleeSkill: 25,
+            sailingSkill: 25
+        };
+
+        var cannons: ShipCannon = {
+            firepower: 1,
+            reloadspeed: 15,
+            range: 60,
+            count: def.maxcannons
+        };
+
+        var ship: Ship = {
+            id: `${p.id}-ship`,
+            type: type,
+            cannons: cannons,
+            speed: def.speed,
+            manueverability: def.manueverability,
+            hullStrength: def.hull,
+            sailQuality: 35,
+            food: 50,
+            ammo: 120,
+            gold: 0,
+            storage: def.storage,
+            location: { x: 100, y: 200 },
+            anchored: true,
+            crew: crew,
+            name: name,
+            ownerid: p.id,
+            captain: p.name,
+            course: { dstx: 0, dsty: 0, speedx: 0, speedy: 0 }
+        };
+
+        if (!p.ai) {
+            ship.location.x = 245;
+            ship.location.y = 225;
+            ship.gold = 520;
+            //ship.cannons.range = 100;
+            //ship.hullStrength = 200;
+        }
+
+        console.log(`allocated ${ship.name} led by ${p.name}`, ship);
+        this.ships.push(ship);
         this.addShipToCollisionSystem(ship);
         return ship;
     }
+   
+    private addShipToCollisionSystem(ship: Ship) {
+        var radius = this.SHIP_RADIUS;
+        this.specialscollider.add({
+            id: ship.id,
+            src: ship,
+            x: () => ship.location.x,
+            y: () => ship.location.y,
+            r: radius
+        });
 
-
+        this.shipcollider.add({
+            id: ship.id,
+            src: ship,
+            x: () => ship.location.x,
+            y: () => ship.location.y,
+            r: radius / 2
+        });
+    }
 }

@@ -1,8 +1,8 @@
-import { Ship } from "../../../common/model/ship";
-import { City } from "../../../common/model/city";
-import { CityCannon } from "../../../common/model/city-cannon";
-import { Purchase } from "../../../common/model/purchase";
-import { ShipCannon } from "../../../common/model/ship-cannon";
+import { Ship } from "../../../common/generated/model/ship";
+import { City } from "../../../common/generated/model/city";
+import { CityCannon } from "../../../common/generated/model/cityCannon";
+import { Purchase } from "../../../common/generated/model/purchase";
+import { ShipCannon } from "../../../common/generated/model/shipCannon";
 import { ShipUtils } from "../../../common/tools/ship-utils";
 
 export class PurchaseEngine {
@@ -55,14 +55,14 @@ export class PurchaseEngine {
             case 'AMMO':
                 return city.ammo;
             case 'CANNON':
-                return ShipUtils.replacementCannonCost(ship, city.cannon, purchase.extra_n);
+                return ShipUtils.replacementCannonCost(ship, city.cannon, purchase.extraN);
             default:
                 throw 'UNHANDLED training area: '+purchase.item;
         }
     }
 
     private makeCannons(s: Ship, c: City, p: Purchase): ShipCannon {
-        var ccan: CityCannon = c.cannon[p.extra_n];
+        var ccan: CityCannon = c.cannon[p.extraN];
         return {
             count: ShipUtils.shipdef(s.type).maxcannons,
             firepower: ccan.firepower,

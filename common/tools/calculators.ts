@@ -1,4 +1,4 @@
-import { Location } from '../model/location'
+import { Location } from '../generated/model/location';
 
 export class Calculators {
     public static distance(loc1: Location, loc2: Location): number {

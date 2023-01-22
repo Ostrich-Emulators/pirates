@@ -1,7 +1,8 @@
-import { Ship } from '../model/ship';
-import { ShipType } from '../model/ship-type.enum';
-import { ShipDefinition } from '../model/ship-definition';
-import { CityCannon } from '../model/city-cannon';
+import { Ship } from '../generated/model/ship';
+import { ShipType } from '../generated/model/shipType';
+import { ShipDefinition } from '../generated/model/shipDefinition';
+import { CityCannon } from '../generated/model/cityCannon';
+import { ShipCannon } from '../generated/model/shipCannon';
 
 export class ShipUtils {
     public static shipdef(type: ShipType): ShipDefinition {
@@ -45,13 +46,13 @@ export class ShipUtils {
         // have and purchase the new ones
 
         // step 1: figure out which type of cannon we have
-        var oldcannons = s.cannons;
+        var oldcannons:ShipCannon = s.cannons || {count:0, firepower:0, range: 0, reloadspeed: 0};
         var oldidx: number = -1;
         var costOfOld: number = 0;
 
         for (var j = 0; j < ccs.length; j++) {
             var cc: CityCannon = ccs[j];
-            if (cc.firepower == oldcannons.firepower &&
+            if (cc.firepower == oldcannons?.firepower &&
                 cc.range == oldcannons.range &&
                 cc.reloadspeed == oldcannons.reloadspeed) {
                 oldidx = j;
@@ -60,12 +61,11 @@ export class ShipUtils {
         }
 
         var MAXCANNONS = ShipUtils.shipdef(s.type).maxcannons;
+        const shipcannoncount: number = s.cannons?.count || 0;
 
         return (oldidx === j
-            ? costOfOld * (MAXCANNONS - s.cannons.count)
-            : (ccs[cidx].cost * MAXCANNONS) - (ccs[oldidx].cost * s.cannons.count)
-        );
-
-        
+            ? costOfOld * (MAXCANNONS - shipcannoncount)
+            : (ccs[cidx].cost * MAXCANNONS) - (ccs[oldidx].cost * shipcannoncount)
+        );        
     }
 }

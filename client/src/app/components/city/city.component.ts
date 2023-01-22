@@ -1,61 +1,78 @@
-import { Component, OnInit, Input, OnDestroy } from '@angular/core';
-import { GameService } from '../../services/game.service';
-import { City } from '../../../../../common/model/city';
-import { Ship } from '../../../../../common/model/ship';
-import { Purchase } from '../../../../../common/model/purchase';
-import { CityCannon } from '../../../../../common/model/city-cannon';
-import { takeUntil } from 'rxjs/operators';
-import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
-import { ShipType } from '../../../../../common/model/ship-type.enum';
+import { Component, Input, OnInit } from '@angular/core';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { City, PurchaseCode, Ship } from 'src/app/generated';
+import { GameService } from 'src/app/services/game.service';
 import { ShipUtils } from '../../../../../common/tools/ship-utils';
 
+@UntilDestroy()
 @Component({
   selector: 'app-city',
   templateUrl: './city.component.html',
   styleUrls: ['./city.component.scss']
 })
-export class CityComponent implements OnInit, OnDestroy {
-  @Input() city: City;
-  private ship: Ship;
+export class CityComponent implements OnInit {
+  @Input() city: City = {};
+  ship: Ship = GameService.EMPTYSHIP;
   private replacementCannonCosts: number[] = [];
-  constructor(private gamesvc: GameService) { }
 
-  ngOnInit() {
-    console.log(this.city);
-    this.gamesvc.myship().pipe(takeUntil(componentDestroyed(this))).subscribe(data => { 
+  constructor(public gamesvc: GameService) { }
+
+  ngOnInit(): void {
+    this.gamesvc.myship().pipe(untilDestroyed(this)).subscribe(data => {
       this.ship = data;
 
       this.calculateReplaceCannonCosts();
     });
   }
 
-  ngOnDestroy(): void {
-  }
-
   private calculateReplaceCannonCosts() {
-    this.replacementCannonCosts = this.city.cannon.map((cc, cidx, ccs) => ShipUtils.replacementCannonCost(this.ship, ccs, cidx));
+    this.replacementCannonCosts
+      = this.city?.cannon?.map((cc, cidx, ccs) => ShipUtils.replacementCannonCost(this.ship, ccs, cidx)) || [];
   }
 
-  undock(e) {
+  undock() {
     this.gamesvc.undock();
   }
 
-  train(e:string) {
+  train(e: PurchaseCode) {
     this.gamesvc.buy({
-      cityname: this.city.name,
+      cityname: this.city?.name || '',
       item: e
     });
   }
 
   buyc(e: number) {
     this.gamesvc.buy({
-      cityname: this.city.name,
+      cityname: this.city?.name || '',
       item: 'CANNON',
-      extra_n: e
+      extraN: e
     });
   }
 
   costforcannon(i: number): number {
     return this.replacementCannonCosts[i];
+  }
+
+  disabled(pc: PurchaseCode) {
+    var cost: number = 0;
+    switch (pc) {
+      case PurchaseCode.AMMO:
+        cost = this.city?.ammo || 0;
+        break;
+      case PurchaseCode.HULL:
+        cost = this.city?.hull || 0;
+        break;
+      case PurchaseCode.MELEE:
+        cost = this.city?.melee || 0;
+        break;
+      case PurchaseCode.SAIL:
+        cost = this.city?.sail || 0;
+        break;
+      case PurchaseCode.SAILING:
+        cost = this.city?.sailing || 0;
+        break;
+    }
+
+    return this.ship.gold || 0 > cost;
   }
 }

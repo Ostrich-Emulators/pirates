@@ -1,4 +1,4 @@
-import { Ship } from "../../../common/model/ship";
+import { Ship } from "../../../common/generated/model/ship";
 
 export interface SeaMonster {
   health: number,

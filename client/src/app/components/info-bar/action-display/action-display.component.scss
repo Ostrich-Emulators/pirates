@@ -1,17 +1,26 @@
-#targetting {
-    padding-top: 1em;
-    background-color: white !important;
+.element {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
 }
 
-.ship{
-  margin-top:1em;
+.key {
+    display: flex;
+    flex: 2 1 70%;
 }
 
-button{
-    width: 100%;
+.value {
+    display: flex;
+    flex: 1 1 30%;
 }
 
-.shipimg {
-    height: 64px;
-    width: 64px;
+.row {
+    display: flex;
+    flex: 1 1 auto;
+}
+
+.action {
+    display: flex;
+    flex: 1 0 50%;
+    justify-content: center;
 }
